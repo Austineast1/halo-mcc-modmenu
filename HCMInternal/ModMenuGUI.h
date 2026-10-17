@@ -145,6 +145,7 @@ private:
 	std::string startSelfTest(const std::string& filter);
 	bool sweepSkipReason(const ModDef& mod, std::string& why);
 	const ModDef* findMod(const std::string& id);
+	bool hasSafeCommands(const ModDef& mod);
 
 public:
 	ModMenuGUI(GameState game, std::shared_ptr<GameEngineFunctions> engine, std::weak_ptr<SettingsStateAndEvents> settings, std::string dirPath);

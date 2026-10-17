@@ -13,6 +13,21 @@
 
 namespace
 {
+	// Commands that hang or crash a game (MCC 1.3528) however they're used, found by the in-game self-test.
+	// The menu never sends them in that game: forms still do everything else, and mods with nothing else left are hidden.
+	bool unsafeIn(GameState::Value game, const std::string& command)
+	{
+		static const std::vector<std::pair<const char*, GameState::Value>> unsafe = {
+			{ "(object_set_scale ", GameState::Value::Halo3 },		// on the player: freezes ~45 s, then crashes halo3.dll (any size, smooth or instant)
+			{ "(unit_lower_weapon ", GameState::Value::HaloReach },	// crashes haloreach.dll+0x213f45
+			{ "(unit_raise_weapon ", GameState::Value::HaloReach },
+			{ "(ai_erase_all", GameState::Value::HaloReach },		// crashes Reach's AI update a moment later
+		};
+		for (auto& [text, g] : unsafe)
+			if (g == game && command.contains(text)) return true;
+		return command.contains("(object_set_shadowless "); // crashed Reach; not trusted anywhere
+	}
+
 	constexpr ImVec4 rgba(int r, int g, int b, float a = 1.f) { return ImVec4(r / 255.f, g / 255.f, b / 255.f, a); }
 
 	// Palette: black lacquer, champagne gold and ivory.
@@ -514,6 +529,11 @@ void ModMenuGUI::sendLines(const std::vector<std::string>& lines, const std::str
 	for (auto& line : lines)
 	{
 		auto command = ModMenuText::expand(line, mGame, value);
+		if (unsafeIn(mGame, command))
+		{
+			addLog(std::format("skipped {} (it crashes {})", command, ModMenuText::longGameName(mGame)), LogLine::Kind::Info);
+			continue;
+		}
 
 		// Only ever break an alliance this menu made. Removing one the game or a Workshop mod set up
 		// (or one that doesn't exist) is asking for trouble.
@@ -929,6 +949,22 @@ bool ModMenuGUI::matchesSearch(const ModDef& mod) const
 	return lower(mod.name).contains(q) || lower(mod.desc).contains(q) || lower(mod.id).contains(q) || lower(mod.tag).contains(q);
 }
 
+// false when every command this mod would send in this game is one that crashes it (e.g. a pure resize in Halo 3)
+bool ModMenuGUI::hasSafeCommands(const ModDef& mod)
+{
+	switch (mod.type)
+	{
+	case ModType::Toggle: case ModType::Slider: case ModType::Button: case ModType::Choice: case ModType::Text: break;
+	default: return true;
+	}
+	auto cmds = mod.commandsFor(mGame);
+	if (!cmds) return true;
+	int total = 0, unsafe = 0;
+	for (auto* list : { &cmds->on, &cmds->off, &cmds->set, &cmds->apply, &cmds->run })
+		for (auto& line : *list) { total++; if (unsafeIn(mGame, line)) unsafe++; }
+	return total == 0 || unsafe < total;
+}
+
 std::vector<const ModDef*> ModMenuGUI::visibleMods(const ModCategory& cat)
 {
 	std::vector<const ModDef*> out;
@@ -937,7 +973,7 @@ std::vector<const ModDef*> ModMenuGUI::visibleMods(const ModCategory& cat)
 
 	for (auto& mod : cat.mods)
 	{
-		if (!mod.supports(mGame) || !matchesSearch(mod)) continue;
+		if (!mod.supports(mGame) || !matchesSearch(mod) || !hasSafeCommands(mod)) continue;
 
 		if (mod.type == ModType::Skull)
 		{
@@ -1964,6 +2000,7 @@ bool ModMenuGUI::sweepSkipReason(const ModDef& mod, std::string& why)
 	}
 	auto cmds = mod.commandsFor(mGame);
 	if (!cmds) { why = "no commands for this game"; return true; }
+	if (!hasSafeCommands(mod)) { why = "everything it does crashes this game, so it's hidden"; return true; }
 	for (auto* list : { &cmds->on, &cmds->off, &cmds->set, &cmds->apply, &cmds->run })
 		for (auto& line : *list)
 			for (auto* breaker : kSweepBreakers)

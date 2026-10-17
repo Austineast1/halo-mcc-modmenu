@@ -189,7 +189,7 @@ namespace
 	// cinematic heads, vehicle parts and weapons that only exist bolted to a vehicle.
 	bool worthListing(SpawnKind kind, const std::string& p) // p is the lower-case tag path
 	{
-		for (auto* junk : { "fp_", "first_person", "\\fp\\", "test", "garbage", "_broken", "\\heads\\", "\\attachments\\", "\\projectiles\\", "\\null\\" })
+		for (auto* junk : { "fp_", "first_person", "\\fp\\", "test", "garbage", "_broken", "\\heads\\", "\\attachments\\", "\\projectiles\\", "\\null\\", "security_camera" })
 			if (p.contains(junk)) return false;
 		bool onAVehicle = p.starts_with("objects\\vehicles\\");
 		bool standaloneTurret = p.contains("vehicles\\human\\turrets\\") || p.contains("vehicles\\covenant\\turrets\\");
@@ -197,7 +197,7 @@ namespace
 		{
 		case SpawnKind::Weapon:
 			if (p.ends_with("unarmed") || p.contains("horn") || p.contains("sheath")) return false;
-			return !onAVehicle || standaloneTurret || p.substr(p.find_last_of('\\') + 1).contains("turret");
+			return !onAVehicle || standaloneTurret; // guns bolted to a vehicle (warthog chaingun, falcon gun) can't be carried
 		case SpawnKind::Vehicle:
 			return !p.contains("\\turrets\\") || standaloneTurret;
 		default:
