@@ -89,7 +89,7 @@ Each line is run (about once a second the file is picked up and deleted) and
 the results are written to ModMenuDev.log. Commands:
   mods                       list every mod id for the game you're playing
   mod <id> [on|off|value]    run a mod (sliders take a number, choices an index)
-  selftest [all|<collection>|<id prefix>]   run every mod one at a time;
+  selftest [all|<collection>|<id prefix>] [after <id>]   run every mod one at a time;
                              if the game crashes, the last TEST line in the log
                              names the mod that did it.  "selftest stop" ends it
   alloff                     turn every mod off

@@ -36,7 +36,7 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
   group="name" makes buttons one-at-a-time: running one forgets the others in the group (Become forms use this).
   A reapply button in a group is remembered and run again after deaths, reverts and level loads.
 -->
-<ModMenuLibrary version="9" title="Mod Menu">
+<ModMenuLibrary version="10" title="Mod Menu">
 
   <!-- ================================================================== -->
   <Category id="spartan" name="Spartan" desc="Your body: armour, health, size and movement.">
@@ -662,7 +662,8 @@ R"MML(    <Mod id="p_odst" type="button" reapply="true" group="form" tag="PRESET
 
     <Mod id="holster" type="toggle" name="Holster Weapon"
          desc="Lower your weapon and walk like you own the place.">
-      <Game games="gen2up">
+      <!-- not in Reach: unit_lower_weapon crashes it (self-test, Oct 2026) -->
+      <Game games="Halo2,Halo3,Halo3ODST,Halo4">
         <On>(unit_lower_weapon {player} 20)</On>
         <Off>(unit_raise_weapon {player} 20)</Off>
       </Game>
@@ -732,12 +733,12 @@ R"MML(    <Mod id="p_odst" type="button" reapply="true" group="form" tag="PRESET
          desc="A Warthog appears next to you.">
       <Game games="Halo1">
         <Run>(cheat_spawn_warthog)</Run>
-      </Game>
+)MML",
+R"MML(      </Game>
     </Mod>
 
     <Mod id="powerups" type="button" name="All Power-ups"
-)MML",
-R"MML(         desc="Spawns camo and overshield power-ups next to you.">
+         desc="Spawns camo and overshield power-ups next to you.">
       <Game games="Halo1">
         <Run>(cheat_all_powerups)</Run>
       </Game>
@@ -938,10 +939,10 @@ R"MML(         desc="Spawns camo and overshield power-ups next to you.">
 (ai_allegiance sentinel human)</Run>
       </Game>
       <Game games="Halo2">
-        <Run>(ai_allegiance heretic player)
-(ai_allegiance heretic human)
 )MML",
-R"MML((ai_allegiance prophet player)
+R"MML(        <Run>(ai_allegiance heretic player)
+(ai_allegiance heretic human)
+(ai_allegiance prophet player)
 (ai_allegiance prophet human)</Run>
       </Game>
       <Game games="Halo3">
@@ -1152,10 +1153,10 @@ R"MML((ai_allegiance prophet player)
       </Game>
     </Mod>
 
-    <Mod id="nogrenadehud" type="toggle" name="Hide Grenade Count"
-         desc="Hides the grenade display.">
 )MML",
-R"MML(      <Game games="gen3">
+R"MML(    <Mod id="nogrenadehud" type="toggle" name="Hide Grenade Count"
+         desc="Hides the grenade display.">
+      <Game games="gen3">
         <On>(chud_show_grenades false)</On>
         <Off>(chud_show_grenades true)</Off>
       </Game>
@@ -1379,11 +1380,11 @@ R"MML(      <Game games="gen3">
   <Category id="classic" name="Halo CE Classic" desc="Bungie's developer cheats, still hidden inside Halo CE.">
 
     <Mod id="jetpack" type="toggle" reapply="true" name="Jetpack"
-         desc="Hold jump to fly, hold crouch to hover. No fall damage.">
+)MML",
+R"MML(         desc="Hold jump to fly, hold crouch to hover. No fall damage.">
       <Game games="Halo1">
         <Set>(set cheat_jetpack {bool})</Set>
-)MML",
-R"MML(      </Game>
+      </Game>
     </Mod>
 
     <Mod id="superjump" type="toggle" reapply="true" name="Super Jump"

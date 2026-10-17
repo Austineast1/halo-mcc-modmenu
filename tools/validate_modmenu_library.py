@@ -35,6 +35,11 @@ ENUM_VALUES = {g: t | DIFFICULTIES for g, t in TEAMS.items()}
 KNOWN_CRASHERS = {
     "object_set_shadowless": "crashed Halo: Reach (null pointer inside haloreach.dll) when called on the player, Oct 2026",
 }
+# Same, but only in some games (found by the in-game self-test: the last TEST line before the crash dump).
+KNOWN_CRASHERS_PER_GAME = {
+    "unit_lower_weapon": ({"HaloReach"}, "crashed Halo: Reach (null pointer in its animation code, haloreach.dll+0x213f45) on the player, Oct 2026"),
+    "unit_raise_weapon": ({"HaloReach"}, "pair of unit_lower_weapon, which crashes Halo: Reach; not trusted there either"),
+}
 SPECIAL_FORMS = {"begin", "begin_random", "if", "cond", "set", "and", "or", "+", "-", "*", "/", "=", "!=", ">", "<", ">=", "<=",
                  "min", "max", "sleep", "sleep_until", "wake", "inspect", "unit", "not", "print", "list_get", "players", "player_get"}
 
@@ -107,6 +112,8 @@ def check_expr(expr, game, docs, problems, where):
             problems.append(f"{where}: global '{args[0]}' is {globs[args[0]]}, not boolean")
     elif head in KNOWN_CRASHERS:
         problems.append(f"{where}: '{head}' is banned: {KNOWN_CRASHERS[head]}")
+    elif head in KNOWN_CRASHERS_PER_GAME and game in KNOWN_CRASHERS_PER_GAME[head][0]:
+        problems.append(f"{where}: '{head}' is banned in {game}: {KNOWN_CRASHERS_PER_GAME[head][1]}")
     elif head in SPECIAL_FORMS:
         pass
     elif head not in funcs:

@@ -31,7 +31,7 @@
   group="name" makes buttons one-at-a-time: running one forgets the others in the group (Become forms use this).
   A reapply button in a group is remembered and run again after deaths, reverts and level loads.
 -->
-<ModMenuLibrary version="9" title="Mod Menu">
+<ModMenuLibrary version="10" title="Mod Menu">
 
   <!-- ================================================================== -->
   <Category id="spartan" name="Spartan" desc="Your body: armour, health, size and movement.">
@@ -654,7 +654,8 @@
 
     <Mod id="holster" type="toggle" name="Holster Weapon"
          desc="Lower your weapon and walk like you own the place.">
-      <Game games="gen2up">
+      <!-- not in Reach: unit_lower_weapon crashes it (self-test, Oct 2026) -->
+      <Game games="Halo2,Halo3,Halo3ODST,Halo4">
         <On>(unit_lower_weapon {player} 20)</On>
         <Off>(unit_raise_weapon {player} 20)</Off>
       </Game>

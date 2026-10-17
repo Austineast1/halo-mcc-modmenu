@@ -1912,8 +1912,16 @@ bool ModMenuGUI::sweepSkipReason(const ModDef& mod, std::string& why)
 	return false;
 }
 
-std::string ModMenuGUI::startSelfTest(const std::string& filter)
+std::string ModMenuGUI::startSelfTest(const std::string& filterAndStart)
 {
+	// "all after holster": carry on after the mod that crashed the last run
+	std::string filter = filterAndStart, after;
+	if (auto at = filterAndStart.find(" after "); at != std::string::npos)
+	{
+		filter = trimmed(filterAndStart.substr(0, at));
+		after = trimmed(filterAndStart.substr(at + 7));
+	}
+	bool started = after.empty();
 	SelfTest test;
 	for (auto& cat : mLibrary.categories)
 	{
@@ -1922,6 +1930,7 @@ std::string ModMenuGUI::startSelfTest(const std::string& filter)
 		{
 			if (!mod.supports(mGame)) continue;
 			if (!filter.empty() && filter != "all" && cat.id != filter && !mod.id.starts_with(filter)) continue;
+			if (!started) { started = mod.id == after; continue; }
 			std::string why;
 			if (sweepSkipReason(mod, why))
 			{
@@ -2095,5 +2104,5 @@ std::string ModMenuGUI::devCommand(const std::string& rawLine)
 			return std::format("bad value '{}': {}", arg, ex.what());
 		}
 	}
-	return std::format("unknown command '{}' (try: mods, mod <id> [on|off|value], selftest [category|all|stop], alloff, hs <command>, spawn <name>, become <name>, catalogue, possess, return, pose, wait <ms>)", verb);
+	return std::format("unknown command '{}' (try: mods, mod <id> [on|off|value], selftest [category|all|stop] [after <id>], alloff, hs <command>, spawn <name>, become <name>, catalogue, possess, return, pose, wait <ms>)", verb);
 }
