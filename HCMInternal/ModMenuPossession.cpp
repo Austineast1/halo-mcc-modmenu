@@ -8,6 +8,7 @@
 #include "IMakeOrGetCheat.h"
 #include "IGetMCCVersion.h"
 #include "Datum.h"
+#include "DirPathContainer.h"
 #include <atomic>
 #include <chrono>
 
@@ -76,6 +77,51 @@ private:
 	std::unique_ptr<ScopedCallback<eventpp::CallbackList<void(uint32_t)>>> mTickCallback;
 	int64_t mPendingSinceMs = 0;
 	std::optional<uint32_t> mPendingSinceTick;
+
+	// The game's checkpoints save who you're possessing, so after a reload (or a restart of MCC) you can still be in a
+	// borrowed body. The body you started in is remembered in this file so "Return to Your Body" still works.
+	std::string mStatePath;
+
+	void rememberOriginalBody(std::optional<uint32_t> datum)
+	{
+		if (mStatePath.empty()) return;
+		std::error_code ec;
+		if (!datum) { std::filesystem::remove(mStatePath, ec); return; }
+		std::ofstream out(mStatePath, std::ios::trunc);
+		if (out) out << std::format("{:08X}\n", *datum);
+	}
+
+	std::optional<uint32_t> recalledOriginalBody()
+	{
+		if (mStatePath.empty()) return std::nullopt;
+		std::ifstream in(mStatePath);
+		std::string text;
+		if (!(in >> text)) return std::nullopt;
+		try { return (uint32_t)std::stoul(text, nullptr, 16); }
+		catch (...) { return std::nullopt; }
+	}
+
+	// new session or level reload while in a borrowed body: use the body remembered on disk, if it's still there empty
+	void recallOriginalBody(uint32_t current)
+	{
+		if (mOriginalBody) return;
+		auto recalled = recalledOriginalBody();
+		if (recalled && *recalled != current && isFreeBody(*recalled)) mOriginalBody = recalled;
+	}
+
+	// an empty body nobody drives: a biped with no player and no AI brain
+	bool isFreeBody(uint32_t datum)
+	{
+		uintptr_t meta = 0;
+		if (datum == kNone || !objectMetaDataTable->resolve(&meta)) return false;
+		uint16_t index = (uint16_t)(datum & 0xFFFF);
+		if (index >= L.maxObjects) return false;
+		uint8_t type = 0xFF;
+		if (!readSafe(meta + headerStride * index + headerType, type) || type != L.bipedType) return false;
+		uintptr_t body = objectAddress(datum);
+		uint32_t actor = 0, player = 0;
+		return body && readSafe(body + L.unitActor, actor) && actor == kNone && readSafe(body + L.unitPlayer, player) && player == kNone;
+	}
 
 	std::optional<uint32_t> currentTick()
 	{
@@ -226,6 +272,13 @@ public:
 		if (!layout) throw HCMInitException("True possession has no memory layout for this game/MCC version yet");
 		L = *layout;
 
+		if (auto dirs = dicon.Resolve<DirPathContainer>().lock())
+		{
+			std::string folder = dirs->dirPath;
+			if (!folder.empty() && folder.back() != '\\' && folder.back() != '/') folder += "\\";
+			mStatePath = folder + "ModMenuPossession.txt";
+		}
+
 		auto ptr = dicon.Resolve<PointerDataStore>().lock();
 		playerUnitPointer = ptr->getData<std::shared_ptr<MultilevelPointer>>("playerDatum", game);
 		objectMetaDataTable = ptr->getData<std::shared_ptr<MultilevelPointer>>("objectMetaDataTable", game);
@@ -251,6 +304,7 @@ public:
 		uint32_t playerDatum = 0;
 		if (!playerRecord(unitField, record, playerDatum)) return "Load into a mission first.";
 		uint32_t current = *(uint32_t*)unitField;
+		recallOriginalBody(current);
 		uintptr_t currentBody = objectAddress(current);
 		SimpleMath::Vector3 eye;
 		if (!currentBody || !readPosition(currentBody, eye)) return "Couldn't find your body. Are you alive?";
@@ -337,8 +391,9 @@ public:
 		uint32_t playerDatum = 0;
 		if (!playerRecord(unitField, record, playerDatum)) return "Load into a mission first.";
 		uint32_t current = *(uint32_t*)unitField;
-		if (!mOriginalBody || current == *mOriginalBody) { mOriginalBody.reset(); return "You're already in your own body."; }
-		if (!objectAddress(*mOriginalBody)) { mOriginalBody.reset(); return "Your old body is gone. You'll get it back next time you die or reload a checkpoint."; }
+		recallOriginalBody(current);
+		if (!mOriginalBody || current == *mOriginalBody) { mOriginalBody.reset(); rememberOriginalBody(std::nullopt); return "You're already in your own body."; }
+		if (!objectAddress(*mOriginalBody)) { mOriginalBody.reset(); rememberOriginalBody(std::nullopt); return "Your old body is gone (it was destroyed). Restart the mission to get it back."; }
 
 		send("(ai_braindead (object_get_ai (player_get 0)) false)"); // the creature gets its brain back
 		try { queue(Request{ *mOriginalBody, true, "" }); }
@@ -353,6 +408,7 @@ public:
 		uint32_t playerDatum = 0;
 		if (!playerRecord(unitField, record, playerDatum)) return "Load into a mission first.";
 		uint32_t current = *(uint32_t*)unitField;
+		recallOriginalBody(current);
 		uintptr_t body = objectAddress(target);
 		if (!body) return "That body is gone.";
 		uint32_t actor = kNone;
@@ -409,6 +465,7 @@ public:
 			mFollowUpCommand.reset();
 		}
 		if (followUp) send(*followUp);
+		rememberOriginalBody(mOriginalBody); // keep the file in step: written after leaving your body, removed on return
 		return result;
 	}
 

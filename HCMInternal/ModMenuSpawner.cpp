@@ -17,6 +17,7 @@ namespace
 	constexpr uint32_t kNone = 0xFFFFFFFF;
 	constexpr uint32_t kCrashed = 0xFFFFFFFE;
 
+	using TagAvailableFn = bool(__fastcall*)(uint32_t tag);
 	using PlacementNewFn = void(__fastcall*)(void* placement, uint32_t definition, uint32_t owner, void* damageOwner);
 	using ObjectNewFn = uint32_t(__fastcall*)(void* placement);
 
@@ -27,6 +28,9 @@ namespace
 		std::vector<uint8_t> placementNewBytes, objectNewBytes;
 		size_t placementSize;
 		size_t placementPosition, placementForward;
+		// the engine's own "is this tag loaded in the current zone set" check (object_new refuses tags that aren't)
+		uintptr_t tagAvailable;
+		std::vector<uint8_t> tagAvailableBytes;
 	};
 
 	// object_placement_data_new and object_new were found by following each game's HaloScript object_create
@@ -42,14 +46,16 @@ namespace
 			return Layout{ L"halo3.dll", 0x341508, 0x341AE8, h3PlacementNew,
 				{ 0x48, 0x8B, 0xC4, 0x53, 0x55, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x83, 0xEC, 0x78, 0x83,
 				  0xCD, 0xFF, 0x45, 0x33, 0xE4, 0xF6, 0x41, 0x18, 0x10, 0x48, 0x8B, 0xF1, 0x8B, 0xFD, 0x44, 0x88, 0x60, 0x10, 0x75, 0x09 },
-				0x180, 0x1C, 0x28 };
+				0x180, 0x1C, 0x28,
+				0x12C9EC, { 0x83, 0xF9, 0xFF, 0x74, 0x25, 0x48, 0x8B, 0x05, 0x30, 0x76, 0x7C, 0x00 } };
 		}
 		if (game.operator GameState::Value() == GameState::Value::Halo3ODST)
 		{
 			return Layout{ L"halo3odst.dll", 0x37C954, 0x37CF34, h3PlacementNew,
 				{ 0x48, 0x8B, 0xC4, 0x53, 0x55, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x81, 0xEC, 0x88, 0x00,
 				  0x00, 0x00, 0x41, 0x83, 0xCE, 0xFF, 0x33, 0xED, 0xF6, 0x41, 0x18, 0x10, 0x48, 0x8B, 0xF1, 0x41, 0x8B, 0xFE, 0x40, 0x88 },
-				0x180, 0x1C, 0x28 };
+				0x180, 0x1C, 0x28,
+				0x14D4C8, { 0x83, 0xF9, 0xFF, 0x74, 0x25, 0x48, 0x8B, 0x05, 0x74, 0x53, 0x7E, 0x00 } };
 		}
 		if (game.operator GameState::Value() == GameState::Value::HaloReach)
 		{
@@ -58,7 +64,8 @@ namespace
 				  0x41, 0x8B, 0xE8, 0x8B, 0xDA, 0x33, 0xD2, 0x41, 0xB8, 0xA8, 0x01, 0x00, 0x00, 0x49, 0x8B, 0xF1, 0x48, 0x8B, 0xF9, 0xE8 },
 				{ 0x40, 0x53, 0x55, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x81, 0xEC, 0xA8, 0x00, 0x00, 0x00,
 				  0x8B, 0x41, 0x18, 0x49, 0x83, 0xCC, 0xFF, 0x45, 0x33, 0xC0, 0xC1, 0xE8, 0x04, 0x44, 0x88, 0x44, 0x24, 0x50, 0x4C, 0x8B },
-				0x1A8, 0x1C, 0x28 };
+				0x1A8, 0x1C, 0x28,
+				0x8F620, { 0x83, 0xF9, 0xFF, 0x74, 0x22, 0x48, 0x8B, 0x05, 0x24, 0x3F, 0xB0, 0x00 } };
 		}
 		return std::nullopt;
 	}
@@ -78,6 +85,12 @@ namespace
 		{
 			return kCrashed;
 		}
+	}
+
+	bool callTagAvailable(TagAvailableFn fn, uint32_t tag)
+	{
+		__try { return fn(tag); }
+		__except (EXCEPTION_EXECUTE_HANDLER) { return false; }
 	}
 
 	std::string titleCase(std::string s)
@@ -150,6 +163,7 @@ private:
 	std::vector<ModMenuSpawnEntry> mCatalogue;	// render thread only
 	std::atomic_bool mCatalogueStale = false;	// set from any thread when the level changes
 	bool mCatalogueBuilt = false;
+	int64_t mCatalogueBuiltAtMs = 0;			// rebuilt every so often: Reach and Halo 3 load new zone sets mid-mission
 	int64_t mCatalogueRetryAtMs = 0;
 
 	struct Request { ModMenuSpawnEntry entry; bool becomeIt; float position[3]; float forward[3]; };
@@ -166,6 +180,17 @@ private:
 	{
 		using namespace std::chrono;
 		return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+	}
+
+	// the engine's own loaded-in-this-zone-set check, if its bytes are what we expect
+	std::optional<TagAvailableFn> tagAvailableCheck()
+	{
+		auto module = ModuleCache::getModuleHandle(L.module);
+		if (!module) return std::nullopt;
+		auto address = (uintptr_t)module.value() + L.tagAvailable;
+		if (IsBadReadPtr((void*)address, L.tagAvailableBytes.size()) || memcmp((void*)address, L.tagAvailableBytes.data(), L.tagAvailableBytes.size()) != 0)
+			return std::nullopt;
+		return (TagAvailableFn)address;
 	}
 
 	bool functionsMatch(uintptr_t base)
@@ -186,7 +211,9 @@ private:
 		auto tag = tagTable->getTagByDatum(Datum((uint16_t)(entry.tag & 0xFFFF), (uint16_t)(entry.tag >> 16)));
 		if (!tag) return false;
 		auto kind = kindOf(tag.value().tagType.getNum());
-		return kind && *kind == entry.kind && (uint32_t)tag.value().tagDatum == entry.tag;
+		if (!kind || *kind != entry.kind || (uint32_t)tag.value().tagDatum != entry.tag) return false;
+		auto available = tagAvailableCheck();
+		return !available || callTagAvailable(*available, entry.tag);
 	}
 
 	// game thread
@@ -245,6 +272,8 @@ private:
 			return;
 		}
 		std::map<std::string, int> nameCounts;
+		auto available = tagAvailableCheck();
+		int notLoaded = 0;
 		for (auto& tag : tags.value())
 		{
 			auto kind = kindOf(tag.tagType.getNum());
@@ -260,6 +289,8 @@ private:
 			std::string lowered = path;
 			std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](unsigned char c) { return (char)std::tolower(c); });
 			if (!worthListing(*kind, lowered)) continue;
+			// the level references it but this part of the level doesn't have it loaded: the game would refuse it
+			if (available && !callTagAvailable(*available, (uint32_t)tag.tagDatum)) { notLoaded++; continue; }
 
 			ModMenuSpawnEntry entry{ (uint32_t)tag.tagDatum, *kind, prettyName(path), path };
 			nameCounts[entry.name]++;
@@ -287,7 +318,8 @@ private:
 		}
 		std::sort(mCatalogue.begin(), mCatalogue.end(), [](const auto& a, const auto& b)
 			{ return a.kind != b.kind ? a.kind < b.kind : a.name < b.name; });
-		PLOG_INFO << "spawner: catalogue has " << mCatalogue.size() << " entries";
+		PLOG_INFO << "spawner: catalogue has " << mCatalogue.size() << " entries (" << notLoaded << " more aren't loaded in this zone set)"
+			<< (available ? "" : "; the zone-set check didn't match, so nothing was filtered");
 	}
 
 public:
@@ -313,11 +345,13 @@ public:
 			mCatalogueBuilt = false;
 			mCatalogueRetryAtMs = nowMs() + 1500; // let the new level finish loading
 		}
+		if (mCatalogueBuilt && nowMs() - mCatalogueBuiltAtMs > 20000) mCatalogueBuilt = false;
 		if (!mCatalogueBuilt && nowMs() >= mCatalogueRetryAtMs)
 		{
 			try { buildCatalogue(); }
 			catch (HCMRuntimeException ex) { PLOG_ERROR << "spawner: " << ex.what(); mCatalogue.clear(); }
 			mCatalogueBuilt = !mCatalogue.empty();
+			mCatalogueBuiltAtMs = nowMs();
 			if (!mCatalogueBuilt) mCatalogueRetryAtMs = nowMs() + 3000; // level still loading, try again shortly
 		}
 		return mCatalogue;
