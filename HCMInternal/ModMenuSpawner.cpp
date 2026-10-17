@@ -7,6 +7,10 @@
 #include "IGetMCCVersion.h"
 #include "ModuleCache.h"
 #include "MagicString.h"
+#include <atomic>
+#include <chrono>
+#include <deque>
+#include <map>
 
 namespace
 {
@@ -25,9 +29,29 @@ namespace
 		size_t placementPosition, placementForward;
 	};
 
+	// object_placement_data_new and object_new were found by following each game's HaloScript object_create
+	// (object_create -> create-by-name -> placement-from-scenario -> placement_new, then object_new). Halo 3 and ODST
+	// use a 0x180-byte placement block with the same field offsets as Reach.
 	std::optional<Layout> layoutFor(GameState game, std::string_view mccVersion)
 	{
-		if (game.operator GameState::Value() == GameState::Value::HaloReach && mccVersion == "1.3528.0.0")
+		if (mccVersion != "1.3528.0.0") return std::nullopt;
+		static const std::vector<uint8_t> h3PlacementNew = { 0x48, 0x89, 0x5C, 0x24, 0x08, 0x48, 0x89, 0x6C, 0x24, 0x10, 0x48, 0x89, 0x74, 0x24, 0x18, 0x57, 0x48, 0x83, 0xEC, 0x20,
+			0x41, 0x8B, 0xE8, 0x8B, 0xDA, 0x33, 0xD2, 0x41, 0xB8, 0x80, 0x01, 0x00, 0x00, 0x49, 0x8B, 0xF1, 0x48, 0x8B, 0xF9, 0xE8 };
+		if (game.operator GameState::Value() == GameState::Value::Halo3)
+		{
+			return Layout{ L"halo3.dll", 0x341508, 0x341AE8, h3PlacementNew,
+				{ 0x48, 0x8B, 0xC4, 0x53, 0x55, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x83, 0xEC, 0x78, 0x83,
+				  0xCD, 0xFF, 0x45, 0x33, 0xE4, 0xF6, 0x41, 0x18, 0x10, 0x48, 0x8B, 0xF1, 0x8B, 0xFD, 0x44, 0x88, 0x60, 0x10, 0x75, 0x09 },
+				0x180, 0x1C, 0x28 };
+		}
+		if (game.operator GameState::Value() == GameState::Value::Halo3ODST)
+		{
+			return Layout{ L"halo3odst.dll", 0x37C954, 0x37CF34, h3PlacementNew,
+				{ 0x48, 0x8B, 0xC4, 0x53, 0x55, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x81, 0xEC, 0x88, 0x00,
+				  0x00, 0x00, 0x41, 0x83, 0xCE, 0xFF, 0x33, 0xED, 0xF6, 0x41, 0x18, 0x10, 0x48, 0x8B, 0xF1, 0x41, 0x8B, 0xFE, 0x40, 0x88 },
+				0x180, 0x1C, 0x28 };
+		}
+		if (game.operator GameState::Value() == GameState::Value::HaloReach)
 		{
 			return Layout{ L"haloreach.dll", 0x49CC24, 0x46D6E0,
 				{ 0x48, 0x89, 0x5C, 0x24, 0x08, 0x48, 0x89, 0x6C, 0x24, 0x10, 0x48, 0x89, 0x74, 0x24, 0x18, 0x57, 0x48, 0x83, 0xEC, 0x20,
@@ -109,12 +133,14 @@ private:
 	int64_t mCatalogueRetryAtMs = 0;
 
 	struct Request { ModMenuSpawnEntry entry; bool becomeIt; float position[3]; float forward[3]; };
+	static constexpr size_t kMaxQueued = 12;
 	std::mutex mMutex;
-	std::optional<Request> mPending;
-	std::optional<Result> mResult;
-	std::atomic_bool mFinished = false;
-	int64_t mPendingSinceMs = 0;
+	std::deque<Request> mPending;	// waiting for the game thread (one is spawned per tick)
+	std::deque<Result> mResults;		// finished, waiting to be reported on the render thread
+	// render thread only
 	std::unique_ptr<ScopedCallback<eventpp::CallbackList<void(uint32_t)>>> mTickCallback;
+	std::optional<uint32_t> mWaitingSinceTick;
+	int64_t mWaitingSinceMs = 0;
 
 	static int64_t nowMs()
 	{
@@ -146,13 +172,13 @@ private:
 	// game thread
 	void onTick(uint32_t)
 	{
-		if (mFinished) return;
 		std::optional<Request> request;
 		{
 			std::lock_guard<std::mutex> lock(mMutex);
-			request = mPending;
+			if (mPending.empty()) return;
+			request = mPending.front();
+			mPending.pop_front();
 		}
-		if (!request) return;
 
 		Result result{ "", kNone, request->becomeIt };
 		auto module = ModuleCache::getModuleHandle(L.module);
@@ -175,9 +201,15 @@ private:
 		}
 
 		std::lock_guard<std::mutex> lock(mMutex);
-		mPending.reset();
-		mResult = result;
-		mFinished = true;
+		mResults.push_back(result);
+	}
+
+	std::optional<uint32_t> currentTick()
+	{
+		auto tick = tickWeak.lock();
+		if (!tick) return std::nullopt;
+		try { return tick->getCurrentGameTick(); }
+		catch (HCMRuntimeException) { return std::nullopt; }
 	}
 
 	void buildCatalogue()
@@ -265,65 +297,82 @@ public:
 
 	std::string spawn(const ModMenuSpawnEntry& entry, bool becomeIt)
 	{
-		if (mPending) return "Still spawning the last one...";
 		auto pose = mPose ? mPose() : std::nullopt;
 		if (!pose) return "Load into a mission first.";
 
+		size_t queued;
+		{
+			std::lock_guard<std::mutex> lock(mMutex);
+			queued = mPending.size();
+		}
+		if (queued >= kMaxQueued) return "Hold on, still spawning the last few...";
+
 		float distance = spawnDistance(entry.kind), height = spawnHeight(entry.kind);
 		Request request{ entry, becomeIt, {}, {} };
-		request.forward[0] = std::cos(pose->yaw);
-		request.forward[1] = std::sin(pose->yaw);
-		request.forward[2] = 0.f;
-		request.position[0] = pose->position.x + request.forward[0] * distance;
-		request.position[1] = pose->position.y + request.forward[1] * distance;
+		float fx = std::cos(pose->yaw), fy = std::sin(pose->yaw);
+		// several spawns queued at once: fan them out sideways so they don't land inside each other
+		float side = queued == 0 ? 0.f : ((queued % 2) ? 1.f : -1.f) * (float)((queued + 1) / 2) * (entry.kind == SpawnKind::Vehicle ? 1.2f : 0.35f);
+		request.position[0] = pose->position.x + fx * distance - fy * side;
+		request.position[1] = pose->position.y + fy * distance + fx * side;
 		request.position[2] = pose->position.z + height;
+		request.forward[0] = fx;
+		request.forward[1] = fy;
+		request.forward[2] = 0.f;
 		if (entry.kind == SpawnKind::Character)
 		{
 			// face the player so you can see who you spawned
-			request.forward[0] = -request.forward[0];
-			request.forward[1] = -request.forward[1];
+			request.forward[0] = -fx;
+			request.forward[1] = -fy;
 		}
 
-		{
-			std::lock_guard<std::mutex> lock(mMutex);
-			mPending = request;
-			mResult.reset();
-			mFinished = false;
-			mPendingSinceMs = nowMs();
-		}
 		try
 		{
-			lockOrThrow(tickWeak, tick);
-			mTickCallback = tick->getGameTickEvent()->subscribe([this](uint32_t t) { onTick(t); });
+			if (!mTickCallback)
+			{
+				lockOrThrow(tickWeak, tick);
+				mTickCallback = tick->getGameTickEvent()->subscribe([this](uint32_t t) { onTick(t); });
+			}
 		}
 		catch (HCMRuntimeException ex)
 		{
-			std::lock_guard<std::mutex> lock(mMutex);
-			mPending.reset();
 			return std::format("Couldn't spawn: {}", ex.what());
+		}
+		{
+			std::lock_guard<std::mutex> lock(mMutex);
+			if (mPending.empty()) { mWaitingSinceTick = currentTick(); mWaitingSinceMs = nowMs(); }
+			mPending.push_back(request);
 		}
 		return std::format("Spawning {}...", entry.name);
 	}
 
 	std::optional<Result> update()
 	{
-		if (!mFinished)
+		bool idle = false, stalled = false;
 		{
-			if (mPending && nowMs() - mPendingSinceMs > 15000)
+			std::lock_guard<std::mutex> lock(mMutex);
+			if (!mResults.empty())
 			{
-				std::lock_guard<std::mutex> lock(mMutex);
-				mPending.reset();
-				mTickCallback.reset();
-				return Result{ "Nothing spawned because the game was paused. Try again in game.", kNone, false };
+				auto result = mResults.front();
+				mResults.pop_front();
+				// progress was made: restart the stall clock for whatever is still queued
+				mWaitingSinceTick = currentTick();
+				mWaitingSinceMs = nowMs();
+				return result;
 			}
-			return std::nullopt;
+			if (mPending.empty()) idle = true;
+			else
+			{
+				// Queued but nothing spawned. If the game is paused the tick stands still and we keep waiting; if the game
+				// is running and our tick hook still never ran, give up instead of spawning something minutes later.
+				auto tick = currentTick();
+				stalled = (tick && mWaitingSinceTick) ? (*tick > *mWaitingSinceTick + 90) : (nowMs() - mWaitingSinceMs > 15000);
+				if (stalled) mPending.clear();
+			}
 		}
-		mTickCallback.reset();
-		mFinished = false;
-		std::lock_guard<std::mutex> lock(mMutex);
-		auto result = mResult;
-		mResult.reset();
-		return result;
+		// unsubscribe outside the lock (the game thread may be waiting on it inside onTick)
+		if (idle || stalled) mTickCallback.reset();
+		if (stalled) return Result{ "Nothing spawned: the game didn't run the request. Try again.", kNone, false };
+		return std::nullopt;
 	}
 
 	// any thread
@@ -331,7 +380,7 @@ public:
 	{
 		mCatalogueStale = true;
 		std::lock_guard<std::mutex> lock(mMutex);
-		mPending.reset();
+		mPending.clear();
 	}
 };
 

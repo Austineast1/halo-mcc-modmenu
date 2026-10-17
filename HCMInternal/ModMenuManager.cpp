@@ -18,6 +18,8 @@
 #include "GameTickEventHook.h"
 #include "GetPlayerDatum.h"
 #include "ModMenuPossession.h"
+#include "GetObjectPhysics.h"
+#include "GetPlayerViewAngle.h"
 
 class ModMenuManager::ModMenuManagerImpl
 {
@@ -51,6 +53,8 @@ private:
 	std::weak_ptr<GetPlayerDatum> playerDatumWeak;
 	std::optional<uint32_t> lastTick;
 	std::optional<Datum> lastPlayerUnit;
+	std::weak_ptr<GetObjectPhysics> objectPhysicsWeak;	// where the player is (any game HCM supports)
+	std::weak_ptr<GetPlayerViewAngle> viewAngleWeak;		// which way they face
 	int64_t nextResetPollMs = 0;
 
 	// Developer automation: lines in ModMenuDev.txt (next to HCM) are run while this game is being played, then the
@@ -253,6 +257,35 @@ private:
 		}
 	}
 
+	// where to put spawned things: the player's position and facing, from HCM's own per-game readers
+	std::optional<ModMenuPose> playerPose()
+	{
+		auto playerDatum = playerDatumWeak.lock();
+		auto physics = objectPhysicsWeak.lock();
+		if (playerDatum && physics)
+		{
+			try
+			{
+				Datum unit = playerDatum->getPlayerDatum();
+				if (unit.isNull()) return std::nullopt;
+				auto position = physics->getObjectPosition(unit);
+				if (!position) return std::nullopt;
+				ModMenuPose pose{ *position, 0.f };
+				if (auto view = viewAngleWeak.lock())
+				{
+					try { pose.yaw = view->getPlayerViewAngle().x; }
+					catch (HCMRuntimeException) {}
+				}
+				return pose;
+			}
+			catch (HCMRuntimeException ex)
+			{
+				PLOG_DEBUG << "ModMenu: no player pose: " << ex.what();
+			}
+		}
+		return possession ? possession->playerPose() : std::nullopt;
+	}
+
 	static std::string lowerCopy(std::string s)
 	{
 		std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return (char)std::tolower(c); });
@@ -306,7 +339,7 @@ private:
 		if (verb == "return") return possession ? possession->returnToBody() : "possession isn't available in this game";
 		if (verb == "pose")
 		{
-			auto pose = possession ? possession->playerPose() : std::nullopt;
+			auto pose = playerPose();
 			if (!pose) return "no pose";
 			return std::format("x {:.3f} y {:.3f} z {:.3f} yaw {:.3f}", pose->position.x, pose->position.y, pose->position.z, pose->yaw);
 		}
@@ -492,10 +525,11 @@ public:
 		}
 		try
 		{
-			spawner = std::make_unique<ModMenuSpawner>(game, dicon, [this]() -> std::optional<ModMenuPose>
-				{
-					return possession ? possession->playerPose() : std::nullopt;
-				});
+			try { objectPhysicsWeak = resolveDependentCheat(GetObjectPhysics); }
+			catch (HCMInitException ex) { PLOG_INFO << "ModMenu: no object physics for " << game.toString() << ": " << ex.what(); }
+			try { viewAngleWeak = resolveDependentCheat(GetPlayerViewAngle); }
+			catch (HCMInitException ex) { PLOG_INFO << "ModMenu: no view angle for " << game.toString() << ": " << ex.what(); }
+			spawner = std::make_unique<ModMenuSpawner>(game, dicon, [this]() -> std::optional<ModMenuPose> { return playerPose(); });
 			PLOG_INFO << "ModMenu: spawning available for " << game.toString();
 		}
 		catch (HCMInitException ex)
@@ -509,6 +543,7 @@ public:
 				return spawner ? spawner->spawn(entry, becomeIt) : std::string("Spawning isn't available in this game yet.");
 			});
 
+		gui->setCanBecome(possession != nullptr);
 		gui->setCustomActionHandler([this](const std::string& key) -> std::string
 			{
 				if (!possession) return "True possession isn't available in this game yet.";

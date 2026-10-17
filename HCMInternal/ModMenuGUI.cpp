@@ -1302,6 +1302,7 @@ void ModMenuGUI::renderMod(const ModDef& mod)
 			{
 				message = mCustomAction ? mCustomAction(mod.hcmKey) : std::string("True possession isn't available here.");
 				addLog(std::format("{}: {}", mod.hcmKey, *message), LogLine::Kind::Info);
+				if (message->ends_with("...")) mCloseRequested = true; // the swap is queued: get out of the way so you see it happen
 			}
 			else if (auto ev = hcmAction(mod.hcmKey))
 			{
@@ -1518,7 +1519,7 @@ void ModMenuGUI::renderSpawnPanel()
 	auto* catalogue = mSpawnCatalogue ? mSpawnCatalogue() : nullptr;
 	if (!catalogue)
 	{
-		textItem(ModMenuFonts::body(), B * 0.9f, colTaupe, "Spawning works in Halo: Reach for now. More games are on the way.");
+		textItem(ModMenuFonts::body(), B * 0.9f, colTaupe, "Spawning works in Halo 3, ODST and Reach for now. More games are on the way.");
 		return;
 	}
 	if (catalogue->empty())
@@ -1556,7 +1557,7 @@ void ModMenuGUI::renderSpawnPanel()
 		ImGui::PopStyleVar(2);
 	}
 	if (mSpawnKind == (int)SpawnKind::Character)
-		textItem(ModMenuFonts::body(), B * 0.74f, colMuted, "Characters spawn as empty bodies. Press BECOME to jump straight into one.", ImGui::GetContentRegionAvail().x);
+		textItem(ModMenuFonts::body(), B * 0.74f, colMuted, mCanBecome ? "Characters spawn as empty bodies. Press BECOME to jump straight into one." : "Characters spawn as empty bodies (no AI).", ImGui::GetContentRegionAvail().x);
 	else if (mSpawnKind == (int)SpawnKind::Vehicle)
 		textItem(ModMenuFonts::body(), B * 0.74f, colMuted, "Vehicles appear a few metres ahead of you, facing the way you're looking.", ImGui::GetContentRegionAvail().x);
 	ImGui::Dummy(ImVec2(0.f, 4.f * S));
@@ -1594,17 +1595,27 @@ void ModMenuGUI::renderSpawnPanel()
 			dl->AddText(fBody(), pathPx, ImVec2(p.x + 18.f * S, textTop + namePx + 3.f * S), col32(colMuted), e.path.c_str());
 			ImGui::PopClipRect();
 
-			bool canBecome = e.kind == SpawnKind::Character;
+			bool canBecome = mCanBecome && e.kind == SpawnKind::Character;
 			float bh = buttonHeight(B, S);
 			float spawnW = buttonWidth("SPAWN", Btn::Outline, B, S);
 			float becomeW = canBecome ? buttonWidth("BECOME", Btn::Primary, B, S) + 10.f * S : 0.f;
 			ImGui::SetCursorScreenPos(ImVec2(q.x - 14.f * S - spawnW - becomeW, p.y + (rowH - 6.f * S - bh) * 0.5f));
 			if (canBecome)
 			{
-				if (luxButton("BECOME", Btn::Primary, B, S) && mSpawnAction) toast(mSpawnAction(e, true));
+				if (luxButton("BECOME", Btn::Primary, B, S) && mSpawnAction)
+				{
+					auto result = mSpawnAction(e, true);
+					toast(result);
+					if (result.ends_with("...")) mCloseRequested = true; // you're about to be inside it
+				}
 				ImGui::SameLine(0.f, 10.f * S);
 			}
-			if (luxButton("SPAWN", Btn::Outline, B, S) && mSpawnAction) toast(mSpawnAction(e, false));
+			if (luxButton("SPAWN", Btn::Outline, B, S) && mSpawnAction)
+			{
+				auto result = mSpawnAction(e, false);
+				if (mPauseWhileOpen && result.ends_with("...")) result += " It appears when you close the menu.";
+				toast(result);
+			}
 			ImGui::SetCursorScreenPos(p);
 			ImGui::Dummy(ImVec2(w, rowH));
 			ImGui::PopID();

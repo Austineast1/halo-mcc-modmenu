@@ -8,6 +8,8 @@
 #include "IMakeOrGetCheat.h"
 #include "IGetMCCVersion.h"
 #include "Datum.h"
+#include <atomic>
+#include <chrono>
 
 namespace
 {
@@ -72,6 +74,15 @@ private:
 	std::atomic_bool mSwapFinished = false;
 	std::unique_ptr<ScopedCallback<eventpp::CallbackList<void(uint32_t)>>> mTickCallback;
 	int64_t mPendingSinceMs = 0;
+	std::optional<uint32_t> mPendingSinceTick;
+
+	std::optional<uint32_t> currentTick()
+	{
+		auto tick = tickWeak.lock();
+		if (!tick) return std::nullopt;
+		try { return tick->getCurrentGameTick(); }
+		catch (HCMRuntimeException) { return std::nullopt; }
+	}
 
 	static int64_t nowMs()
 	{
@@ -200,6 +211,7 @@ private:
 			mSwapFinished = false;
 			mPendingSinceMs = nowMs();
 		}
+		mPendingSinceTick = currentTick();
 		lockOrThrow(tickWeak, tick);
 		mTickCallback = tick->getGameTickEvent()->subscribe([this](uint32_t t) { onTick(t); });
 	}
@@ -372,15 +384,18 @@ public:
 	{
 		if (!mSwapFinished)
 		{
-			// tick hook never fired (game paused for a long time, or not playing): give up quietly after a while
-			if (mPending && nowMs() - mPendingSinceMs > 15000)
+			// Still queued. While the game is paused its tick stands still and we keep waiting; if the game is running
+			// and the swap still hasn't happened, the tick hook isn't working: give up rather than swap minutes later.
+			if (!mPending) return std::nullopt;
+			auto tick = currentTick();
+			bool stalled = (tick && mPendingSinceTick) ? (*tick > *mPendingSinceTick + 90) : (nowMs() - mPendingSinceMs > 15000);
+			if (!stalled) return std::nullopt;
 			{
 				std::lock_guard<std::mutex> lock(mMutex);
 				mPending.reset();
-				mTickCallback.reset();
-				return std::string("The swap didn't happen because the game was paused. Try again in game.");
 			}
-			return std::nullopt;
+			mTickCallback.reset();
+			return std::string("The swap didn't happen (the game didn't run it). Try again.");
 		}
 		mTickCallback.reset();
 		mSwapFinished = false;

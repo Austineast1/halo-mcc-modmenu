@@ -13,10 +13,9 @@ struct ModMenuPose
 
 // Spawns any weapon / vehicle / character / equipment / crate the current level has loaded, in front of the player.
 //
-// Halo: Reach (MCC 1.3528): calls the game's own object_placement_data_new (haloreach+0x49CC24) and object_new
-// (haloreach+0x46D6E0) on the game thread, inside the game tick, because the engine keeps its game state in
-// thread-local storage. Both functions are signature-checked before every call; nothing is called if the bytes
-// don't match (another MCC version).
+// Halo 3, ODST and Reach (MCC 1.3528): calls the game's own object_placement_data_new and object_new on the game
+// thread, inside the game tick, because the engine keeps its game state in thread-local storage. Both functions are
+// signature-checked before every call; nothing is called if the bytes don't match (another MCC version).
 class ModMenuSpawner
 {
 private:
