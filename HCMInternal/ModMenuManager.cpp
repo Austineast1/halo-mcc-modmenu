@@ -335,6 +335,7 @@ private:
 			for (auto& e : entries) devLog(std::format("  {:<9} {:08X} {} = {}", kinds[(int)e.kind], e.tag, e.name, e.path));
 			return std::format("{} spawnable tags", entries.size());
 		}
+		if (verb == "loadmore") return spawner ? spawner->loadMore() : "spawning isn't available in this game";
 		if (verb == "possess") return possession ? possession->possessAimed() : "possession isn't available in this game";
 		if (verb == "return") return possession ? possession->returnToBody() : "possession isn't available in this game";
 		if (verb == "pose")
@@ -544,6 +545,8 @@ public:
 			});
 
 		gui->setCanBecome(possession != nullptr);
+		if (spawner && spawner->canLoadMore())
+			gui->setLoadMoreHandler([this]() -> std::string { return spawner ? spawner->loadMore() : std::string("Not available."); });
 		gui->setCustomActionHandler([this](const std::string& key) -> std::string
 			{
 				if (!possession) return "True possession isn't available in this game yet.";

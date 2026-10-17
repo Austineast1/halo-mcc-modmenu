@@ -676,6 +676,14 @@ int ModMenuGUI::reapplyActive(const std::string& reason)
 			}
 		}
 	}
+	// third person: the free camera switches itself off on every level load, so put it back if it was wanted
+	for (auto& cat : mLibrary.categories)
+		for (auto& mod : cat.mods)
+			if (mod.reapply && mod.type == ModType::HCMToggle && mod.hcmKey == "thirdPerson" && mod.supports(mGame))
+			{
+				auto s = mSettingsWeak.lock();
+				if (s && s->thirdPersonCameraToggle->GetValue() && !s->freeCameraToggle->GetValue()) { setThirdPerson(true); count++; }
+			}
 	if (count > 0) addLog(std::format("Re-applied {} mod{} after {}", count, count == 1 ? "" : "s", reason), LogLine::Kind::Info);
 	return count;
 }
@@ -767,6 +775,7 @@ std::shared_ptr<BinarySetting<double>> ModMenuGUI::hcmDouble(const std::string& 
 	auto s = mSettingsWeak.lock();
 	if (!s) return nullptr;
 	if (key == "speedhackValue") return s->speedhackSetting;
+	if (key == "thirdPersonDistance") return s->thirdPersonCameraDistance;
 	return nullptr;
 }
 
@@ -786,14 +795,56 @@ std::shared_ptr<ActionEvent> ModMenuGUI::hcmAction(const std::string& key)
 	return nullptr;
 }
 
+// Third person rides on HCM's free camera: render the third-person body, keep your controls, and let the free camera
+// follow a point behind your shoulder (FreeCamera::setCameraData). Your own free-camera settings are put back after.
+void ModMenuGUI::setThirdPerson(bool on)
+{
+	auto s = mSettingsWeak.lock();
+	if (!s) return;
+	auto setBool = [](std::shared_ptr<BinarySetting<bool>>& setting, bool v) { setting->GetValueDisplay() = v; setting->UpdateValueWithInput(); };
+	if (on)
+	{
+		if (!mThirdPersonSaved) mThirdPersonSaved = std::make_pair(s->freeCameraThirdPersonRendering->GetValue(), s->freeCameraGameInputDisable->GetValue());
+		if (s->freeCameraToggle->GetValue() && !s->thirdPersonCameraToggle->GetValue()) setBool(s->freeCameraToggle, false); // ordinary free camera was flying
+		setBool(s->freeCameraThirdPersonRendering, true);
+		setBool(s->freeCameraGameInputDisable, false);
+		setBool(s->thirdPersonCameraToggle, true);
+		setBool(s->freeCameraToggle, true);
+	}
+	else
+	{
+		if (s->freeCameraToggle->GetValue()) setBool(s->freeCameraToggle, false);
+		setBool(s->thirdPersonCameraToggle, false);
+		if (mThirdPersonSaved)
+		{
+			setBool(s->freeCameraThirdPersonRendering, mThirdPersonSaved->first);
+			setBool(s->freeCameraGameInputDisable, mThirdPersonSaved->second);
+			mThirdPersonSaved.reset();
+		}
+	}
+	addLog(std::format("Third person {}", on ? "on" : "off"), LogLine::Kind::Info);
+}
+
 bool ModMenuGUI::hcmBoolValue(const ModDef& mod)
 {
+	if (mod.hcmKey == "thirdPerson")
+	{
+		auto s = mSettingsWeak.lock();
+		return s && s->thirdPersonCameraToggle->GetValue() && s->freeCameraToggle->GetValue();
+	}
 	auto setting = hcmBool(mod.hcmKey);
 	return setting ? setting->GetValue() : false;
 }
 
 void ModMenuGUI::setHcmBool(const ModDef& mod, bool value)
 {
+	if (mod.hcmKey == "thirdPerson") { setThirdPerson(value); return; }
+	if (mod.hcmKey == "freeCamera")
+	{
+		// switching to the flying camera: leave third person first so the camera can be flown again
+		auto s = mSettingsWeak.lock();
+		if (s && s->thirdPersonCameraToggle->GetValue()) setThirdPerson(false);
+	}
 	auto setting = hcmBool(mod.hcmKey);
 	if (!setting)
 	{
@@ -1545,6 +1596,14 @@ void ModMenuGUI::renderSpawnPanel()
 		if (luxButton(label.c_str(), k == mSpawnKind ? Btn::Primary : Btn::Outline, B, S)) { mSpawnKind = k; }
 	}
 	ImGui::Dummy(ImVec2(0.f, 6.f * S));
+
+	// the mission only keeps some of its vehicles and weapons loaded at a time; this loads the rest it allows here
+	if (mLoadMoreAction)
+	{
+		if (luxButton("LOAD MORE FROM THIS MISSION", Btn::Outline, B, S)) toast(mLoadMoreAction());
+		textItem(ModMenuFonts::body(), B * 0.74f, colMuted, "Missions keep some vehicles, weapons and characters unloaded until you reach them. This loads every set this part of the mission allows, so they can be spawned now.", ImGui::GetContentRegionAvail().x);
+		ImGui::Dummy(ImVec2(0.f, 6.f * S));
+	}
 
 	// filter
 	{

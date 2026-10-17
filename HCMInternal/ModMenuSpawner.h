@@ -38,4 +38,9 @@ public:
 	std::optional<Result> update();
 
 	void onLevelChanged();
+
+	// Reach: load every extra set of vehicles/weapons/characters ("designer zones") this part of the mission allows,
+	// so more of the mission's things can be spawned now instead of later. Render thread; runs on the next tick.
+	bool canLoadMore();
+	std::string loadMore();
 };

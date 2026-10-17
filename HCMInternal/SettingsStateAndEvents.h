@@ -914,6 +914,23 @@ public:
 			nameof(freeCameraThirdPersonRendering)
 		);
 
+	// Mod Menu "Third Person": the free camera follows a point behind your shoulder instead of being flown around
+	// (see FreeCamera::setCameraData). Not saved between sessions.
+	std::shared_ptr<BinarySetting<bool>> thirdPersonCameraToggle = std::make_shared<BinarySetting<bool>>
+		(
+			false,
+			[](bool in) { return true; },
+			nameof(thirdPersonCameraToggle)
+		);
+
+	// how far behind you the third-person camera sits, in world units (1 wu is about 3 m)
+	std::shared_ptr<BinarySetting<double>> thirdPersonCameraDistance = std::make_shared<BinarySetting<double>>
+		(
+			0.6,
+			[](double in) { return in >= 0.2 && in <= 3.0; },
+			nameof(thirdPersonCameraDistance)
+		);
+
 	std::shared_ptr<BinarySetting<bool>> freeCameraDisableScreenEffects = std::make_shared<BinarySetting<bool>>
 		(
 			true,

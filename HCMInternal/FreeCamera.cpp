@@ -203,6 +203,27 @@ private:
 				needToResetCamera = false;
 			}
 
+			// Mod Menu third person: no flying, just sit behind the game's own (first-person) camera and look where it looks.
+			// The game rebuilds its camera from the player every frame, so this follows you, your aim and your vehicle.
+			if (settings->thirdPersonCameraToggle->GetValue())
+			{
+				SimpleMath::Vector3 forward = *gameCameraData.lookDirForward;
+				SimpleMath::Vector3 up = *gameCameraData.lookDirUp;
+				forward.Normalize();
+				up.Normalize();
+				SimpleMath::Vector3 right = forward.Cross(up); // Halo is z-up with +y to the left, so this points right
+				right.Normalize();
+				float distance = (float)settings->thirdPersonCameraDistance->GetValue();
+				freeCameraData.currentlookDirForward = forward;
+				freeCameraData.currentlookDirUp = up;
+				freeCameraData.currentlookDirRight = right;
+				freeCameraData.currentPosition = *gameCameraData.position - forward * distance + SimpleMath::Vector3::UnitZ * (distance * 0.2f) + right * (distance * 0.18f);
+				freeCameraData.currentFOV = targetFOVCopy;
+				lockOrThrow(updateGameCameraDataWeak, updateGameCameraData);
+				updateGameCameraData->updateGameCameraData(gameCameraData, freeCameraData, targetFOVCopy);
+				return;
+			}
+
 			LOG_ONCE(PLOG_VERBOSE << "getting frameDelta");
 			float frameDelta;
 			if (!gameFrameDeltaPointer->readData(&frameDelta)) throw HCMRuntimeException("Could not resolve MCCFrameDeltaPointer");
@@ -334,7 +355,11 @@ private:
 			if (mccStateHook->isGameCurrentlyPlaying(gameT))
 			{
 				lockOrThrow(messagesGUIWeak, messagesGUI)
-				messagesGUI->addMessage(newValue ? "Free Camera enabled." : "Free Camera disabled.");
+				lockOrThrow(settingsWeak, settings);
+				if (settings->thirdPersonCameraToggle->GetValue())
+					messagesGUI->addMessage(newValue ? "Third person on." : "Third person off.");
+				else
+					messagesGUI->addMessage(newValue ? "Free Camera enabled." : "Free Camera disabled.");
 			}
 
 		}

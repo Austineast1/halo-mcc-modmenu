@@ -11,6 +11,7 @@
 #include <chrono>
 #include <deque>
 #include <map>
+#include <bit>
 
 namespace
 {
@@ -18,6 +19,18 @@ namespace
 	constexpr uint32_t kCrashed = 0xFFFFFFFE;
 
 	using TagAvailableFn = bool(__fastcall*)(uint32_t tag);
+	using ZoneMaskFn = uint32_t(__fastcall*)(int32_t zoneSet);
+
+	// Designer zones: extra sets of vehicles, weapons and characters a mission loads when it needs them (up to 32,
+	// one bit each). Each zone set says which designer zones are allowed with it. Loading them early is exactly what
+	// HaloScript designer_zone_activate does, just for every allowed zone at once.
+	struct DesignerZones
+	{
+		uintptr_t activateCode; std::vector<uint8_t> activateBytes;	// the part of designer_zone_activate that writes the globals below
+		uintptr_t allowedFn; std::vector<uint8_t> allowedBytes;		// mask of designer zones allowed with a zone set
+		uintptr_t requiredFn; std::vector<uint8_t> requiredBytes;		// mask the zone set already handles itself
+		uintptr_t currentZoneSet, activeMask, pendingOn, pendingOff, syncFlag;
+	};
 	using PlacementNewFn = void(__fastcall*)(void* placement, uint32_t definition, uint32_t owner, void* damageOwner);
 	using ObjectNewFn = uint32_t(__fastcall*)(void* placement);
 
@@ -31,6 +44,7 @@ namespace
 		// the engine's own "is this tag loaded in the current zone set" check (object_new refuses tags that aren't)
 		uintptr_t tagAvailable;
 		std::vector<uint8_t> tagAvailableBytes;
+		std::optional<DesignerZones> designerZones = std::nullopt;
 	};
 
 	// object_placement_data_new and object_new were found by following each game's HaloScript object_create
@@ -65,7 +79,14 @@ namespace
 				{ 0x40, 0x53, 0x55, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x81, 0xEC, 0xA8, 0x00, 0x00, 0x00,
 				  0x8B, 0x41, 0x18, 0x49, 0x83, 0xCC, 0xFF, 0x45, 0x33, 0xC0, 0xC1, 0xE8, 0x04, 0x44, 0x88, 0x44, 0x24, 0x50, 0x4C, 0x8B },
 				0x1A8, 0x1C, 0x28,
-				0x8F620, { 0x83, 0xF9, 0xFF, 0x74, 0x22, 0x48, 0x8B, 0x05, 0x24, 0x3F, 0xB0, 0x00 } };
+				0x8F620, { 0x83, 0xF9, 0xFF, 0x74, 0x22, 0x48, 0x8B, 0x05, 0x24, 0x3F, 0xB0, 0x00 },
+				DesignerZones{
+					0x1B709C, { 0x41, 0x8B, 0xC0, 0x41, 0xF7, 0xD0, 0x0B, 0x05, 0x34, 0x7A, 0x48, 0x02, 0x44, 0x21, 0x05, 0x29, 0x7A, 0x48, 0x02,
+						0x89, 0x05, 0x27, 0x7A, 0x48, 0x02, 0x75, 0x16, 0x85, 0xC0, 0x75, 0x12, 0x44, 0x39, 0x0D, 0x1E, 0x7A, 0x48, 0x02, 0x75, 0x09,
+						0x44, 0x39, 0x0D, 0x19, 0x7A, 0x48, 0x02, 0x74, 0x03, 0x41, 0xB1, 0x01, 0x44, 0x88, 0x0D, 0xED, 0x79, 0x48, 0x02 },
+					0x97A9C, { 0x83, 0xF9, 0xFF, 0x74, 0x2E, 0x48, 0x8B, 0x05, 0x88, 0x27, 0xB8, 0x00, 0x8B, 0x90, 0xB0, 0x00 },
+					0x97AD4, { 0x83, 0xF9, 0xFF, 0x74, 0x2E, 0x48, 0x8B, 0x05, 0x50, 0x27, 0xB8, 0x00, 0x8B, 0x90, 0xB0, 0x00 },
+					0xAFBE30, 0x4E2FB24, 0x263EADC, 0x263EAD8, 0x263EAC4 } };
 		}
 		return std::nullopt;
 	}
@@ -85,6 +106,17 @@ namespace
 		{
 			return kCrashed;
 		}
+	}
+
+	uint32_t callZoneMask(ZoneMaskFn fn, int32_t zoneSet)
+	{
+		__try { return fn(zoneSet); }
+		__except (EXCEPTION_EXECUTE_HANDLER) { return 0; }
+	}
+
+	bool bytesMatch(uintptr_t address, const std::vector<uint8_t>& bytes)
+	{
+		return !IsBadReadPtr((void*)address, bytes.size()) && memcmp((void*)address, bytes.data(), bytes.size()) == 0;
 	}
 
 	bool callTagAvailable(TagAvailableFn fn, uint32_t tag)
@@ -178,6 +210,7 @@ private:
 	std::atomic_bool mCatalogueStale = false;	// set from any thread when the level changes
 	bool mCatalogueBuilt = false;
 	int64_t mCatalogueBuiltAtMs = 0;			// rebuilt every so often: Reach and Halo 3 load new zone sets mid-mission
+	std::atomic<int64_t> mFastRefreshUntilMs = 0;	// after "load more", refresh the list every few seconds for a while
 	int64_t mCatalogueRetryAtMs = 0;
 
 	struct Request { ModMenuSpawnEntry entry; bool becomeIt; float position[3]; float forward[3]; };
@@ -185,6 +218,7 @@ private:
 	std::mutex mMutex;
 	std::deque<Request> mPending;	// waiting for the game thread (one is spawned per tick)
 	std::deque<Result> mResults;		// finished, waiting to be reported on the render thread
+	std::atomic_bool mLoadMoreRequested = false;	// load every allowed designer zone on the next tick
 	// render thread only
 	std::unique_ptr<ScopedCallback<eventpp::CallbackList<void(uint32_t)>>> mTickCallback;
 	std::optional<uint32_t> mWaitingSinceTick;
@@ -231,8 +265,42 @@ private:
 	}
 
 	// game thread
+	// game thread: queue every designer zone this zone set allows but hasn't loaded yet
+	std::string loadMoreOnGameThread()
+	{
+		auto module = ModuleCache::getModuleHandle(L.module);
+		if (!module || !L.designerZones) return "Loading more isn't available in this game yet.";
+		auto base = (uintptr_t)module.value();
+		const auto& Z = *L.designerZones;
+		if (!bytesMatch(base + Z.activateCode, Z.activateBytes) || !bytesMatch(base + Z.allowedFn, Z.allowedBytes) || !bytesMatch(base + Z.requiredFn, Z.requiredBytes))
+			return "This version of the game doesn't match, so nothing was loaded.";
+		int32_t zoneSet = *(int32_t*)(base + Z.currentZoneSet);
+		if (zoneSet < 0) return "The level is still loading. Try again in a moment.";
+		uint32_t allowed = callZoneMask((ZoneMaskFn)(base + Z.allowedFn), zoneSet);
+		uint32_t required = callZoneMask((ZoneMaskFn)(base + Z.requiredFn), zoneSet);
+		uint32_t& active = *(uint32_t*)(base + Z.activeMask);
+		uint32_t& pendingOn = *(uint32_t*)(base + Z.pendingOn);
+		uint32_t& pendingOff = *(uint32_t*)(base + Z.pendingOff);
+		uint32_t mask = allowed & ~required & ~active & ~pendingOn;
+		PLOG_INFO << std::format("spawner: zone set {} allows designer zones {:08X}, required {:08X}, active {:08X}, loading {:08X}", zoneSet, allowed, required, active, mask);
+		if (mask == 0) return "Everything this part of the mission allows is already loaded.";
+		pendingOn |= mask;
+		pendingOff &= ~mask;
+		*(uint8_t*)(base + Z.syncFlag) = 1;
+		mFastRefreshUntilMs = nowMs() + 30000;
+		int count = std::popcount(mask);
+		return std::format("Loading {} more set{} of vehicles, weapons and characters. They show up in the list in a few seconds.", count, count == 1 ? "" : "s");
+	}
+
 	void onTick(uint32_t)
 	{
+		if (mLoadMoreRequested.exchange(false))
+		{
+			Result result{ loadMoreOnGameThread(), kNone, false };
+			std::lock_guard<std::mutex> lock(mMutex);
+			mResults.push_back(result);
+			return;
+		}
 		std::optional<Request> request;
 		{
 			std::lock_guard<std::mutex> lock(mMutex);
@@ -359,7 +427,9 @@ public:
 			mCatalogueBuilt = false;
 			mCatalogueRetryAtMs = nowMs() + 1500; // let the new level finish loading
 		}
-		if (mCatalogueBuilt && nowMs() - mCatalogueBuiltAtMs > 20000) mCatalogueBuilt = false;
+		// zone sets change mid-mission, and "load more" streams things in over a few seconds: refresh now and then
+		int64_t refreshEvery = nowMs() < mFastRefreshUntilMs ? 3000 : 20000;
+		if (mCatalogueBuilt && nowMs() - mCatalogueBuiltAtMs > refreshEvery) mCatalogueBuilt = false;
 		if (!mCatalogueBuilt && nowMs() >= mCatalogueRetryAtMs)
 		{
 			try { buildCatalogue(); }
@@ -421,6 +491,31 @@ public:
 		return std::format("Spawning {}...", entry.name);
 	}
 
+	bool canLoadMore() const { return L.designerZones.has_value(); }
+
+	std::string loadMore()
+	{
+		if (!L.designerZones) return "Loading more isn't available in this game yet.";
+		try
+		{
+			if (!mTickCallback)
+			{
+				lockOrThrow(tickWeak, tick);
+				mTickCallback = tick->getGameTickEvent()->subscribe([this](uint32_t t) { onTick(t); });
+			}
+		}
+		catch (HCMRuntimeException ex)
+		{
+			return std::format("Couldn't load more: {}", ex.what());
+		}
+		mLoadMoreRequested = true;
+		{
+			std::lock_guard<std::mutex> lock(mMutex);
+			if (mPending.empty()) { mWaitingSinceTick = currentTick(); mWaitingSinceMs = nowMs(); }
+		}
+		return "Loading more from this mission...";
+	}
+
 	std::optional<Result> update()
 	{
 		bool idle = false, stalled = false;
@@ -435,7 +530,8 @@ public:
 				mWaitingSinceMs = nowMs();
 				return result;
 			}
-			if (mPending.empty()) idle = true;
+			if (mPending.empty() && !mLoadMoreRequested) idle = true;
+			else if (mPending.empty()) {} // load-more waits for the next tick
 			else
 			{
 				// Queued but nothing spawned. If the game is paused the tick stands still and we keep waiting; if the game
@@ -467,3 +563,5 @@ const std::vector<ModMenuSpawnEntry>& ModMenuSpawner::catalogue() { return pimpl
 std::string ModMenuSpawner::spawn(const ModMenuSpawnEntry& entry, bool thenBecomeIt) { return pimpl->spawn(entry, thenBecomeIt); }
 std::optional<ModMenuSpawner::Result> ModMenuSpawner::update() { return pimpl->update(); }
 void ModMenuSpawner::onLevelChanged() { pimpl->onLevelChanged(); }
+bool ModMenuSpawner::canLoadMore() { return pimpl->canLoadMore(); }
+std::string ModMenuSpawner::loadMore() { return pimpl->loadMore(); }

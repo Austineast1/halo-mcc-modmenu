@@ -31,7 +31,7 @@
   group="name" makes buttons one-at-a-time: running one forgets the others in the group (Become forms use this).
   A reapply button in a group is remembered and run again after deaths, reverts and level loads.
 -->
-<ModMenuLibrary version="12" title="Mod Menu">
+<ModMenuLibrary version="13" title="Mod Menu">
 
   <!-- ================================================================== -->
   <Category id="spartan" name="Spartan" desc="Your body: armour, health, size and movement.">
@@ -1089,6 +1089,12 @@
 
     <Mod id="hidehud" type="hcm-toggle" hcm="hideHUD" games="all" name="Hide HUD"
          desc="Clean screen for screenshots." />
+
+    <Mod id="thirdperson" type="hcm-toggle" hcm="thirdPerson" reapply="true" games="all" tag="NEW" name="Third Person"
+         desc="Play from behind your shoulder. You keep full control: walk, aim, shoot, drive. Works in any body you take over or become." />
+
+    <Mod id="thirdpersondist" type="hcm-slider" hcm="thirdPersonDistance" games="all" min="0.3" max="2.5" step="0.1" default="0.6" name="Third Person Distance"
+         desc="How far back the camera sits. Pull it out wide when you're a Hunter, in a tank, or flying." />
 
     <Mod id="freecam" type="hcm-toggle" hcm="freeCamera" games="all" name="Free Camera"
          desc="Detaches the camera so you can fly around. Controls are in HCM's main menu." />

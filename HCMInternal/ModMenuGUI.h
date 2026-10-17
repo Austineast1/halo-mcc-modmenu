@@ -59,7 +59,10 @@ private:
 	// spawning (Spawn collection)
 	std::function<const std::vector<ModMenuSpawnEntry>*()> mSpawnCatalogue;
 	std::function<std::string(const ModMenuSpawnEntry&, bool)> mSpawnAction;
-	bool mCanBecome = false;	// true body swap is available in this game (BECOME buttons on characters)
+	std::optional<std::pair<bool, bool>> mThirdPersonSaved; // free camera's third-person-rendering and block-input settings before third person
+	void setThirdPerson(bool on);
+	bool mCanBecome = false;
+	std::function<std::string()> mLoadMoreAction;	// true body swap is available in this game (BECOME buttons on characters)
 	int mSpawnKind = 0;
 	std::string mSpawnFilter;
 	bool mCloseRequested = false;
@@ -168,6 +171,8 @@ public:
 	}
 
 	void setCanBecome(bool canBecome) { mCanBecome = canBecome; }
+	// "load more from this mission" on the Spawn page (Reach designer zones); empty = not offered
+	void setLoadMoreHandler(std::function<std::string()> handler) { mLoadMoreAction = std::move(handler); }
 
 	// shows a line in the menu's footer next time it's open
 	void notify(const std::string& text) { toast(text); }

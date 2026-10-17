@@ -36,7 +36,7 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
   group="name" makes buttons one-at-a-time: running one forgets the others in the group (Become forms use this).
   A reapply button in a group is remembered and run again after deaths, reverts and level loads.
 -->
-<ModMenuLibrary version="12" title="Mod Menu">
+<ModMenuLibrary version="13" title="Mod Menu">
 
   <!-- ================================================================== -->
   <Category id="spartan" name="Spartan" desc="Your body: armour, health, size and movement.">
@@ -1100,6 +1100,12 @@ R"MML(        <Run>(ai_allegiance heretic player)
     <Mod id="hidehud" type="hcm-toggle" hcm="hideHUD" games="all" name="Hide HUD"
          desc="Clean screen for screenshots." />
 
+    <Mod id="thirdperson" type="hcm-toggle" hcm="thirdPerson" reapply="true" games="all" tag="NEW" name="Third Person"
+         desc="Play from behind your shoulder. You keep full control: walk, aim, shoot, drive. Works in any body you take over or become." />
+
+    <Mod id="thirdpersondist" type="hcm-slider" hcm="thirdPersonDistance" games="all" min="0.3" max="2.5" step="0.1" default="0.6" name="Third Person Distance"
+         desc="How far back the camera sits. Pull it out wide when you're a Hunter, in a tank, or flying." />
+
     <Mod id="freecam" type="hcm-toggle" hcm="freeCamera" games="all" name="Free Camera"
          desc="Detaches the camera so you can fly around. Controls are in HCM's main menu." />
 
@@ -1133,7 +1139,8 @@ R"MML(        <Run>(ai_allegiance heretic player)
     <Mod id="nocrosshair" type="toggle" name="Hide Crosshair"
          desc="Removes the reticle only.">
       <Game games="gen3">
-        <On>(chud_show_crosshair false)</On>
+)MML",
+R"MML(        <On>(chud_show_crosshair false)</On>
         <Off>(chud_show_crosshair true)</Off>
       </Game>
       <Game games="Halo1">
@@ -1149,8 +1156,7 @@ R"MML(        <Run>(ai_allegiance heretic player)
         <Off>(chud_show_motion_sensor true)</Off>
       </Game>
       <Game games="Halo1">
-)MML",
-R"MML(        <On>(hud_show_motion_sensor false)</On>
+        <On>(hud_show_motion_sensor false)</On>
         <Off>(hud_show_motion_sensor true)</Off>
       </Game>
     </Mod>
@@ -1367,7 +1373,8 @@ R"MML(        <On>(hud_show_motion_sensor false)</On>
     </Mod>
 
     <Mod id="nuke" type="button" tag="DANGER" name="Delete Every Object"
-         desc="Wipes every non-player object from the level: enemies, allies, vehicles, weapons and crates. Revert to undo.">
+)MML",
+R"MML(         desc="Wipes every non-player object from the level: enemies, allies, vehicles, weapons and crates. Revert to undo.">
       <Game games="all">
         <Run>(object_destroy_all)</Run>
       </Game>
@@ -1378,8 +1385,7 @@ R"MML(        <On>(hud_show_motion_sensor false)</On>
   <Category id="skulls" name="Skulls" special="skulls" desc="Every skull this game has, flipped live mid-mission." />
 
   <!-- ================================================================== -->
-)MML",
-R"MML(  <Category id="classic" name="Halo CE Classic" desc="Bungie's developer cheats, still hidden inside Halo CE.">
+  <Category id="classic" name="Halo CE Classic" desc="Bungie's developer cheats, still hidden inside Halo CE.">
 
     <Mod id="jetpack" type="toggle" reapply="true" name="Jetpack"
          desc="Hold jump to fly, hold crouch to hover. No fall damage.">
