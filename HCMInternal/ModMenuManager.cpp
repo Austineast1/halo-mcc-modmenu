@@ -53,6 +53,14 @@ private:
 	std::optional<Datum> lastPlayerUnit;
 	int64_t nextResetPollMs = 0;
 
+	// Developer automation: lines in ModMenuDev.txt (next to HCM) are run while this game is being played, then the
+	// file is deleted; results are appended to ModMenuDev.log. Lets a script drive the menu: "spawn warthog", "wait 2000",
+	// "become elite", "selftest all"... Nothing happens unless that file exists.
+	std::string devCommandPath, devLogPath;
+	std::deque<std::string> devQueue;
+	int64_t nextDevPollMs = 0, devNextLineAtMs = 0;
+	bool devDisabled = false;
+
 	// requests held while the menu is open
 	struct OpenRequests
 	{
@@ -172,7 +180,6 @@ private:
 		reapplyAtMs = nowMs() + delayMs;
 	}
 
-	// polled a few times a second on the render thread while our game is being played
 	// take the player's current unit as the baseline (after a deliberate body swap)
 	void forgetPlayerUnit()
 	{
@@ -187,6 +194,7 @@ private:
 		}
 	}
 
+	// polled a few times a second on the render thread while our game is being played
 	void pollForResets(bool ourGamePlaying)
 	{
 		// keep the last values while not playing (loading screens, menus) so a revert or restart that passes
@@ -216,7 +224,9 @@ private:
 
 		if (auto playerDatum = playerDatumWeak.lock())
 		{
-			Datum unit = playerDatum->getPlayerDatum();
+			Datum unit;
+			try { unit = playerDatum->getPlayerDatum(); }
+			catch (HCMRuntimeException) { return; } // between lives / loading
 			if (!unit.isNull())
 			{
 				if (lastPlayerUnit && unit != *lastPlayerUnit && wanted && reapplyAtMs.load() == 0 && !(possession && possession->busy()))
@@ -243,6 +253,126 @@ private:
 		}
 	}
 
+	static std::string lowerCopy(std::string s)
+	{
+		std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+		return s;
+	}
+
+	void devLog(const std::string& text)
+	{
+		if (devLogPath.empty()) return;
+		std::ofstream out(devLogPath, std::ios::app);
+		if (!out) return;
+		auto now = std::chrono::floor<std::chrono::milliseconds>(std::chrono::system_clock::now());
+		out << std::format("{:%H:%M:%S} UTC [{}] {}\n", now, ModMenuText::shortGameName(mGame), text);
+	}
+
+	const ModMenuSpawnEntry* findSpawn(const std::string& query)
+	{
+		if (!spawner) return nullptr;
+		auto& entries = spawner->catalogue();
+		auto q = lowerCopy(query);
+		for (auto& e : entries) if (lowerCopy(e.name) == q) return &e;
+		for (auto& e : entries) if (lowerCopy(e.name).contains(q)) return &e;
+		for (auto& e : entries) if (lowerCopy(e.path).contains(q)) return &e;
+		return nullptr;
+	}
+
+	std::string runDevCommand(const std::string& line)
+	{
+		auto space = line.find(' ');
+		std::string verb = lowerCopy(line.substr(0, space));
+		std::string rest = space == std::string::npos ? "" : line.substr(space + 1);
+		while (!rest.empty() && rest.front() == ' ') rest.erase(rest.begin());
+
+		if (verb == "spawn" || verb == "become")
+		{
+			if (!spawner) return "spawning isn't available in this game";
+			if (spawner->catalogue().empty()) return "the spawn list is empty (level still loading?)";
+			auto* entry = findSpawn(rest);
+			if (!entry) return std::format("nothing called '{}' on this level", rest);
+			return std::format("{} ({:08X}): {}", entry->path, entry->tag, spawner->spawn(*entry, verb == "become"));
+		}
+		if (verb == "catalogue")
+		{
+			if (!spawner) return "spawning isn't available in this game";
+			static const char* kinds[] = { "weapon", "vehicle", "character", "equipment", "prop" };
+			auto& entries = spawner->catalogue();
+			for (auto& e : entries) devLog(std::format("  {:<9} {:08X} {} = {}", kinds[(int)e.kind], e.tag, e.name, e.path));
+			return std::format("{} spawnable tags", entries.size());
+		}
+		if (verb == "possess") return possession ? possession->possessAimed() : "possession isn't available in this game";
+		if (verb == "return") return possession ? possession->returnToBody() : "possession isn't available in this game";
+		if (verb == "pose")
+		{
+			auto pose = possession ? possession->playerPose() : std::nullopt;
+			if (!pose) return "no pose";
+			return std::format("x {:.3f} y {:.3f} z {:.3f} yaw {:.3f}", pose->position.x, pose->position.y, pose->position.z, pose->yaw);
+		}
+		if (verb == "status")
+		{
+			std::string out = std::format("{} playing", mGame.toString());
+			if (auto tick = tickSourceWeak.lock()) try { out += std::format(", tick {}", tick->getCurrentGameTick()); } catch (HCMRuntimeException) {}
+			if (auto pd = playerDatumWeak.lock()) try { out += std::format(", unit {:08X}", (uint32_t)pd->getPlayerDatum()); } catch (HCMRuntimeException) {}
+			out += gui->selfTestRunning() ? ", self-test running" : "";
+			return out;
+		}
+		return gui->devCommand(line);
+	}
+
+	void pollDevCommands(bool ourGamePlaying)
+	{
+		if (devDisabled || devCommandPath.empty() || !ourGamePlaying) return;
+		auto now = nowMs();
+
+		// pick up a new command file about once a second
+		if (now >= nextDevPollMs)
+		{
+			nextDevPollMs = now + 1000;
+			std::error_code ec;
+			if (std::filesystem::exists(devCommandPath, ec))
+			{
+				{
+					std::ifstream in(devCommandPath);
+					std::string line;
+					while (std::getline(in, line))
+					{
+						while (!line.empty() && (line.back() == '\r' || line.back() == ' ')) line.pop_back();
+						while (!line.empty() && line.front() == ' ') line.erase(line.begin());
+						if (!line.empty() && line.front() != '#') devQueue.push_back(line);
+					}
+				}
+				std::filesystem::remove(devCommandPath, ec);
+				if (ec)
+				{
+					devDisabled = true; // can't delete it: don't run the same commands every second
+					devLog("couldn't delete ModMenuDev.txt, dev commands are off until HCM restarts: " + ec.message());
+					devQueue.clear();
+				}
+			}
+		}
+
+		// run queued lines; "wait <ms>" spaces them out so async things (spawns, swaps) can finish
+		while (!devQueue.empty() && now >= devNextLineAtMs)
+		{
+			auto line = devQueue.front();
+			devQueue.pop_front();
+			if (lowerCopy(line).starts_with("wait"))
+			{
+				int ms = 1000;
+				try { ms = std::stoi(line.substr(4)); } catch (...) {}
+				devNextLineAtMs = now + std::clamp(ms, 0, 120000);
+				continue;
+			}
+			std::string result;
+			try { result = runDevCommand(line); }
+			catch (HCMRuntimeException ex) { result = std::string("error: ") + ex.what(); }
+			catch (const std::exception& ex) { result = std::string("error: ") + ex.what(); }
+			devLog("> " + line + "  =>  " + result);
+		}
+	}
+
 	// runs every frame on the render thread
 	void onRender(SimpleMath::Vector2 screenSize)
 	{
@@ -259,6 +389,7 @@ private:
 				bool swapping = possession->busy();
 				if (auto message = possession->update())
 				{
+					devLog("possession: " + *message);
 					gui->notify(*message);
 					if (auto messages = messagesWeak.lock()) messages->addMessage("Mod Menu: " + *message);
 				}
@@ -272,6 +403,7 @@ private:
 			{
 				if (auto result = spawner->update())
 				{
+					devLog(std::format("spawner: {} (object {:08X})", result->message, result->object));
 					gui->notify(result->message);
 					if (result->becomeIt && result->object != 0xFFFFFFFF)
 					{
@@ -300,6 +432,9 @@ private:
 					}
 				}
 			}
+
+			pollDevCommands(ourGamePlaying);
+			gui->tickSelfTest(ourGamePlaying);
 
 			if (!ourGamePlaying) return;
 
@@ -338,6 +473,13 @@ public:
 		auto engine = resolveDependentCheat(GameEngineFunctions); // throws HCMInitException if the engine command interface isn't available
 		auto dirPath = dicon.Resolve<DirPathContainer>().lock()->dirPath;
 		gui = std::make_unique<ModMenuGUI>(game, engine, settingsWeak, dirPath);
+		{
+			std::string folder = dirPath;
+			if (!folder.empty() && folder.back() != '\\' && folder.back() != '/') folder += "\\";
+			devCommandPath = folder + "ModMenuDev.txt";
+			devLogPath = folder + "ModMenuDev.log";
+			gui->setDevLog([this](const std::string& text) { devLog(text); });
+		}
 
 		try
 		{

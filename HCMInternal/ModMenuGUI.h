@@ -125,6 +125,23 @@ private:
 	void loadLibrary();
 	void turnEverythingOff();
 
+	// developer self-test: runs every mod for this game one at a time, logging each step first,
+	// so if the game crashes the last "TEST" line names the mod that did it
+	struct SelfTest
+	{
+		std::vector<const ModDef*> mods;
+		size_t index = 0;
+		int phase = 0;
+		int64_t nextAtMs = 0;
+		int skipped = 0;
+	};
+	std::optional<SelfTest> mSelfTest;
+	std::function<void(const std::string&)> mDevLog;
+	void devLog(const std::string& text);
+	std::string startSelfTest(const std::string& filter);
+	bool sweepSkipReason(const ModDef& mod, std::string& why);
+	const ModDef* findMod(const std::string& id);
+
 public:
 	ModMenuGUI(GameState game, std::shared_ptr<GameEngineFunctions> engine, std::weak_ptr<SettingsStateAndEvents> settings, std::string dirPath);
 
@@ -151,6 +168,12 @@ public:
 
 	// shows a line in the menu's footer next time it's open
 	void notify(const std::string& text) { toast(text); }
+
+	// developer automation (see ModMenuManager: ModMenuDev.txt). Returns what happened.
+	std::string devCommand(const std::string& line);
+	void setDevLog(std::function<void(const std::string&)> log) { mDevLog = std::move(log); }
+	void tickSelfTest(bool gamePlaying);	// every frame
+	bool selfTestRunning() const { return mSelfTest.has_value(); }
 
 	bool pauseWhileOpen() const { return mPauseWhileOpen; }
 	bool autoReapply() const { return mAutoReapply; }

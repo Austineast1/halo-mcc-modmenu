@@ -1831,3 +1831,258 @@ void ModMenuGUI::render(SimpleMath::Vector2 screenSize)
 	ImGui::End();
 	popStyle();
 }
+
+// ------------------------------------------------------------------ developer automation
+
+namespace
+{
+	int64_t steadyMs()
+	{
+		using namespace std::chrono;
+		return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+	}
+
+	// commands that end the mission, kill you or empty the level: a sweep can't carry on after them
+	constexpr const char* kSweepBreakers[] = { "(game_won", "(game_lost", "(game_save_and_quit", "(object_destroy_all", "(unit_kill", "(ai_erase_all" };
+
+	const char* typeName(ModType t)
+	{
+		switch (t)
+		{
+		case ModType::Toggle: return "toggle";
+		case ModType::Slider: return "slider";
+		case ModType::Button: return "button";
+		case ModType::Choice: return "choice";
+		case ModType::Text: return "text";
+		case ModType::HCMToggle: return "hcm-toggle";
+		case ModType::HCMSlider: return "hcm-slider";
+		case ModType::HCMAction: return "hcm-action";
+		case ModType::Skull: return "skull";
+		}
+		return "?";
+	}
+
+	std::string trimmed(const std::string& s)
+	{
+		auto a = s.find_first_not_of(" \t\r\n");
+		if (a == std::string::npos) return "";
+		auto b = s.find_last_not_of(" \t\r\n");
+		return s.substr(a, b - a + 1);
+	}
+}
+
+void ModMenuGUI::devLog(const std::string& text)
+{
+	if (mDevLog) mDevLog(text);
+	addLog(text, LogLine::Kind::Info);
+}
+
+const ModDef* ModMenuGUI::findMod(const std::string& id)
+{
+	for (auto& cat : mLibrary.categories)
+		for (auto& mod : cat.mods)
+			if (mod.id == id) return &mod;
+	return nullptr;
+}
+
+bool ModMenuGUI::sweepSkipReason(const ModDef& mod, std::string& why)
+{
+	switch (mod.type)
+	{
+	case ModType::Toggle: case ModType::Slider: case ModType::Button: case ModType::Choice: break;
+	default: why = std::format("{} mods aren't swept", typeName(mod.type)); return true;
+	}
+	auto cmds = mod.commandsFor(mGame);
+	if (!cmds) { why = "no commands for this game"; return true; }
+	for (auto* list : { &cmds->on, &cmds->off, &cmds->set, &cmds->apply, &cmds->run })
+		for (auto& line : *list)
+			for (auto* breaker : kSweepBreakers)
+				if (line.contains(breaker)) { why = std::format("uses {})", breaker); return true; }
+	return false;
+}
+
+std::string ModMenuGUI::startSelfTest(const std::string& filter)
+{
+	SelfTest test;
+	for (auto& cat : mLibrary.categories)
+	{
+		if (!cat.special.empty()) continue;
+		for (auto& mod : cat.mods)
+		{
+			if (!mod.supports(mGame)) continue;
+			if (!filter.empty() && filter != "all" && cat.id != filter && !mod.id.starts_with(filter)) continue;
+			std::string why;
+			if (sweepSkipReason(mod, why))
+			{
+				devLog(std::format("SKIP {} ({})", mod.id, why));
+				test.skipped++;
+				continue;
+			}
+			test.mods.push_back(&mod);
+		}
+	}
+	if (test.mods.empty()) return std::format("self-test: nothing matches '{}'", filter);
+	turnEverythingOff();
+	test.nextAtMs = steadyMs() + 500;
+	auto count = test.mods.size();
+	auto skipped = test.skipped;
+	mSelfTest = std::move(test);
+	auto text = std::format("SELFTEST START {} mods ({} skipped) in {}", count, skipped, mGame.toString());
+	devLog(text);
+	toast(std::format("Self-test: running {} mods...", count));
+	return text;
+}
+
+void ModMenuGUI::tickSelfTest(bool gamePlaying)
+{
+	if (!mSelfTest) return;
+	auto now = steadyMs();
+	if (now < mSelfTest->nextAtMs) return;
+	if (!gamePlaying) { mSelfTest->nextAtMs = now + 500; return; } // loading screen, pause menu: wait
+
+	auto& t = *mSelfTest;
+	if (t.index >= t.mods.size())
+	{
+		turnEverythingOff();
+		devLog(std::format("SELFTEST DONE: {} mods ran and the game is still up", t.mods.size()));
+		toast("Self-test finished. Everything was turned back off.");
+		mSelfTest.reset();
+		return;
+	}
+
+	const ModDef& mod = *t.mods[t.index];
+	if (t.phase == 0) devLog(std::format("TEST {}/{} {} [{}] {}", t.index + 1, t.mods.size(), mod.id, typeName(mod.type), mod.name));
+
+	int wait = 1200;
+	bool done = false;
+	switch (mod.type)
+	{
+	case ModType::Toggle:
+		if (t.phase == 0) applyToggle(mod, true);
+		else if (t.phase == 1) { applyToggle(mod, false); wait = 500; }
+		else done = true;
+		break;
+	case ModType::Slider:
+		if (t.phase == 0) applySlider(mod, mod.maxValue);
+		else if (t.phase == 1) applySlider(mod, mod.minValue);
+		else if (t.phase == 2)
+		{
+			bool hasDefault = mod.defaultValue >= mod.minValue && mod.defaultValue <= mod.maxValue;
+			applySlider(mod, hasDefault ? mod.defaultValue : mod.minValue);
+			runtime(mod).applied = false;
+			wait = 500;
+		}
+		else done = true;
+		break;
+	case ModType::Choice:
+	{
+		int count = (int)mod.options.size();
+		if (t.phase < count)
+		{
+			if (mod.options[t.phase].supports(mGame)) applyChoice(mod, t.phase);
+			else wait = 0;
+		}
+		else if (t.phase == count) { undoChoice(mod); wait = 500; }
+		else done = true;
+		break;
+	}
+	case ModType::Button:
+		if (t.phase == 0) { runButton(mod); wait = 1500; }
+		else done = true;
+		break;
+	default:
+		done = true;
+		break;
+	}
+
+	if (done)
+	{
+		devLog(std::format("  ok {}", mod.id));
+		// a form (or its reset) leaves the player changed: put everything back before the next mod
+		if (mod.type == ModType::Button && !mod.group.empty()) turnEverythingOff();
+		t.index++;
+		t.phase = 0;
+		t.nextAtMs = now + 250;
+		return;
+	}
+	t.phase++;
+	t.nextAtMs = now + wait;
+}
+
+std::string ModMenuGUI::devCommand(const std::string& rawLine)
+{
+	std::string line = trimmed(rawLine);
+	auto space = line.find(' ');
+	std::string verb = lower(line.substr(0, space));
+	std::string rest = space == std::string::npos ? "" : trimmed(line.substr(space + 1));
+
+	if (verb == "selftest")
+	{
+		if (rest == "stop")
+		{
+			if (!mSelfTest) return "no self-test running";
+			mSelfTest.reset();
+			turnEverythingOff();
+			return "self-test stopped, everything off";
+		}
+		if (mSelfTest) return "a self-test is already running ('selftest stop' first)";
+		return startSelfTest(rest);
+	}
+	if (verb == "alloff") { turnEverythingOff(); return "turned everything off"; }
+	if (verb == "hs")
+	{
+		if (rest.empty()) return "usage: hs (some_command args)";
+		sendLines({ rest }, "");
+		return "sent";
+	}
+	if (verb == "mods")
+	{
+		int n = 0;
+		for (auto& cat : mLibrary.categories)
+			for (auto& mod : cat.mods)
+				if (mod.supports(mGame))
+				{
+					devLog(std::format("  {} / {} [{}] {}", cat.id, mod.id, typeName(mod.type), mod.name));
+					n++;
+				}
+		return std::format("{} mods in {}", n, mGame.toString());
+	}
+	if (verb == "mod")
+	{
+		auto space2 = rest.find(' ');
+		std::string id = rest.substr(0, space2);
+		std::string arg = space2 == std::string::npos ? "" : trimmed(rest.substr(space2 + 1));
+		auto* mod = findMod(id);
+		if (!mod) return std::format("no mod '{}'", id);
+		if (!mod->supports(mGame)) return std::format("{} isn't in {}", id, mGame.toString());
+		try
+		{
+			switch (mod->type)
+			{
+			case ModType::Toggle: applyToggle(*mod, arg != "off"); return std::format("{} {}", id, arg != "off" ? "on" : "off");
+			case ModType::Slider: applySlider(*mod, arg.empty() ? mod->maxValue : std::stof(arg)); return std::format("{} = {}", id, runtime(*mod).value);
+			case ModType::Choice:
+			{
+				if (arg == "off") { undoChoice(*mod); return std::format("{} off", id); }
+				int i = arg.empty() ? 0 : std::stoi(arg);
+				if (i < 0 || i >= (int)mod->options.size()) return std::format("{} has {} options", id, mod->options.size());
+				applyChoice(*mod, i);
+				return std::format("{} = {}", id, mod->options[i].label);
+			}
+			case ModType::Button: runButton(*mod); return std::format("ran {}", id);
+			case ModType::Text: runText(*mod, arg); return std::format("{} '{}'", id, arg);
+			case ModType::HCMToggle: setHcmBool(*mod, arg != "off"); return std::format("{} {}", id, arg != "off" ? "on" : "off");
+			case ModType::HCMAction:
+				if (mod->hcmKey.starts_with("possess")) return mCustomAction ? mCustomAction(mod->hcmKey) : "possession unavailable";
+				if (auto ev = hcmAction(mod->hcmKey)) { ev->operator()(); return std::format("fired {}", mod->hcmKey); }
+				return std::format("unknown HCM action {}", mod->hcmKey);
+			default: return std::format("{} mods can't be run from here", typeName(mod->type));
+			}
+		}
+		catch (const std::exception& ex)
+		{
+			return std::format("bad value '{}': {}", arg, ex.what());
+		}
+	}
+	return std::format("unknown command '{}' (try: mods, mod <id> [on|off|value], selftest [category|all|stop], alloff, hs <command>, spawn <name>, become <name>, catalogue, possess, return, pose, wait <ms>)", verb);
+}
