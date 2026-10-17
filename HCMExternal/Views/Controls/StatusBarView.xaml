@@ -1,0 +1,65 @@
+﻿<UserControl x:Class="HCMExternal.Views.Controls.StatusBarView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:HCMExternal.Views.Controls"
+             xmlns:cnv="clr-namespace:HCMExternal.Converters"
+             mc:Ignorable="d" 
+             d:DesignHeight="25" d:DesignWidth="200"
+             xmlns:viewModels="clr-namespace:HCMExternal.ViewModels"
+             d:DataContext="{d:DesignInstance viewModels:MCCHookStateViewModel}"
+             >
+    <Grid Width="180" Height="35">
+        <Grid.Resources>
+            <cnv:StatusBarColorConverter x:Key="StatusBarColorConverter" />
+            <cnv:StatusBarTextConverter x:Key="StatusBarTextConverter" />
+            <cnv:StatusBarButtonVisibilityConverter x:Key="StatusBarButtonVisibilityConverter" />
+
+
+        </Grid.Resources>
+
+
+        <Grid >
+
+            <!--Button to show error message (only visible when in error state thanks to styling)-->
+            <Button
+            Visibility="{Binding Path=State.State, Converter={StaticResource StatusBarButtonVisibilityConverter}}"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            Margin="0,3,6,0"
+            Width="40"
+            Height="17"
+            Padding="0,-1,0,0"
+            Content="Show"
+            Command="{Binding Path=ShowErrorCommand}"
+            
+            />
+
+            <!-- Draws a circle with a coloured or empty interior (indicating state) and a black outline. -->
+            <Ellipse
+
+            Fill="{Binding Path=State.State, Converter={StaticResource StatusBarColorConverter}}"
+    Stroke="Black"
+    StrokeThickness="1"
+    Canvas.Left="0"
+    Canvas.Top="0" 
+                Width="14"
+                Height="14"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                            Margin="0, 5, 0, 0"
+     /> 
+        </Grid>
+       
+        <!--label to right of circle-->
+        <Label 
+            Margin="15, -1, 0, 0"
+            Content="{Binding Path=State.State, Converter={StaticResource StatusBarTextConverter}}"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+               />
+
+
+    </Grid>
+</UserControl>

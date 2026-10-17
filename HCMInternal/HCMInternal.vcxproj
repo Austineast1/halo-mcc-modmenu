@@ -1,0 +1,805 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{6041871f-23ae-4c0e-811e-496f959a6c1f}</ProjectGuid>
+    <RootNamespace>HCMInternal</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)HCMExternal\bin\$(Platform)\$(Configuration)\net7.0-windows\</OutDir>
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildBeforeTargets>
+    </CustomBuildBeforeTargets>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)HCMExternal\bin\$(Platform)\$(Configuration)\net7.0-windows\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseMD>false</VcpkgUseMD>
+    <VcpkgTriplet>x64-windows-static</VcpkgTriplet>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseMD>false</VcpkgUseMD>
+    <VcpkgTriplet>x64-windows-static</VcpkgTriplet>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;HCMINTERNAL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;HCMINTERNAL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;HCM_OUTPUT_PATH=R"($(OutputPath))";HCM_DEBUG;_DEBUG;HCMINTERNAL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(ProjectDir)includes\safetyhook\include;$(ProjectDir)includes\type_safe\include;$(ProjectDir)includes</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <BuildStlModules>false</BuildStlModules>
+      <DisableSpecificWarnings>4005</DisableSpecificWarnings>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
+      <PreprocessToFile>false</PreprocessToFile>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>d3d11.lib;dxguid.lib;libcurl.lib;version.lib;Ws2_32.lib;Wldap32.Lib;Crypt32.Lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\lib</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+    </Link>
+    <PreBuildEvent>
+      <Command>set /P "_VSdmy=$(OutputPath.Replace('"','').trim().Replace('\','\\').trim().trimEnd('\'))" &lt;nul&gt;; "$(SolutionDir)OutputPath.vsmacro" ||(call,)
+
+IF EXIST "C:\Program Files\LockHunter\LockHunter.exe"  (
+	"C:\Program Files\LockHunter\LockHunter.exe" /silent /unlock  "$(SolutionDir)HCMExternal\bin\$(Platform)\$(Configuration)\net7.0-windows\HCMInternal.pdb"
+                   "C:\Program Files\LockHunter\LockHunter.exe" /silent /unlock  "$(SolutionDir)HCMExternal\bin\$(Platform)\$(Configuration)\net7.0-windows\HCMSpeedhack.pdb"
+)</Command>
+    </PreBuildEvent>
+    <PreLinkEvent>
+      <Command>
+      </Command>
+    </PreLinkEvent>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+    <CustomBuildStep>
+      <Command>xcopy /y $(ProjectDir)InternalPointerData.xml  $(OutDir)InternalPointerData.xml || set errorlevel=0</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Copying internal pointer data</Message>
+      <Outputs>nonexistentfiletoforcebuildeventtoalwaysrun</Outputs>
+    </CustomBuildStep>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;HCM_OUTPUT_PATH=R"($(OutputPath))";NDEBUG;HCMINTERNAL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(ProjectDir)includes\safetyhook\include;$(ProjectDir)includes\type_safe\include;$(ProjectDir)includes</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BuildStlModules>false</BuildStlModules>
+      <DisableSpecificWarnings>4005</DisableSpecificWarnings>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
+      <PreprocessToFile>false</PreprocessToFile>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>d3d11.lib;dxguid.lib;libcurl.lib;version.lib;Ws2_32.lib;Wldap32.Lib;Crypt32.Lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\lib</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+    </Link>
+    <PreBuildEvent>
+      <Command>set /P "_VSdmy=$(OutputPath.Replace('"','').trim().Replace('\','\\').trim().trimEnd('\'))" &lt;nul&gt;; "$(SolutionDir)OutputPath.vsmacro" ||(call,)
+
+IF EXIST "C:\Program Files\LockHunter\LockHunter.exe"  (
+	"C:\Program Files\LockHunter\LockHunter.exe" /silent /unlock  "$(SolutionDir)HCMExternal\bin\$(Platform)\$(Configuration)\net7.0-windows\HCMInternal.pdb"
+                   "C:\Program Files\LockHunter\LockHunter.exe" /silent /unlock  "$(SolutionDir)HCMExternal\bin\$(Platform)\$(Configuration)\net7.0-windows\HCMSpeedhack.pdb"
+)
+</Command>
+    </PreBuildEvent>
+    <PreLinkEvent>
+      <Command>
+      </Command>
+    </PreLinkEvent>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="BitBoolPointer.h" />
+    <ClInclude Include="BSPChangeHookEvent.h" />
+    <ClInclude Include="ChangeOOBBackground.h" />
+    <ClInclude Include="CheckpointDumpNameDialog.h" />
+    <ClInclude Include="CommandConsoleGUI.h" />
+    <ClInclude Include="CommandConsoleManager.h" />
+    <ClInclude Include="CustomErrors.h" />
+    <ClInclude Include="DirectXRenderEvent.h" />
+    <ClInclude Include="DisableBarriers.h" />
+    <ClInclude Include="DisableFog.h" />
+    <ClInclude Include="EditOrAddViewAngleLineDialog.h" />
+    <ClInclude Include="EditOrAddWaypointDialog.h" />
+    <ClInclude Include="EditPlayerViewAngleID.h" />
+    <ClInclude Include="EnumClass.h" />
+    <ClInclude Include="FailedOptionalCheatServicesDialog.h" />
+    <ClInclude Include="ForceMissionRestart.h" />
+    <ClInclude Include="FreeCameraFOVOverride.h" />
+    <ClInclude Include="GameEngineFunctions.h" />
+    <ClInclude Include="GameEngineDetail.h" />
+    <ClInclude Include="GetActiveStructureDesignTags.h" />
+    <ClInclude Include="GetCurrentBSPSet.h" />
+    <ClInclude Include="GetCurrentZoneSet.h" />
+    <ClInclude Include="GetDebugString.h" />
+    <ClInclude Include="GetHCMVersion.h" />
+    <ClInclude Include="GetPlayerDatumPresenter.h" />
+    <ClInclude Include="GetPlayerTriggerPosition.h" />
+    <ClInclude Include="GetScenarioAddress.h" />
+    <ClInclude Include="GetSoftCeilingData.h" />
+    <ClInclude Include="GetAbilityData.h" />
+    <ClInclude Include="GetTagAddressPresenter.h" />
+    <ClInclude Include="GetTriggerData.h" />
+    <ClInclude Include="GUIColourPicker.h" />
+    <ClInclude Include="GUIButtonAndBinaryInt.h" />
+    <ClInclude Include="GUIInputMultilineString.h" />
+    <ClInclude Include="GUIInputSubpixel.h" />
+    <ClInclude Include="GUIInvisible.h" />
+    <ClInclude Include="GUILabel.h" />
+    <ClInclude Include="GUISkullToggle.h" />
+    <ClInclude Include="GUIViewAngleLineList.h" />
+    <ClInclude Include="GUIWaypointList.h" />
+    <ClInclude Include="BSPSetChangeHookEvent.h" />
+    <ClInclude Include="HaloScriptOutputHookEvent.h" />
+    <ClInclude Include="HideWatermarkCheck.h" />
+    <ClInclude Include="HideWatermarkManager.h" />
+    <ClInclude Include="HotkeyRebindDialog.h" />
+    <ClInclude Include="IFireCallbackListChanged.h" />
+    <ClInclude Include="IModalDialog.h" />
+    <ClInclude Include="IModel.h" />
+    <ClInclude Include="includes\ImGuiColorTextEdit\TextEditor.h" />
+    <ClInclude Include="includes\safetyhook\include\safetyhook.hpp" />
+    <ClInclude Include="includes\safetyhook\include\safetyhook\allocator.hpp" />
+    <ClInclude Include="includes\safetyhook\include\safetyhook\common.hpp" />
+    <ClInclude Include="includes\safetyhook\include\safetyhook\context.hpp" />
+    <ClInclude Include="includes\safetyhook\include\safetyhook\easy.hpp" />
+    <ClInclude Include="includes\safetyhook\include\safetyhook\inline_hook.hpp" />
+    <ClInclude Include="includes\safetyhook\include\safetyhook\mid_hook.hpp" />
+    <ClInclude Include="includes\safetyhook\include\safetyhook\os.hpp" />
+    <ClInclude Include="includes\safetyhook\include\safetyhook\utility.hpp" />
+    <ClInclude Include="includes\safetyhook\include\safetyhook\vmt_hook.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\arithmetic_policy.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\boolean.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\bounded_type.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\compact_optional.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\config.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\constrained_type.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\deferred_construction.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\aligned_union.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\all_of.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\assert.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\assign_or_construct.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\constant_parser.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\copy_move_control.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\force_inline.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\is_nothrow_swappable.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\map_invoke.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\variant_impl.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\downcast.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\flag.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\flag_set.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\floating_point.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\index.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\integer.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\narrow_cast.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\optional.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\optional_ref.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\output_parameter.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\reference.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\strong_typedef.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\tagged_union.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\types.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\variant.hpp" />
+    <ClInclude Include="includes\type_safe\include\type_safe\visitor.hpp" />
+    <ClInclude Include="ManagedResource.h" />
+    <ClInclude Include="MCCInitialisationCheck.h" />
+    <ClInclude Include="InjectionWarningDialog.h" />
+    <ClInclude Include="IRenderer3D.h" />
+    <ClInclude Include="ObservedScopedCallback.h" />
+    <ClInclude Include="ObservedEvent.h" />
+    <ClInclude Include="AbilityMeterOverlay.h" />
+    <ClInclude Include="PointerDataTypes.h" />
+    <ClInclude Include="RevertEventHook.h" />
+    <ClInclude Include="SharedRequestProvider.h" />
+    <ClInclude Include="SoundClassGain.h" />
+    <ClInclude Include="SubpixelID.h" />
+    <ClInclude Include="TextureFactory.h" />
+    <ClInclude Include="MagicString.h" />
+    <ClInclude Include="MCCString.h" />
+    <ClInclude Include="MeasurePlayerDistanceToObject.h" />
+    <ClInclude Include="ModalDialogFactory.h" />
+    <ClInclude Include="ObjectTableRange.h" />
+    <ClInclude Include="PlayerPositionToClipboard.h" />
+    <ClInclude Include="PointerDataGetter.h" />
+    <ClInclude Include="PointerDataParser.h" />
+    <ClInclude Include="PointerDataParserInstantiators.h" />
+    <ClInclude Include="PointerDataStore.h" />
+    <ClInclude Include="Render3DEventProvider.h" />
+    <ClInclude Include="Renderer3DImpl.h" />
+    <ClInclude Include="RenderTextHelper.h" />
+    <ClInclude Include="ScopedImFontScaler.h" />
+    <ClInclude Include="SensDriftOverlay.h" />
+    <ClInclude Include="SerialisableSetting.h" />
+    <ClInclude Include="SettingsEnums.h" />
+    <ClInclude Include="ShieldInputPrinter.h" />
+    <ClInclude Include="SkullEnum.h" />
+    <ClInclude Include="SkullToggler.h" />
+    <ClInclude Include="SliderParam.h" />
+    <ClInclude Include="SoftCeilingData.h" />
+    <ClInclude Include="SoftCeilingOverlay.h" />
+    <ClInclude Include="SwitchBSPSet.h" />
+    <ClInclude Include="TagBlock.h" />
+    <ClInclude Include="TagBlockReader.h" />
+    <ClInclude Include="TagInfo.h" />
+    <ClInclude Include="TagReferenceReader.h" />
+    <ClInclude Include="TagTableRange.h" />
+    <ClInclude Include="TextureResource.h" />
+    <ClInclude Include="TrackTriggerEnterExit.h" />
+    <ClInclude Include="TriggerData.h" />
+    <ClInclude Include="TriggerFilter.h" />
+    <ClInclude Include="TriggerFilterModalDialogManager.h" />
+    <ClInclude Include="TriggerFilterStringDialog.h" />
+    <ClInclude Include="TriggerModel.h" />
+    <ClInclude Include="TriggerNamesHardcoded.h" />
+    <ClInclude Include="TriggerOverlay.h" />
+    <ClInclude Include="UnarySetting.h" />
+    <ClInclude Include="UpdateTriggerLastChecked.h" />
+    <ClInclude Include="ViewAngle3D.h" />
+    <ClInclude Include="ViewAngleLineList.h" />
+    <ClInclude Include="WaypointList.h" />
+    <ClInclude Include="Waypoint3D.h" />
+    <ClInclude Include="AdvanceTicks.h" />
+    <ClInclude Include="AIFreeze.h" />
+    <ClInclude Include="App.h" />
+    <ClInclude Include="BlockGameInput.h" />
+    <ClInclude Include="BlockPlayerCharacterInput.h" />
+    <ClInclude Include="BottomlessClip.h" />
+    <ClInclude Include="CarrierBumpAnalyser.h" />
+    <ClInclude Include="CheckpointInjectionLogger.h" />
+    <ClInclude Include="DisableScreenEffects.h" />
+    <ClInclude Include="EditPlayerViewAngle.h" />
+    <ClInclude Include="ForceFutureCheckpoint.h" />
+    <ClInclude Include="GetCurrentBSP.h" />
+    <ClInclude Include="GetCurrentRNG.h" />
+    <ClInclude Include="GUIComboEnumWithChildren.h" />
+    <ClInclude Include="GUIDummyContainer.h" />
+    <ClInclude Include="GUIButtonAndInt.h" />
+    <ClInclude Include="GUIVec3.h" />
+    <ClInclude Include="EventOnPressHotkey.h" />
+    <ClInclude Include="HideHUD.h" />
+    <ClInclude Include="HideMessagesService.h" />
+    <ClInclude Include="HideWatermarkService.h" />
+    <ClInclude Include="IUpdateCameraTransform.h" />
+    <ClInclude Include="Lapua.h" />
+    <ClInclude Include="OBSBypassCheck.h" />
+    <ClInclude Include="Renderer2D.h" />
+    <ClInclude Include="OBSBypassManager.h" />
+    <ClInclude Include="SetPlayerHealth.h" />
+    <ClInclude Include="SwitchBSP.h" />
+    <ClInclude Include="ThirdPersonRendering.h" />
+    <ClInclude Include="UserCameraInputReader.h" />
+    <ClInclude Include="CameraTransformer.h" />
+    <ClInclude Include="GameCameraData.h" />
+    <ClInclude Include="Conduit_ITCFont.h" />
+    <ClInclude Include="ControlServiceContainer.h" />
+    <ClInclude Include="LinearSmoother.h" />
+    <ClInclude Include="DifficultyEnum.h" />
+    <ClInclude Include="DirPathContainer.h" />
+    <ClInclude Include="DisplayPlayerInfo.h" />
+    <ClInclude Include="DynamicStruct.h" />
+    <ClInclude Include="DynamicStructFactory.h" />
+    <ClInclude Include="ForceLaunch.h" />
+    <ClInclude Include="ForceTeleport.h" />
+    <ClInclude Include="FreeCamera.h" />
+    <ClInclude Include="FreeCameraData.h" />
+    <ClInclude Include="FreeMCCCursor.h" />
+    <ClInclude Include="GameTickEventHook.h" />
+    <ClInclude Include="GetAggroData.h" />
+    <ClInclude Include="GetBipedsVehicleDatum.h" />
+    <ClInclude Include="GetGameCameraData.h" />
+    <ClInclude Include="GetCurrentDifficulty.h" />
+    <ClInclude Include="GetCurrentLevelCode.h" />
+    <ClInclude Include="GetEntityDataAsString.h" />
+    <ClInclude Include="GetGameDataAsString.h" />
+    <ClInclude Include="GetHavokAnchorPoint.h" />
+    <ClInclude Include="GetHavokComponent.h" />
+    <ClInclude Include="GetNextObjectDatum.h" />
+    <ClInclude Include="GetObjectAddress.h" />
+    <ClInclude Include="GetObjectAddressCLI.h" />
+    <ClInclude Include="GetObjectHealth.h" />
+    <ClInclude Include="GetObjectPhysics.h" />
+    <ClInclude Include="GetObjectTagName.h" />
+    <ClInclude Include="GetPlayerDataAsString.h" />
+    <ClInclude Include="GetPlayerViewAngle.h" />
+    <ClInclude Include="GetTagName.h" />
+    <ClInclude Include="GUIAdvanceTicks.h" />
+    <ClInclude Include="GUIColourPickerAlpha.h" />
+    <ClInclude Include="GUIFloat.h" />
+    <ClInclude Include="GUIHeading.h" />
+    <ClInclude Include="GUIHotkeyOnly.h" />
+    <ClInclude Include="GUIInputDWORD.h" />
+    <ClInclude Include="GUIInputInt.h" />
+    <ClInclude Include="GUIInputString.h" />
+    <ClInclude Include="GUIMCCState.h" />
+    <ClInclude Include="GUIComboEnum.h" />
+    <ClInclude Include="GUIRadioButton.h" />
+    <ClInclude Include="GUIRadioGroup.h" />
+    <ClInclude Include="GUISubHeading.h" />
+    <ClInclude Include="GUIToggleWithChildren.h" />
+    <ClInclude Include="GUIVec2.h" />
+    <ClInclude Include="H1PlayerStruct.h" />
+    <ClInclude Include="HCM_imconfig.h" />
+    <ClInclude Include="HotkeysEnum.h" />
+    <ClInclude Include="HotkeyEventsLambdas.h" />
+    <ClInclude Include="HotkeyRenderer.h" />
+    <ClInclude Include="HotkeyRendererImpl.h" />
+    <ClInclude Include="IgnoreCheckpointChecksum.h" />
+    <ClInclude Include="ISmoother.h" />
+    <ClInclude Include="IMakeOrGetCheat.h" />
+    <ClInclude Include="IMCCStateHook.h" />
+    <ClInclude Include="IMessagesGUI.h" />
+    <ClInclude Include="InfiniteAmmo.h" />
+    <ClInclude Include="ISettingsSerialiser.h" />
+    <ClInclude Include="ISharedMemory.h" />
+    <ClInclude Include="MCCState.h" />
+    <ClInclude Include="GetPlayerDatum.h" />
+    <ClInclude Include="Medusa.h" />
+    <ClInclude Include="MidhookFlagInterpreter.h" />
+    <ClInclude Include="ModalDialogRenderer.h" />
+    <ClInclude Include="NaturalCheckpointDisable.h" />
+    <ClInclude Include="NullSmoother.h" />
+    <ClInclude Include="ObjectTypes.h" />
+    <ClInclude Include="PauseGame.h" />
+    <ClInclude Include="ProggyVectorRegularFont.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="ScopedAtomicBool.h" />
+    <ClInclude Include="ScopedCallback.h" />
+    <ClInclude Include="SharedRequestToken.h" />
+    <ClInclude Include="SharedMemoryInternal.h" />
+    <ClInclude Include="ToggleBlockInput.h" />
+    <ClInclude Include="ToggleFreeCursor.h" />
+    <ClInclude Include="TogglePause.h" />
+    <ClInclude Include="IOptionalCheat.h" />
+    <ClInclude Include="ControlDefs.h" />
+    <ClInclude Include="CustomExceptions.h" />
+    <ClInclude Include="D3D11Hook.h" />
+    <ClInclude Include="DIContainer.h" />
+    <ClInclude Include="DumpCheckpoint.h" />
+    <ClInclude Include="DumpCore.h" />
+    <ClInclude Include="ExternalInfo.h" />
+    <ClInclude Include="GUIServiceInfo.h" />
+    <ClInclude Include="ForceCheckpoint.h" />
+    <ClInclude Include="ForceCoreLoad.h" />
+    <ClInclude Include="ForceCoreSave.h" />
+    <ClInclude Include="ForceDoubleRevert.h" />
+    <ClInclude Include="ForceRevert.h" />
+    <ClInclude Include="MCCStateHook.h" />
+    <ClInclude Include="GetMCCVersion.h" />
+    <ClInclude Include="GlobalKill.h" />
+    <ClInclude Include="GUIElementStore.h" />
+    <ClInclude Include="GUIInvulnerability.h" />
+    <ClInclude Include="IAnchorPoint.h" />
+    <ClInclude Include="IGUIElement.h" />
+    <ClInclude Include="GUIElementConstructor.h" />
+    <ClInclude Include="GuiElementEnum.h" />
+    <ClInclude Include="GUIRequiredServices.h" />
+    <ClInclude Include="GUISimpleButton.h" />
+    <ClInclude Include="GameState.h" />
+    <ClInclude Include="GUISimpleToggle.h" />
+    <ClInclude Include="GUISpeedhack.h" />
+    <ClInclude Include="HCMExternalCommand.h" />
+    <ClInclude Include="HCMInternalGUI.h" />
+    <ClInclude Include="Datum.h" />
+    <ClInclude Include="HeartbeatTimer.h" />
+    <ClInclude Include="RebindableHotkey.h" />
+    <ClInclude Include="HotkeyManager.h" />
+    <ClInclude Include="HotkeyDefinitions.h" />
+    <ClInclude Include="IGetMCCVersion.h" />
+    <ClInclude Include="IGUIRequiredServices.h" />
+    <ClInclude Include="ImGuiManager.h" />
+    <ClInclude Include="InjectCheckpoint.h" />
+    <ClInclude Include="InjectCore.h" />
+    <ClInclude Include="InjectRequirements.h" />
+    <ClInclude Include="Invulnerability.h" />
+    <ClInclude Include="Logging.h" />
+    <ClInclude Include="map.h" />
+    <ClInclude Include="MessagesGUI.h" />
+    <ClInclude Include="MidhookContextInterpreter.h" />
+    <ClInclude Include="ModuleCache.h" />
+    <ClInclude Include="ModuleHook.h" />
+    <ClInclude Include="ModuleHookManager.h" />
+    <ClInclude Include="MultilevelPointer.h" />
+    <ClInclude Include="BinarySetting.h" />
+    <ClInclude Include="OptionalCheatInfo.h" />
+    <ClInclude Include="OptionalCheatManager.h" />
+    <ClInclude Include="OptionalCheatEnum.h" />
+    <ClInclude Include="SettingsSerialiser.h" />
+    <ClInclude Include="SettingsStateAndEvents.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="RuntimeExceptionHandler.h" />
+    <ClInclude Include="Speedhack.h" />
+    <ClInclude Include="ToolTipCollection.h" />
+    <ClInclude Include="UnfreezeObjectPhysics.h" />
+    <ClInclude Include="UnhandledExceptionHandler.h" />
+    <ClInclude Include="UpdateGameCameraData.h" />
+    <ClInclude Include="VersionInfo.h" />
+    <ClInclude Include="WindowsUtilities.h" />
+    <ClInclude Include="WinHandle.h" />
+    <ClInclude Include="BSPSet.h" />
+    <ClInclude Include="ZoneSetChangeHookEvent.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="BSPChangeHookEvent.cpp" />
+    <ClCompile Include="BSPSetChangeHookEvent.cpp" />
+    <ClCompile Include="ChangeOOBBackground.cpp" />
+    <ClCompile Include="CommandConsoleGUI.cpp" />
+    <ClCompile Include="CommandConsoleManager.cpp" />
+    <ClCompile Include="DisableBarriers.cpp" />
+    <ClCompile Include="DisableFog.cpp" />
+    <ClCompile Include="EditPlayerViewAngleID.cpp" />
+    <ClCompile Include="FreeCameraFOVOverride.cpp" />
+    <ClCompile Include="GameEngineDetail.cpp" />
+    <ClCompile Include="GameEngineFunctions.cpp" />
+    <ClCompile Include="GetActiveStructureDesignTags.cpp" />
+    <ClCompile Include="GetCurrentBSPSet.cpp" />
+    <ClCompile Include="GetCurrentZoneSet.cpp" />
+    <ClCompile Include="GetDebugString.cpp" />
+    <ClCompile Include="GetHCMVersion.cpp" />
+    <ClCompile Include="GetPlayerTriggerPosition.cpp" />
+    <ClCompile Include="GetScenarioAddress.cpp" />
+    <ClCompile Include="GetSoftCeilingData.cpp" />
+    <ClCompile Include="GetAbilityData.cpp" />
+    <ClCompile Include="GetTriggerData.cpp" />
+    <ClCompile Include="HaloScriptOutputHookEvent.cpp" />
+    <ClCompile Include="HotkeyRebindDialog.cpp" />
+    <ClCompile Include="AbilityMeterOverlay.cpp" />
+    <ClCompile Include="includes\ImGuiColorTextEdit\ImGuiDebugPanel.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="includes\ImGuiColorTextEdit\LanguageDefinitions.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="includes\ImGuiColorTextEdit\TextEditor.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="includes\ImGuiColorTextEdit\UnitTests.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\allocator.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\easy.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\inline_hook.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\mid_hook.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\os.linux.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\os.windows.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\utility.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\vmt_hook.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="MCCInitialisationCheck.cpp" />
+    <ClCompile Include="RevertEventHook.cpp" />
+    <ClCompile Include="SoundClassGain.cpp" />
+    <ClCompile Include="SubpixelID.cpp" />
+    <ClCompile Include="TextureFactory.cpp" />
+    <ClCompile Include="MeasurePlayerDistanceToObject.cpp" />
+    <ClCompile Include="ModalDialogFactory.cpp" />
+    <ClCompile Include="ObjectTableRange.cpp" />
+    <ClCompile Include="PlayerPositionToClipboard.cpp" />
+    <ClCompile Include="PointerDataGetter.cpp" />
+    <ClCompile Include="PointerDataParser.cpp" />
+    <ClCompile Include="PointerDataStore.cpp" />
+    <ClCompile Include="Render3DEventProvider.cpp" />
+    <ClCompile Include="Renderer3DImpl_Geometry.cpp" />
+    <ClCompile Include="Renderer3DImpl_updateCameraData.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Renderer3DImpl.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Renderer3DImpl_Sprites.cpp" />
+    <ClCompile Include="Renderer3DImpl_WorldToScreen.cpp" />
+    <ClCompile Include="RenderTextHelper.cpp" />
+    <ClCompile Include="ScopedImFontScaler.cpp" />
+    <ClCompile Include="SensDriftOverlay.cpp" />
+    <ClCompile Include="SettingsEnum.cpp" />
+    <ClCompile Include="ShieldInputPrinter.cpp" />
+    <ClCompile Include="SkullToggler.cpp" />
+    <ClCompile Include="SoftCeilingOverlay.cpp" />
+    <ClCompile Include="SwitchBSPSet.cpp" />
+    <ClCompile Include="TagBlockReader.cpp" />
+    <ClCompile Include="TagReferenceReader.cpp" />
+    <ClCompile Include="TagTableRange.cpp" />
+    <ClCompile Include="TrackTriggerEnterExit.cpp" />
+    <ClCompile Include="TriggerFilter.cpp" />
+    <ClCompile Include="TriggerModel.cpp" />
+    <ClCompile Include="TriggerOverlay.cpp" />
+    <ClCompile Include="UnarySetting.cpp" />
+    <ClCompile Include="UpdateTriggerLastChecked.cpp" />
+    <ClCompile Include="ViewAngle3D.cpp" />
+    <ClCompile Include="ViewAngleLineList.cpp" />
+    <ClCompile Include="Waypoint3D.cpp" />
+    <ClCompile Include="AdvanceTicks.cpp" />
+    <ClCompile Include="AIFreeze.cpp" />
+    <ClCompile Include="BlockGameInput.cpp" />
+    <ClCompile Include="BlockPlayerCharacterInput.cpp" />
+    <ClCompile Include="BottomlessClip.cpp" />
+    <ClCompile Include="CarrierBumpAnalyser.cpp" />
+    <ClCompile Include="CheckpointInjectionLogger.cpp" />
+    <ClCompile Include="DisableScreenEffects.cpp" />
+    <ClCompile Include="EditPlayerViewAngle.cpp" />
+    <ClCompile Include="ForceFutureCheckpoint.cpp" />
+    <ClCompile Include="GetCurrentBSP.cpp" />
+    <ClCompile Include="GetCurrentRNG.cpp" />
+    <ClCompile Include="HideHUD.cpp" />
+    <ClCompile Include="Lapua.cpp" />
+    <ClCompile Include="Renderer2D.cpp" />
+    <ClCompile Include="SetPlayerHealth.cpp" />
+    <ClCompile Include="SwitchBSP.cpp" />
+    <ClCompile Include="ThirdPersonRendering.cpp" />
+    <ClCompile Include="UserCameraInputReader.cpp" />
+    <ClCompile Include="Conduit_ITCFont.cpp" />
+    <ClCompile Include="D3D11Hook.cpp" />
+    <ClCompile Include="DisplayPlayerInfo.cpp" />
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="DynamicStruct.cpp" />
+    <ClCompile Include="DynamicStructFactory.cpp" />
+    <ClCompile Include="ForceLaunch.cpp" />
+    <ClCompile Include="ForceTeleport.cpp" />
+    <ClCompile Include="FreeCamera.cpp" />
+    <ClCompile Include="FreeMCCCursor.cpp" />
+    <ClCompile Include="GameTickEventHook.cpp" />
+    <ClCompile Include="GetAggroData.cpp" />
+    <ClCompile Include="GetBipedsVehicleDatum.cpp" />
+    <ClCompile Include="GetGameCameraData.cpp" />
+    <ClCompile Include="GetCurrentDifficulty.cpp" />
+    <ClCompile Include="GetCurrentLevelCode.cpp" />
+    <ClCompile Include="GetHavokAnchorPoint.cpp" />
+    <ClCompile Include="GetHavokComponent.cpp" />
+    <ClCompile Include="GetNextObjectDatum.cpp" />
+    <ClCompile Include="GetObjectAddress.cpp" />
+    <ClCompile Include="GetObjectHealth.cpp" />
+    <ClCompile Include="GetObjectPhysics.cpp" />
+    <ClCompile Include="GetObjectTagName.cpp" />
+    <ClCompile Include="GetPlayerViewAngle.cpp" />
+    <ClCompile Include="GetTagName.cpp" />
+    <ClCompile Include="GUIServiceInfo.cpp" />
+    <ClCompile Include="HCM_imconfig.cpp" />
+    <ClCompile Include="InfiniteAmmo.cpp" />
+    <ClCompile Include="MCCStateHook.cpp" />
+    <ClCompile Include="GetMCCVersion.cpp" />
+    <ClCompile Include="GUIElementConstructor.cpp" />
+    <ClCompile Include="GUIRequiredServices.cpp" />
+    <ClCompile Include="HCMInternalGUI.cpp" />
+    <ClCompile Include="HeartbeatTimer.cpp" />
+    <ClCompile Include="HotkeyManager.cpp" />
+    <ClCompile Include="HotkeyRendererImpl.cpp" />
+    <ClCompile Include="ImGuiManager.cpp" />
+    <ClCompile Include="ZoneSetChangeHookEvent.cpp" />
+    <Xml Include="InternalPointerData.xml">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </Xml>
+    <ClCompile Include="Invulnerability.cpp" />
+    <ClCompile Include="Logging.cpp" />
+    <ClCompile Include="Medusa.cpp" />
+    <ClCompile Include="MessagesGUI.cpp" />
+    <ClCompile Include="MidhookContextInterpreter.cpp" />
+    <ClCompile Include="ModalDialogRenderer.cpp" />
+    <ClCompile Include="ModuleCache.cpp" />
+    <ClCompile Include="ModuleHook.cpp" />
+    <ClCompile Include="ModuleHookManager.cpp" />
+    <ClCompile Include="MultilevelPointer.cpp" />
+    <ClCompile Include="GetPlayerDatum.cpp" />
+    <ClCompile Include="NaturalCheckpointDisable.cpp" />
+    <ClCompile Include="PauseGame.cpp" />
+    <ClCompile Include="ProggyVectorRegularFont.cpp" />
+    <ClCompile Include="BinarySetting.cpp" />
+    <ClCompile Include="OptionalCheatManager.cpp" />
+    <ClCompile Include="SettingsSerialiser.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="RuntimeExceptionHandler.cpp" />
+    <ClCompile Include="SharedMemoryInternal.cpp" />
+    <ClCompile Include="LinearSmoother.cpp" />
+    <ClCompile Include="Speedhack.cpp" />
+    <ClCompile Include="UnfreezeObjectPhysics.cpp" />
+    <ClCompile Include="UnhandledExceptionHandler.cpp" />
+    <ClCompile Include="UpdateGameCameraData.cpp" />
+    <ClCompile Include="WaypointList.cpp" />
+    <ClCompile Include="WindowsUtilities.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
+    <None Include="dds2.bin" />
+    <None Include="includes\safetyhook\src\mid_hook.x86_32.asm" />
+    <None Include="includes\safetyhook\src\mid_hook.x86_64-linux.asm" />
+    <None Include="includes\safetyhook\src\mid_hook.x86_64-windows.asm" />
+    <None Include="vcpkg.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="HCMInternal.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="lapua.dds" />
+    <Image Include="lapua2.dds" />
+    <Image Include="TriggerPatternedTexture.dds" />
+    <Image Include="Waypoint3DReticle.dds" />
+    <Image Include="Waypoint3DReticle.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="GeigerClick1.wav" />
+    <Media Include="GeigerClick2.wav" />
+    <Media Include="GeigerClickA.wav" />
+    <Media Include="GeigerClickB.wav" />
+    <Media Include="lapua.wav" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

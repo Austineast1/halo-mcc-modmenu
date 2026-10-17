@@ -1,0 +1,72 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33516.290
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HCMInternal", "HCMInternal\HCMInternal.vcxproj", "{6041871F-23AE-4C0E-811E-496F959A6C1F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HCMExternal", "HCMExternal\HCMExternal.csproj", "{3C3194F3-2290-4D62-8E3D-660F0E707311}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6041871F-23AE-4C0E-811E-496F959A6C1F} = {6041871F-23AE-4C0E-811E-496F959A6C1F}
+		{9D798DF1-8077-405E-A9F8-615105425E87} = {9D798DF1-8077-405E-A9F8-615105425E87}
+		{BFF1240A-449C-44A1-BEBB-F95AB31FC1E6} = {BFF1240A-449C-44A1-BEBB-F95AB31FC1E6}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HCMInterproc", "HCMInterproc\HCMInterproc.vcxproj", "{9D798DF1-8077-405E-A9F8-615105425E87}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B2765793-1120-4992-8EB2-153F970F7E45}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+		README.md = README.md
+		THIRD-PARTY-LICENSES.md = THIRD-PARTY-LICENSES.md
+		TODO.md = TODO.md
+		updateVersionInfo.ps1 = updateVersionInfo.ps1
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HCMSpeedhack", "HCMSpeedhack\HCMSpeedhack.vcxproj", "{BFF1240A-449C-44A1-BEBB-F95AB31FC1E6}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HCMInternalTests", "HCMInternalTests\HCMInternalTests.vcxproj", "{F75200BC-1AB7-4807-A753-EC6E4D3BA77D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "HaloScript Docs", "HaloScript Docs", "{4A8CDBF6-98AF-4671-A0A1-194A46A110B2}"
+	ProjectSection(SolutionItems) = preProject
+		HaloScript Docs\Halo1.md = HaloScript Docs\Halo1.md
+		HaloScript Docs\Halo2.md = HaloScript Docs\Halo2.md
+		HaloScript Docs\Halo3.md = HaloScript Docs\Halo3.md
+		HaloScript Docs\Halo3ODST.md = HaloScript Docs\Halo3ODST.md
+		HaloScript Docs\Halo4.md = HaloScript Docs\Halo4.md
+		HaloScript Docs\HaloReach.md = HaloScript Docs\HaloReach.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6041871F-23AE-4C0E-811E-496F959A6C1F}.Debug|x64.ActiveCfg = Debug|x64
+		{6041871F-23AE-4C0E-811E-496F959A6C1F}.Debug|x64.Build.0 = Debug|x64
+		{6041871F-23AE-4C0E-811E-496F959A6C1F}.Release|x64.ActiveCfg = Release|x64
+		{6041871F-23AE-4C0E-811E-496F959A6C1F}.Release|x64.Build.0 = Release|x64
+		{3C3194F3-2290-4D62-8E3D-660F0E707311}.Debug|x64.ActiveCfg = Debug|x64
+		{3C3194F3-2290-4D62-8E3D-660F0E707311}.Debug|x64.Build.0 = Debug|x64
+		{3C3194F3-2290-4D62-8E3D-660F0E707311}.Release|x64.ActiveCfg = Release|x64
+		{3C3194F3-2290-4D62-8E3D-660F0E707311}.Release|x64.Build.0 = Release|x64
+		{9D798DF1-8077-405E-A9F8-615105425E87}.Debug|x64.ActiveCfg = Debug|x64
+		{9D798DF1-8077-405E-A9F8-615105425E87}.Debug|x64.Build.0 = Debug|x64
+		{9D798DF1-8077-405E-A9F8-615105425E87}.Release|x64.ActiveCfg = Release|x64
+		{9D798DF1-8077-405E-A9F8-615105425E87}.Release|x64.Build.0 = Release|x64
+		{BFF1240A-449C-44A1-BEBB-F95AB31FC1E6}.Debug|x64.ActiveCfg = Debug|x64
+		{BFF1240A-449C-44A1-BEBB-F95AB31FC1E6}.Debug|x64.Build.0 = Debug|x64
+		{BFF1240A-449C-44A1-BEBB-F95AB31FC1E6}.Release|x64.ActiveCfg = Release|x64
+		{BFF1240A-449C-44A1-BEBB-F95AB31FC1E6}.Release|x64.Build.0 = Release|x64
+		{F75200BC-1AB7-4807-A753-EC6E4D3BA77D}.Debug|x64.ActiveCfg = Debug|x64
+		{F75200BC-1AB7-4807-A753-EC6E4D3BA77D}.Debug|x64.Build.0 = Debug|x64
+		{F75200BC-1AB7-4807-A753-EC6E4D3BA77D}.Release|x64.ActiveCfg = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A8788195-81C1-4916-8ED8-E58E0ED3F589}
+	EndGlobalSection
+EndGlobal

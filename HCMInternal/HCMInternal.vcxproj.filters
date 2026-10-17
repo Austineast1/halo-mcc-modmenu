@@ -1,0 +1,1646 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Services">
+      <UniqueIdentifier>{33813428-34be-431d-a692-fde745b0c8b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Classes">
+      <UniqueIdentifier>{10649697-325c-415c-bd50-731289283de5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Includes">
+      <UniqueIdentifier>{8a884ef3-004e-4426-80e6-4f1e78b02180}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Interfaces">
+      <UniqueIdentifier>{e2b4f4de-ecde-4fd0-b550-cd9418577881}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\OptionalCheats">
+      <UniqueIdentifier>{837d1078-0fa6-48f6-a483-88e1205c2f94}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\OptionalCheats\Implementations">
+      <UniqueIdentifier>{928d8ca6-9603-4a95-b642-2a1f38fbcc92}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\Rendering">
+      <UniqueIdentifier>{afbd61dc-d4f9-423a-879e-ffd24607ed77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\GUI">
+      <UniqueIdentifier>{3a262df6-8060-4d9a-a4f0-726961876f0f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\GUI\GUIElements">
+      <UniqueIdentifier>{cb48ce07-b284-4f20-94d3-b2a89baa1b6b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\Hotkeys">
+      <UniqueIdentifier>{539c47bb-619e-4e7a-a44f-8533b9eef1f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\OptionalCheats\Management">
+      <UniqueIdentifier>{6d4f6412-347f-451e-9d8f-544db3eb9fc1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\SettingsStateAndEvents">
+      <UniqueIdentifier>{cd89c4a0-0b05-4ad8-9368-f35b4356b3e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Global">
+      <UniqueIdentifier>{16bbe2af-9d7a-44b7-a05b-e67ab9d7b0a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DynamicStructs">
+      <UniqueIdentifier>{b77a04b7-7f4a-426e-a98a-1078088ea099}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\OptionalCheats\Implementations\Services">
+      <UniqueIdentifier>{07345286-baf4-4a5b-9e05-e5dbd51bfd1e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\Control">
+      <UniqueIdentifier>{ba0b1f25-6689-445e-b492-ab1646c72bc9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\OptionalCheats\Implementations\DataStringGetters">
+      <UniqueIdentifier>{440cedb9-6e99-4d4f-963c-6760eaa31a6c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\OptionalCheats\Implementations\Camera">
+      <UniqueIdentifier>{8f023fa3-225e-49d6-a4e9-8be0135cbb84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\OptionalCheats\Implementations\Camera\Smoother">
+      <UniqueIdentifier>{fc84e771-a284-4a7b-9a81-f51257e0b992}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\OptionalCheats\Implementations\3D">
+      <UniqueIdentifier>{cd1cd030-f535-41e8-b94a-facc6adcd96f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\GUI\ModalDialogs">
+      <UniqueIdentifier>{81ff9a9b-365d-4e9d-96b9-12e59d6880b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\OptionalCheats\Implementations\Skulls">
+      <UniqueIdentifier>{3736243c-8af8-4c62-825e-52c84c5f52dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\PointerData">
+      <UniqueIdentifier>{3edcd80b-8a9c-4b7a-a3c6-1d2c522c6662}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\OptionalCheats\Implementations\3D\Waypoint">
+      <UniqueIdentifier>{e748bfcf-5484-4838-9ceb-6989448f2ec4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\OptionalCheats\Implementations\3D\Trigger">
+      <UniqueIdentifier>{0f426aa6-70fa-45b4-b531-6866b9476161}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Includes\safetyhook">
+      <UniqueIdentifier>{d1f7066d-bbdc-4427-bb5a-b19007d2b8f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Includes\ImGuiColorTextEditor">
+      <UniqueIdentifier>{e97217e9-5185-4653-aa8c-93717bbdec9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\OptionalCheats\Implementations\3D\SoftCeiling">
+      <UniqueIdentifier>{87b7cc1c-459d-46ad-8e31-c6c33df15298}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\OptionalCheats\Implementations\Services\BSPs">
+      <UniqueIdentifier>{337a314c-9702-461f-9e86-e2e84933141d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Classes\3DModel">
+      <UniqueIdentifier>{33b37033-68bc-4a7a-b2ac-4c0fc788ba2c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Classes\Events">
+      <UniqueIdentifier>{e1b10632-8e97-4ede-af4a-05418c747a6b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Classes\Definitions">
+      <UniqueIdentifier>{3e929823-9bb9-423f-b811-bbee94da77be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Includes\type_safe">
+      <UniqueIdentifier>{8e095301-396e-423f-bdfb-54cff888c81e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services\OptionalCheats\Implementations\3D\ViewAngleLine">
+      <UniqueIdentifier>{534fa38f-7c28-45de-b81d-142ec6ef4d46}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Includes\type_safe\detail">
+      <UniqueIdentifier>{80102b94-9a3d-4d6c-acbe-1f026d24740f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Includes\safetyhook\include">
+      <UniqueIdentifier>{020ed911-0607-4d4f-980f-82fbc227888a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Includes\safetyhook\src">
+      <UniqueIdentifier>{9578365a-7b79-43f0-93c4-a6a6d3cb972c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h">
+      <Filter>Global</Filter>
+    </ClInclude>
+    <ClInclude Include="HCMExternalCommand.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalKill.h">
+      <Filter>Global</Filter>
+    </ClInclude>
+    <ClInclude Include="ControlDefs.h">
+      <Filter>Global</Filter>
+    </ClInclude>
+    <ClInclude Include="CustomExceptions.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="MidhookContextInterpreter.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowsUtilities.h">
+      <Filter>Global</Filter>
+    </ClInclude>
+    <ClInclude Include="RuntimeExceptionHandler.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="ModuleHookManager.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="ModuleHook.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="MultilevelPointer.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="ModuleCache.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="Logging.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="MCCStateHook.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="GameState.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="InjectRequirements.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="HeartbeatTimer.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalInfo.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="Datum.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="App.h">
+      <Filter>Global</Filter>
+    </ClInclude>
+    <ClInclude Include="GetMCCVersion.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="VersionInfo.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="DIContainer.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="DumpCheckpoint.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="DumpCore.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="ForceCheckpoint.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="ForceCoreSave.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="ForceDoubleRevert.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="ForceRevert.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="InjectCheckpoint.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="InjectCore.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="Speedhack.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="Invulnerability.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="GuiElementEnum.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="HotkeyDefinitions.h">
+      <Filter>Services\Hotkeys</Filter>
+    </ClInclude>
+    <ClInclude Include="HotkeyManager.h">
+      <Filter>Services\Hotkeys</Filter>
+    </ClInclude>
+    <ClInclude Include="RebindableHotkey.h">
+      <Filter>Services\Hotkeys</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIRequiredServices.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="IGUIRequiredServices.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="IAnchorPoint.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIElementStore.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIServiceInfo.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D11Hook.h">
+      <Filter>Services\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiManager.h">
+      <Filter>Services\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIElementConstructor.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="SettingsStateAndEvents.h">
+      <Filter>Services\SettingsStateAndEvents</Filter>
+    </ClInclude>
+    <ClInclude Include="SettingsSerialiser.h">
+      <Filter>Services\SettingsStateAndEvents</Filter>
+    </ClInclude>
+    <ClInclude Include="MessagesGUI.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="GUISimpleButton.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GUISimpleToggle.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GUISpeedhack.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="IGUIElement.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIInvulnerability.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="HCMInternalGUI.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="HCM_imconfig.h">
+      <Filter>Global</Filter>
+    </ClInclude>
+    <ClInclude Include="HotkeysEnum.h">
+      <Filter>Services\Hotkeys</Filter>
+    </ClInclude>
+    <ClInclude Include="HotkeyRenderer.h">
+      <Filter>Services\Hotkeys</Filter>
+    </ClInclude>
+    <ClInclude Include="UnhandledExceptionHandler.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="HotkeyRendererImpl.h">
+      <Filter>Services\Hotkeys</Filter>
+    </ClInclude>
+    <ClInclude Include="OptionalCheatInfo.h">
+      <Filter>Services\OptionalCheats\Management</Filter>
+    </ClInclude>
+    <ClInclude Include="OptionalCheatManager.h">
+      <Filter>Services\OptionalCheats\Management</Filter>
+    </ClInclude>
+    <ClInclude Include="OptionalCheatEnum.h">
+      <Filter>Services\OptionalCheats\Management</Filter>
+    </ClInclude>
+    <ClInclude Include="IOptionalCheat.h">
+      <Filter>Services\OptionalCheats</Filter>
+    </ClInclude>
+    <ClInclude Include="MCCState.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="DirPathContainer.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIMCCState.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="WinHandle.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="SharedMemoryInternal.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="IMakeOrGetCheat.h">
+      <Filter>Services\OptionalCheats\Management</Filter>
+    </ClInclude>
+    <ClInclude Include="IGetMCCVersion.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="DynamicStructFactory.h">
+      <Filter>DynamicStructs</Filter>
+    </ClInclude>
+    <ClInclude Include="DynamicStruct.h">
+      <Filter>DynamicStructs</Filter>
+    </ClInclude>
+    <ClInclude Include="H1PlayerStruct.h">
+      <Filter>DynamicStructs</Filter>
+    </ClInclude>
+    <ClInclude Include="GetPlayerDatum.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="GetObjectAddress.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="IMessagesGUI.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="ISharedMemory.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="ISettingsSerialiser.h">
+      <Filter>Services\SettingsStateAndEvents</Filter>
+    </ClInclude>
+    <ClInclude Include="IMCCStateHook.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="HotkeyEventsLambdas.h">
+      <Filter>Services\Hotkeys</Filter>
+    </ClInclude>
+    <ClInclude Include="ScopedAtomicBool.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="AIFreeze.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="MidhookFlagInterpreter.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIHeading.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GUISubHeading.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="ControlServiceContainer.h">
+      <Filter>Services\Control</Filter>
+    </ClInclude>
+    <ClInclude Include="FreeMCCCursor.h">
+      <Filter>Services\Control</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIHotkeyOnly.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockGameInput.h">
+      <Filter>Services\Control</Filter>
+    </ClInclude>
+    <ClInclude Include="PauseGame.h">
+      <Filter>Services\Control</Filter>
+    </ClInclude>
+    <ClInclude Include="TogglePause.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="ToggleBlockInput.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="ToggleFreeCursor.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="GetCurrentLevelCode.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="GetCurrentDifficulty.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="DifficultyEnum.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="IgnoreCheckpointChecksum.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="AdvanceTicks.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIAdvanceTicks.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GameTickEventHook.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="ForceLaunch.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="ForceTeleport.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIRadioButton.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIRadioGroup.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GetPlayerViewAngle.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIFloat.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GetHavokComponent.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectTypes.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="GetObjectPhysics.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="UnfreezeObjectPhysics.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="GetObjectAddressCLI.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="GetHavokAnchorPoint.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIToggleWithChildren.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIInputString.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIInputDWORD.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="Medusa.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="ToolTipCollection.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="NaturalCheckpointDisable.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="InfiniteAmmo.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="BottomlessClip.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="DisplayPlayerInfo.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIColourPickerAlpha.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIInputInt.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIVec2.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIComboEnum.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GetAggroData.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="GetObjectHealth.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="GetEntityDataAsString.h">
+      <Filter>Services\OptionalCheats\Implementations\DataStringGetters</Filter>
+    </ClInclude>
+    <ClInclude Include="GetPlayerDataAsString.h">
+      <Filter>Services\OptionalCheats\Implementations\DataStringGetters</Filter>
+    </ClInclude>
+    <ClInclude Include="GetGameDataAsString.h">
+      <Filter>Services\OptionalCheats\Implementations\DataStringGetters</Filter>
+    </ClInclude>
+    <ClInclude Include="GetObjectTagName.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="GetTagName.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="GetBipedsVehicleDatum.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="Conduit_ITCFont.h">
+      <Filter>Global</Filter>
+    </ClInclude>
+    <ClInclude Include="ProggyVectorRegularFont.h">
+      <Filter>Global</Filter>
+    </ClInclude>
+    <ClInclude Include="GetNextObjectDatum.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="GameCameraData.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="GetGameCameraData.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ForceCoreLoad.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="FreeCamera.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ISmoother.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera\Smoother</Filter>
+    </ClInclude>
+    <ClInclude Include="LinearSmoother.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera\Smoother</Filter>
+    </ClInclude>
+    <ClInclude Include="UpdateGameCameraData.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="FreeCameraData.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="NullSmoother.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera\Smoother</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraTransformer.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="UserCameraInputReader.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="IUpdateCameraTransform.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIComboEnumWithChildren.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIDummyContainer.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIVec3.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GetCurrentRNG.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="CheckpointInjectionLogger.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="EditPlayerViewAngle.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="SwitchBSP.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIButtonAndInt.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdPersonRendering.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockPlayerCharacterInput.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="DisableScreenEffects.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="HideWatermarkService.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="HideMessagesService.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="HideHUD.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="EventOnPressHotkey.h">
+      <Filter>Services\Hotkeys</Filter>
+    </ClInclude>
+    <ClInclude Include="Lapua.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="OBSBypassManager.h">
+      <Filter>Services\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer2D.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="OBSBypassCheck.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="SetPlayerHealth.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="CarrierBumpAnalyser.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="ForceFutureCheckpoint.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="Render3DEventProvider.h">
+      <Filter>Services\OptionalCheats\Implementations\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer3DImpl.h">
+      <Filter>Services\OptionalCheats\Implementations\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="IRenderer3D.h">
+      <Filter>Services\OptionalCheats\Implementations\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="MeasurePlayerDistanceToObject.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectXRenderEvent.h">
+      <Filter>Services\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTextHelper.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="ScopedImFontScaler.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIWaypointList.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="ModalDialogRenderer.h">
+      <Filter>Services\GUI\ModalDialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="CheckpointDumpNameDialog.h">
+      <Filter>Services\GUI\ModalDialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="IModalDialog.h">
+      <Filter>Services\GUI\ModalDialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="InjectionWarningDialog.h">
+      <Filter>Services\GUI\ModalDialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="FailedOptionalCheatServicesDialog.h">
+      <Filter>Services\GUI\ModalDialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="EditOrAddWaypointDialog.h">
+      <Filter>Services\GUI\ModalDialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="ModalDialogFactory.h">
+      <Filter>Services\GUI\ModalDialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="SerialisableSetting.h">
+      <Filter>Services\SettingsStateAndEvents</Filter>
+    </ClInclude>
+    <ClInclude Include="BinarySetting.h">
+      <Filter>Services\SettingsStateAndEvents</Filter>
+    </ClInclude>
+    <ClInclude Include="UnarySetting.h">
+      <Filter>Services\SettingsStateAndEvents</Filter>
+    </ClInclude>
+    <ClInclude Include="BitBoolPointer.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="GUISkullToggle.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="SkullEnum.h">
+      <Filter>Services\OptionalCheats\Implementations\Skulls</Filter>
+    </ClInclude>
+    <ClInclude Include="SkullToggler.h">
+      <Filter>Services\OptionalCheats\Implementations\Skulls</Filter>
+    </ClInclude>
+    <ClInclude Include="PointerDataStore.h">
+      <Filter>Services\PointerData</Filter>
+    </ClInclude>
+    <ClInclude Include="PointerDataGetter.h">
+      <Filter>Services\PointerData</Filter>
+    </ClInclude>
+    <ClInclude Include="PointerDataParser.h">
+      <Filter>Services\PointerData</Filter>
+    </ClInclude>
+    <ClInclude Include="PointerDataParserInstantiators.h">
+      <Filter>Services\PointerData</Filter>
+    </ClInclude>
+    <ClInclude Include="Waypoint3D.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\Waypoint</Filter>
+    </ClInclude>
+    <ClInclude Include="WaypointList.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\Waypoint</Filter>
+    </ClInclude>
+    <ClInclude Include="TriggerOverlay.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClInclude>
+    <ClInclude Include="GetTriggerData.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClInclude>
+    <ClInclude Include="UpdateTriggerLastChecked.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClInclude>
+    <ClInclude Include="TriggerData.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectTableRange.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="HideWatermarkCheck.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="HideWatermarkManager.h">
+      <Filter>Services\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerPositionToClipboard.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="SettingsEnums.h">
+      <Filter>Services\SettingsStateAndEvents</Filter>
+    </ClInclude>
+    <ClInclude Include="TagBlock.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="MCCString.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIColourPicker.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIInputMultilineString.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="TriggerFilter.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClInclude>
+    <ClInclude Include="TrackTriggerEnterExit.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClInclude>
+    <ClInclude Include="GetPlayerTriggerPosition.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClInclude>
+    <ClInclude Include="ShieldInputPrinter.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="EnumClass.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="SensDriftOverlay.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="GUILabel.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="TriggerFilterModalDialogManager.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClInclude>
+    <ClInclude Include="TriggerFilterStringDialog.h">
+      <Filter>Services\GUI\ModalDialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="GetScenarioAddress.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="GetDebugString.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="TriggerNamesHardcoded.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClInclude>
+    <ClInclude Include="TagBlockReader.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="SoftCeilingOverlay.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\SoftCeiling</Filter>
+    </ClInclude>
+    <ClInclude Include="TagTableRange.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="GetSoftCeilingData.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\SoftCeiling</Filter>
+    </ClInclude>
+    <ClInclude Include="SoftCeilingData.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\SoftCeiling</Filter>
+    </ClInclude>
+    <ClInclude Include="MagicString.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureFactory.h">
+      <Filter>Services\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="SliderParam.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="BSPSet.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIButtonAndBinaryInt.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="SwitchBSPSet.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="BSPChangeHookEvent.h">
+      <Filter>Services\OptionalCheats\Implementations\Services\BSPs</Filter>
+    </ClInclude>
+    <ClInclude Include="GetCurrentBSP.h">
+      <Filter>Services\OptionalCheats\Implementations\Services\BSPs</Filter>
+    </ClInclude>
+    <ClInclude Include="GetCurrentBSPSet.h">
+      <Filter>Services\OptionalCheats\Implementations\Services\BSPs</Filter>
+    </ClInclude>
+    <ClInclude Include="GetCurrentZoneSet.h">
+      <Filter>Services\OptionalCheats\Implementations\Services\BSPs</Filter>
+    </ClInclude>
+    <ClInclude Include="ZoneSetChangeHookEvent.h">
+      <Filter>Services\OptionalCheats\Implementations\Services\BSPs</Filter>
+    </ClInclude>
+    <ClInclude Include="BSPSetChangeHookEvent.h">
+      <Filter>Services\OptionalCheats\Implementations\Services\BSPs</Filter>
+    </ClInclude>
+    <ClInclude Include="TagInfo.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="TagReferenceReader.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="GetActiveStructureDesignTags.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\SoftCeiling</Filter>
+    </ClInclude>
+    <ClInclude Include="IModel.h">
+      <Filter>Classes\3DModel</Filter>
+    </ClInclude>
+    <ClInclude Include="TriggerModel.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureResource.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandConsoleManager.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandConsoleGUI.h">
+      <Filter>Services\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="ScopedCallback.h">
+      <Filter>Classes\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="SharedRequestToken.h">
+      <Filter>Classes\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="ObservedScopedCallback.h">
+      <Filter>Classes\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="ObservedEvent.h">
+      <Filter>Classes\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="IFireCallbackListChanged.h">
+      <Filter>Classes\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="HaloScriptOutputHookEvent.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="DisableBarriers.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="GetPlayerDatumPresenter.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="HotkeyRebindDialog.h">
+      <Filter>Services\Hotkeys</Filter>
+    </ClInclude>
+    <ClInclude Include="FreeCameraFOVOverride.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="GetAbilityData.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="CustomErrors.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="AbilityMeterOverlay.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="GetTagAddressPresenter.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="SharedRequestProvider.h">
+      <Filter>Classes\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIInvisible.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundClassGain.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="DisableFog.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ChangeOOBBackground.h">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="MCCInitialisationCheck.h">
+      <Filter>Global</Filter>
+    </ClInclude>
+    <ClInclude Include="GetHCMVersion.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="PointerDataTypes.h">
+      <Filter>Services\PointerData</Filter>
+    </ClInclude>
+    <ClInclude Include="RevertEventHook.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="map.h">
+      <Filter>Includes</Filter>
+    </ClInclude>
+    <ClInclude Include="ManagedResource.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngineDetail.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="ForceMissionRestart.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngineFunctions.h">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="EditPlayerViewAngleID.h">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="ViewAngleLineList.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\ViewAngleLine</Filter>
+    </ClInclude>
+    <ClInclude Include="ViewAngle3D.h">
+      <Filter>Services\OptionalCheats\Implementations\3D\ViewAngleLine</Filter>
+    </ClInclude>
+    <ClInclude Include="SubpixelID.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="EditOrAddViewAngleLineDialog.h">
+      <Filter>Services\GUI\ModalDialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIViewAngleLineList.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\arithmetic_policy.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\boolean.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\bounded_type.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\compact_optional.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\config.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\constrained_type.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\deferred_construction.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\downcast.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\flag.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\flag_set.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\floating_point.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\index.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\integer.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\narrow_cast.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\optional.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\optional_ref.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\output_parameter.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\reference.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\strong_typedef.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\tagged_union.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\types.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\variant.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\visitor.hpp">
+      <Filter>Includes\type_safe</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\aligned_union.hpp">
+      <Filter>Includes\type_safe\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\all_of.hpp">
+      <Filter>Includes\type_safe\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\assert.hpp">
+      <Filter>Includes\type_safe\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\assign_or_construct.hpp">
+      <Filter>Includes\type_safe\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\constant_parser.hpp">
+      <Filter>Includes\type_safe\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\copy_move_control.hpp">
+      <Filter>Includes\type_safe\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\force_inline.hpp">
+      <Filter>Includes\type_safe\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\is_nothrow_swappable.hpp">
+      <Filter>Includes\type_safe\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\map_invoke.hpp">
+      <Filter>Includes\type_safe\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\type_safe\include\type_safe\detail\variant_impl.hpp">
+      <Filter>Includes\type_safe\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\safetyhook\include\safetyhook.hpp">
+      <Filter>Includes\safetyhook\include</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\safetyhook\include\safetyhook\allocator.hpp">
+      <Filter>Includes\safetyhook\include</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\safetyhook\include\safetyhook\common.hpp">
+      <Filter>Includes\safetyhook\include</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\safetyhook\include\safetyhook\context.hpp">
+      <Filter>Includes\safetyhook\include</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\safetyhook\include\safetyhook\easy.hpp">
+      <Filter>Includes\safetyhook\include</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\safetyhook\include\safetyhook\inline_hook.hpp">
+      <Filter>Includes\safetyhook\include</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\safetyhook\include\safetyhook\mid_hook.hpp">
+      <Filter>Includes\safetyhook\include</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\safetyhook\include\safetyhook\os.hpp">
+      <Filter>Includes\safetyhook\include</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\safetyhook\include\safetyhook\utility.hpp">
+      <Filter>Includes\safetyhook\include</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\safetyhook\include\safetyhook\vmt_hook.hpp">
+      <Filter>Includes\safetyhook\include</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\ImGuiColorTextEdit\TextEditor.h">
+      <Filter>Includes\ImGuiColorTextEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="GUIInputSubpixel.h">
+      <Filter>Services\GUI\GUIElements</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>Global</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Global</Filter>
+    </ClCompile>
+    <ClCompile Include="MidhookContextInterpreter.cpp">
+      <Filter>Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowsUtilities.cpp">
+      <Filter>Global</Filter>
+    </ClCompile>
+    <ClCompile Include="RuntimeExceptionHandler.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="ModuleHookManager.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="ModuleHook.cpp">
+      <Filter>Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="MultilevelPointer.cpp">
+      <Filter>Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="ModuleCache.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="Logging.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="MCCStateHook.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="HeartbeatTimer.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GetMCCVersion.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="Speedhack.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="Invulnerability.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="HotkeyManager.cpp">
+      <Filter>Services\Hotkeys</Filter>
+    </ClCompile>
+    <ClCompile Include="GUIRequiredServices.cpp">
+      <Filter>Services\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="GUIServiceInfo.cpp">
+      <Filter>Services\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D11Hook.cpp">
+      <Filter>Services\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiManager.cpp">
+      <Filter>Services\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="GUIElementConstructor.cpp">
+      <Filter>Services\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="SettingsSerialiser.cpp">
+      <Filter>Services\SettingsStateAndEvents</Filter>
+    </ClCompile>
+    <ClCompile Include="MessagesGUI.cpp">
+      <Filter>Services\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="HCMInternalGUI.cpp">
+      <Filter>Services\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="UnhandledExceptionHandler.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="HotkeyRendererImpl.cpp">
+      <Filter>Services\Hotkeys</Filter>
+    </ClCompile>
+    <ClCompile Include="OptionalCheatManager.cpp">
+      <Filter>Services\OptionalCheats\Management</Filter>
+    </ClCompile>
+    <ClCompile Include="SharedMemoryInternal.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="DynamicStruct.cpp">
+      <Filter>DynamicStructs</Filter>
+    </ClCompile>
+    <ClCompile Include="DynamicStructFactory.cpp">
+      <Filter>DynamicStructs</Filter>
+    </ClCompile>
+    <ClCompile Include="GetPlayerDatum.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GetObjectAddress.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="AIFreeze.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="FreeMCCCursor.cpp">
+      <Filter>Services\Control</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockGameInput.cpp">
+      <Filter>Services\Control</Filter>
+    </ClCompile>
+    <ClCompile Include="PauseGame.cpp">
+      <Filter>Services\Control</Filter>
+    </ClCompile>
+    <ClCompile Include="GetCurrentLevelCode.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GetCurrentDifficulty.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="AdvanceTicks.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="GameTickEventHook.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="ForceLaunch.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="ForceTeleport.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="GetPlayerViewAngle.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="HCM_imconfig.cpp">
+      <Filter>Global</Filter>
+    </ClCompile>
+    <ClCompile Include="GetHavokComponent.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GetObjectPhysics.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="UnfreezeObjectPhysics.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GetHavokAnchorPoint.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="Medusa.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="NaturalCheckpointDisable.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="BottomlessClip.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="InfiniteAmmo.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="DisplayPlayerInfo.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="GetAggroData.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GetObjectHealth.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GetObjectTagName.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GetTagName.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GetBipedsVehicleDatum.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="ProggyVectorRegularFont.cpp">
+      <Filter>Global</Filter>
+    </ClCompile>
+    <ClCompile Include="Conduit_ITCFont.cpp">
+      <Filter>Global</Filter>
+    </ClCompile>
+    <ClCompile Include="GetNextObjectDatum.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GetGameCameraData.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="FreeCamera.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="UpdateGameCameraData.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="UserCameraInputReader.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="LinearSmoother.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Camera\Smoother</Filter>
+    </ClCompile>
+    <ClCompile Include="GetCurrentRNG.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="CheckpointInjectionLogger.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="EditPlayerViewAngle.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="SwitchBSP.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdPersonRendering.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockPlayerCharacterInput.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="HideHUD.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Lapua.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer2D.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="DisableScreenEffects.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="SetPlayerHealth.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="CarrierBumpAnalyser.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="ForceFutureCheckpoint.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="Render3DEventProvider.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer3DImpl.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="MeasurePlayerDistanceToObject.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer3DImpl_WorldToScreen.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer3DImpl_Sprites.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderTextHelper.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="ModalDialogRenderer.cpp">
+      <Filter>Services\GUI\ModalDialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="BinarySetting.cpp">
+      <Filter>Services\SettingsStateAndEvents</Filter>
+    </ClCompile>
+    <ClCompile Include="UnarySetting.cpp">
+      <Filter>Services\SettingsStateAndEvents</Filter>
+    </ClCompile>
+    <ClCompile Include="SkullToggler.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Skulls</Filter>
+    </ClCompile>
+    <ClCompile Include="PointerDataGetter.cpp">
+      <Filter>Services\PointerData</Filter>
+    </ClCompile>
+    <ClCompile Include="PointerDataParser.cpp">
+      <Filter>Services\PointerData</Filter>
+    </ClCompile>
+    <ClCompile Include="PointerDataStore.cpp">
+      <Filter>Services\PointerData</Filter>
+    </ClCompile>
+    <ClCompile Include="Waypoint3D.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D\Waypoint</Filter>
+    </ClCompile>
+    <ClCompile Include="WaypointList.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D\Waypoint</Filter>
+    </ClCompile>
+    <ClCompile Include="TriggerOverlay.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClCompile>
+    <ClCompile Include="GetTriggerData.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClCompile>
+    <ClCompile Include="UpdateTriggerLastChecked.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer3DImpl_updateCameraData.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer3DImpl_Geometry.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjectTableRange.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerPositionToClipboard.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="SettingsEnum.cpp">
+      <Filter>Services\SettingsStateAndEvents</Filter>
+    </ClCompile>
+    <ClCompile Include="TriggerFilter.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClCompile>
+    <ClCompile Include="TrackTriggerEnterExit.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClCompile>
+    <ClCompile Include="GetPlayerTriggerPosition.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClCompile>
+    <ClCompile Include="ShieldInputPrinter.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="SensDriftOverlay.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="GetScenarioAddress.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GetDebugString.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="TagBlockReader.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="TagTableRange.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GetSoftCeilingData.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D\SoftCeiling</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftCeilingOverlay.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D\SoftCeiling</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureFactory.cpp">
+      <Filter>Services\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="ScopedImFontScaler.cpp">
+      <Filter>Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="SwitchBSPSet.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="GetCurrentBSP.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services\BSPs</Filter>
+    </ClCompile>
+    <ClCompile Include="GetCurrentBSPSet.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services\BSPs</Filter>
+    </ClCompile>
+    <ClCompile Include="GetCurrentZoneSet.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services\BSPs</Filter>
+    </ClCompile>
+    <ClCompile Include="BSPSetChangeHookEvent.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services\BSPs</Filter>
+    </ClCompile>
+    <ClCompile Include="BSPChangeHookEvent.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services\BSPs</Filter>
+    </ClCompile>
+    <ClCompile Include="ZoneSetChangeHookEvent.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services\BSPs</Filter>
+    </ClCompile>
+    <ClCompile Include="TagReferenceReader.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GetActiveStructureDesignTags.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D\SoftCeiling</Filter>
+    </ClCompile>
+    <ClCompile Include="TriggerModel.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D\Trigger</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandConsoleManager.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandConsoleGUI.cpp">
+      <Filter>Services\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="HaloScriptOutputHookEvent.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="DisableBarriers.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="HotkeyRebindDialog.cpp">
+      <Filter>Services\Hotkeys</Filter>
+    </ClCompile>
+    <ClCompile Include="FreeCameraFOVOverride.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="GetAbilityData.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="AbilityMeterOverlay.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundClassGain.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="ChangeOOBBackground.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="DisableFog.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="MCCInitialisationCheck.cpp">
+      <Filter>Global</Filter>
+    </ClCompile>
+    <ClCompile Include="GetHCMVersion.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="RevertEventHook.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngineDetail.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngineFunctions.cpp">
+      <Filter>Services\OptionalCheats\Implementations\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="EditPlayerViewAngleID.cpp">
+      <Filter>Services\OptionalCheats\Implementations</Filter>
+    </ClCompile>
+    <ClCompile Include="ViewAngleLineList.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D\ViewAngleLine</Filter>
+    </ClCompile>
+    <ClCompile Include="ViewAngle3D.cpp">
+      <Filter>Services\OptionalCheats\Implementations\3D\ViewAngleLine</Filter>
+    </ClCompile>
+    <ClCompile Include="SubpixelID.cpp">
+      <Filter>Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="ModalDialogFactory.cpp">
+      <Filter>Services\GUI\ModalDialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\allocator.cpp">
+      <Filter>Includes\safetyhook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\easy.cpp">
+      <Filter>Includes\safetyhook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\inline_hook.cpp">
+      <Filter>Includes\safetyhook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\mid_hook.cpp">
+      <Filter>Includes\safetyhook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\os.linux.cpp">
+      <Filter>Includes\safetyhook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\os.windows.cpp">
+      <Filter>Includes\safetyhook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\utility.cpp">
+      <Filter>Includes\safetyhook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\safetyhook\src\vmt_hook.cpp">
+      <Filter>Includes\safetyhook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\ImGuiColorTextEdit\ImGuiDebugPanel.cpp">
+      <Filter>Includes\ImGuiColorTextEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\ImGuiColorTextEdit\LanguageDefinitions.cpp">
+      <Filter>Includes\ImGuiColorTextEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\ImGuiColorTextEdit\TextEditor.cpp">
+      <Filter>Includes\ImGuiColorTextEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="includes\ImGuiColorTextEdit\UnitTests.cpp">
+      <Filter>Includes\ImGuiColorTextEditor</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dds2.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="vcpkg.json">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cpp.hint">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="includes\safetyhook\src\mid_hook.x86_32.asm">
+      <Filter>Includes\safetyhook\src</Filter>
+    </None>
+    <None Include="includes\safetyhook\src\mid_hook.x86_64-linux.asm">
+      <Filter>Includes\safetyhook\src</Filter>
+    </None>
+    <None Include="includes\safetyhook\src\mid_hook.x86_64-windows.asm">
+      <Filter>Includes\safetyhook\src</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="InternalPointerData.xml">
+      <Filter>Resource Files</Filter>
+    </Xml>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="HCMInternal.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Waypoint3DReticle.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Waypoint3DReticle.dds">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="TriggerPatternedTexture.dds">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="lapua2.dds">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="lapua.dds">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="lapua.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+    <Media Include="GeigerClick1.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+    <Media Include="GeigerClick2.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+    <Media Include="GeigerClickA.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+    <Media Include="GeigerClickB.wav">
+      <Filter>Resource Files</Filter>
+    </Media>
+  </ItemGroup>
+</Project>

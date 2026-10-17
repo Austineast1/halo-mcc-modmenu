@@ -1,0 +1,836 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+
+<Root>
+	<!--If current HCM version isn't one of these, the user will be prompted that an update is available-->
+	<!--IMPORTANT! Must update in both External AND Internal xmls-->
+	<LatestHCMVersions>
+		<Entry>3.1.9.0</Entry>
+	</LatestHCMVersions>
+
+	<!--If the current HCM is one of these, HCM will refuse to start and the user will be prompted to update-->
+	<ObsoleteHCMVersions>
+		<Entry>1.9.9</Entry>
+	</ObsoleteHCMVersions>
+
+	<!--Highest MCC version. Used for WinStore version detection. Winstore can't downpatch so is always latest patch.-->
+	<HighestSupportedVersion>
+		<Entry>1.3528.0.0</Entry>
+	</HighestSupportedVersion>
+
+	<HighestSupportedCartographerVersion>
+		<Entry>All</Entry>
+	</HighestSupportedCartographerVersion>
+
+
+<!-- Safety flag. 0 when MCC is still loading in, 1 after that. Is ROUGHLY 0x90 bytes behind the game engine pointer-->
+	<!--can scan nw "4c 8b 4c c1 08 4d 85 c9", go up a bit (add -> je -> mov) to where it moves a val in from r12-->
+	<!-- NOTE: no longer used. see HCMInternal.MCCInitialisationCheck-->
+	<Entry Type="int">
+		<Name>Steam_MCCInitialisationFlagOffset</Name>
+		<Version Version="1.2448.0.0">
+			<Offset>0x3A24EF0</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>0x3B80E20</Offset>
+		</Version>
+		<Version Version="1.2904.0.0">
+			<Offset>0x3F7B848</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x3FFDA28</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x3FFCA18</Offset>
+		</Version>
+		<Version Version="1.3495.0.0">
+			<Offset>0x4000B10</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x4000B10</Offset>
+		</Version>
+	</Entry>
+
+	<Entry Type="int">
+		<Name>WinStore_MCCInitialisationFlagOffset</Name>
+		<Version Version="1.3528.0.0">
+			<Offset>0x3E4EF78</Offset>
+		</Version>
+	</Entry>
+
+	<!--Data for decoding useful information from checkpoint files-->
+	<!-- #region Halo 1-->
+	<Entry Type="int">
+		<Name>H1_CheckpointData_LevelCode</Name>
+		<Version Version="All">
+			<Offset>11</Offset>
+		</Version>
+	</Entry>
+	<Entry Type="int">
+		<Name>H1_CheckpointData_GameTickCount</Name>
+		<Version Version="1.2448.0.0">
+			<Offset>0x2F4</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>0x2F4</Offset>
+		</Version>
+		<Version Version="1.3073.0.0">
+			<Offset>0x3CD4</Offset>
+		</Version>
+		<Version Version="1.3251.0.0">
+			<Offset>0x3FD4</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x3FD4</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x3FD4</Offset>
+		</Version>
+		<Version Version="1.3495.0">
+			<Offset>0x3FD4</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x3FD4</Offset>
+		</Version>
+	</Entry>
+	<Entry Type="int">
+		<Name>H1_CheckpointData_Difficulty</Name>
+		<Version Version="All">
+			<Offset>0x126</Offset>
+		</Version>
+	</Entry>
+	<!-- #endregion Halo 1-->
+	<!-- #region Halo 2-->
+	<Entry Type="int">
+		<Name>H2_CheckpointData_LevelCode</Name>
+		<Version Version="1.2448.0.0">
+			<Offset>0x17</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>0x13</Offset>
+		</Version>
+		<Version Version="1.3073.0.0">
+			<Offset>0x13</Offset>
+		</Version>
+		<Version Version="1.3251.0.0">
+			<Offset>0x13</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x13</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x13</Offset>
+		</Version>
+		<Version Version="1.3495.0.0">
+			<Offset>0x13</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x13</Offset>
+		</Version>
+	</Entry>
+	<Entry Type="int">
+		<Name>H2_CheckpointData_GameTickCount</Name>
+		<Version Version="1.2448.0.0">
+			<Offset>13992</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>13920</Offset>
+		</Version>
+		<Version Version="1.3073.0.0">
+			<Offset>0x36A0</Offset>
+		</Version>
+		<Version Version="1.3251.0.0">
+			<Offset>0x36A0</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x36A0</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x36A0</Offset>
+		</Version>
+		<Version Version="1.3495.0.0">
+			<Offset>0x36A0</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x36A0</Offset>
+		</Version>
+	</Entry>
+	<Entry Type="int">
+		<Name>H2_CheckpointData_Difficulty</Name>
+		<Version Version="1.2448.0.0">
+			<Offset>0x3CE</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>0x3CE</Offset>
+		</Version>
+		<Version Version="1.3073.0.0">
+			<Offset>0x3EE</Offset>
+		</Version>
+		<Version Version="1.3251.0.0">
+			<Offset>0x3EE</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x3EE</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x3EE</Offset>
+		</Version>
+		<Version Version="1.3495.0.0">
+			<Offset>0x3EE</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x3EE</Offset>
+		</Version>
+	</Entry>
+	<!-- #endregion Halo 2-->
+
+	<!-- #region Halo 3-->
+	<Entry Type="int">
+		<Name>H3_CheckpointData_LevelCode</Name>
+		<Version Version="1.2448.0.0">
+			<Offset>0x167</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>0x167</Offset>
+		</Version>
+		<Version Version="1.3073.0.0">
+			<Offset>0x187</Offset>
+		</Version>
+		<Version Version="1.3251.0.0">
+			<Offset>0x187</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x187</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x187</Offset>
+		</Version>
+		<Version Version="1.3495.0.0">
+			<Offset>0x187</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x187</Offset>
+		</Version>
+	</Entry>
+	<Entry Type="int">
+		<Name>H3_CheckpointData_GameTickCount</Name>
+		<Version Version="1.2448.0.0">
+			<Offset>0x3F0220</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>0x470220</Offset>
+		</Version>
+		<Version Version="1.2862.0.0">
+			<Offset>0x470220</Offset>
+		</Version>
+		<Version Version="1.3073.0.0">
+			<Offset>0x470220</Offset>
+		</Version>
+		<Version Version="1.3251.0.0">
+			<Offset>0x470220</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x470220</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x470220</Offset>
+		</Version>
+		<Version Version="1.3495.0.0">
+			<Offset>0x470220</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x470220</Offset>
+		</Version>
+	</Entry>
+	<Entry Type="int">
+		<Name>H3_CheckpointData_Difficulty</Name>
+		<Version Version="1.2448.0.0">
+			<Offset>0x274</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>0x274</Offset>
+		</Version>
+		<Version Version="1.2862.0.0">
+			<Offset>0x294</Offset>
+		</Version>
+		<Version Version="1.3073.0.0">
+			<Offset>0x294</Offset>
+		</Version>
+		<Version Version="1.3251.0.0">
+			<Offset>0x294</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x294</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x294</Offset>
+		</Version>
+		<Version Version="1.3495.0.0">
+			<Offset>0x294</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x294</Offset>
+		</Version>
+	</Entry>
+	<!-- #endregion Halo 3-->
+
+	<!-- #region Halo 3: ODST-->
+	<Entry Type="int">
+		<Name>OD_CheckpointData_LevelCode</Name>
+		<Version Version="All">
+			<Offset>0x15</Offset>
+		</Version>
+	</Entry>
+	<Entry Type="int">
+		<Name>OD_CheckpointData_GameTickCount</Name>
+		<Version Version="1.2094.0.0">
+			<Offset>0x004002E0</Offset>
+		</Version>
+		<Version Version="1.2448.0.0">
+			<Offset>0x00400AF0</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>0x480D50</Offset>
+		</Version>
+		<Version Version="1.3073.0.0">
+			<Offset>0x7b3bc8</Offset>
+		</Version>
+		<Version Version="1.3251.0.0">
+			<Offset>0x7b3A44</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x7b3A44</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x7b3A44</Offset>
+		</Version>
+		<Version Version="1.3495.0.0">
+			<Offset>0x7b3A44</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x7b3A44</Offset>
+		</Version>
+	</Entry>
+	<Entry Type="int">
+		<Name>OD_CheckpointData_Difficulty</Name>
+		<Version Version="1.2094.0.0">
+			<Offset>0x26C</Offset>
+		</Version>
+		<Version Version="1.2448.0.0">
+			<Offset>0x26C</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>0x26C</Offset>
+		</Version>
+		<Version Version="1.3073.0.0">
+			<Offset>0x28C</Offset>
+		</Version>
+		<Version Version="1.3251.0.0">
+			<Offset>0x28C</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x28C</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x28C</Offset>
+		</Version>
+		<Version Version="1.3495.0.0">
+			<Offset>0x28C</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x28C</Offset>
+		</Version>
+	</Entry>
+	<!-- #endregion Halo 3: ODST-->
+
+	<!-- #region Halo Reach-->
+	<Entry Type="int">
+		<Name>HR_CheckpointData_LevelCode</Name>
+		<Version Version="1.2448.0.0">
+			<Offset>0x1017B</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>0x1017B</Offset>
+		</Version>
+		<Version Version="1.2904.0.0">
+			<Offset>0x1017B</Offset>
+		</Version>
+		<Version Version="1.3073.0.0">
+			<Offset>0x183</Offset>
+		</Version>
+		<Version Version="1.3251.0.0">
+			<Offset>0x183</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x183</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x183</Offset>
+		</Version>
+		<Version Version="1.3495.0.0">
+			<Offset>0x183</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x183</Offset>
+		</Version>
+	</Entry>
+	<Entry Type="int">
+		<Name>HR_CheckpointData_GameTickCount</Name>
+		<Version Version="1.2448.0.0">
+			<Offset>0x10FD54</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>0x10FD54</Offset>
+		</Version>
+		<Version Version="1.2904.0.0">
+			<Offset>0x10FD54</Offset>
+		</Version>
+		<Version Version="1.3073.0.0">
+			<Offset>0xC6770</Offset>
+		</Version>
+		<Version Version="1.3251.0.0">
+			<Offset>0xC8830</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x5C0218</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x5C0218</Offset>
+		</Version>
+		<Version Version="1.3495.0.0">
+			<Offset>0x5C0218</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x5C0218</Offset>
+		</Version>
+		
+	</Entry>
+	<Entry Type="int">
+		<Name>HR_CheckpointData_Difficulty</Name>
+		<Version Version="1.2448.0.0">
+			<Offset>0x10304</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>0x10304</Offset>
+		</Version>
+		<Version Version="1.2904.0.0">
+			<Offset>0x10304</Offset>
+		</Version>
+		<Version Version="1.3073.0.0">
+			<Offset>0x304</Offset>
+		</Version>
+		<Version Version="1.3251.0.0">
+			<Offset>0x304</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x304</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x304</Offset>
+		</Version>
+		<Version Version="1.3495.0.0">
+			<Offset>0x304</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x304</Offset>
+		</Version>
+	</Entry>
+	<!-- #endregion Halo Reach-->
+
+	<!-- #region Halo 4-->
+	<Entry Type="int">
+		<Name>H4_CheckpointData_LevelCode</Name>
+		<Version Version="1.2448.0.0">
+			<Offset>0x1CD77</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>0x1CD77</Offset>
+		</Version>
+		<Version Version="1.2969.0.0">
+			<Offset>0x1CD77</Offset>
+		</Version>
+		<Version Version="1.3073.0.0">
+			<Offset>0x1CD97</Offset>
+		</Version>
+		<Version Version="1.3251.0.0">
+			<Offset>0x1CD97</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x1CD97</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x1CD97</Offset>
+		</Version>
+		<Version Version="1.3495.0.0">
+			<Offset>0x1CD97</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x1CD97</Offset>
+		</Version>
+	</Entry>
+	<Entry Type="int">
+		<Name>H4_CheckpointData_GameTickCount</Name>
+		<Version Version="All">
+			<Offset>0x2E424</Offset>
+		</Version>
+	</Entry>
+	<Entry Type="int">
+		<Name>H4_CheckpointData_Difficulty</Name>
+		<Version Version="1.2448.0.0">
+			<Offset>0x1CF08</Offset>
+		</Version>
+		<Version Version="1.2645.0.0">
+			<Offset>0x1CF08</Offset>
+		</Version>
+		<Version Version="1.2969.0.0">
+			<Offset>0x1CF08</Offset>
+		</Version>
+		<Version Version="1.3073.0.0">
+			<Offset>0x1CF28</Offset>
+		</Version>
+		<Version Version="1.3251.0.0">
+			<Offset>0x1CF28</Offset>
+		</Version>
+		<Version Version="1.3272.0.0">
+			<Offset>0x1CF28</Offset>
+		</Version>
+		<Version Version="1.3385.0.0">
+			<Offset>0x1CF28</Offset>
+		</Version>
+		<Version Version="1.3495.0.0">
+			<Offset>0x1CF28</Offset>
+		</Version>
+		<Version Version="1.3528.0.0">
+			<Offset>0x1CF28</Offset>
+		</Version>
+	</Entry>
+	<!-- #endregion Halo 4-->
+
+	<!-- #region Project Cartographer-->
+	<Entry Type="int">
+		<Name>PC_CheckpointData_LevelCode</Name>
+		<Version Version="All">
+			<Offset>0x17</Offset>
+		</Version>
+	</Entry>
+	<Entry Type="int">
+		<Name>PC_CheckpointData_GameTickCount</Name>
+		<Version Version="All">
+			<Offset>0x29D0</Offset>
+		</Version>
+	</Entry>
+	<Entry Type="int">
+		<Name>PC_CheckpointData_Difficulty</Name>
+		<Version Version="All">
+			<Offset>0x3CA</Offset>
+		</Version>
+	</Entry>
+	<!-- #endregion Project Cartographer-->
+
+
+	<GameProcessEntry Type = "MultilevelPointer" HaloProcessType="ProjectCartographer" HaloGame ="PC" >
+		<Name>ForceCheckpointFlag</Name>
+		<Version Version="All">
+				<Offsets>
+					<Offset>0x482250</Offset>
+				</Offsets>
+			</Version>
+	</GameProcessEntry>
+
+	<GameProcessEntry Type = "MultilevelPointer" HaloProcessType="ProjectCartographer" HaloGame ="PC" >
+		<Name>ForceRevertFlag</Name>
+		<Version Version="All">
+			<Offsets>
+				<Offset>0x48224F</Offset>
+			</Offsets>
+		</Version>
+	</GameProcessEntry>
+
+	<GameProcessEntry Type = "MultilevelPointer" HaloProcessType="ProjectCartographer" HaloGame ="PC" >
+		<Name>DoubleRevertFlag</Name>
+		<Version Version="All">
+			<Offsets>
+				<Offset>0x47A72C</Offset>
+			</Offsets>
+		</Version>
+	</GameProcessEntry>
+
+
+	<GameProcessEntry Type = "MultilevelPointer" HaloProcessType="ProjectCartographer" HaloGame ="PC" >
+		<Name>NaturalCheckpointCode</Name>
+		<Version Version="All">
+			<Offsets>
+				<Offset>0x3955A</Offset>
+			</Offsets>
+		</Version>
+	</GameProcessEntry>
+
+	<GameProcessEntry Type = "MultilevelPointer" HaloProcessType="ProjectCartographer" HaloGame ="PC" >
+		<Name>CheckpointFileHandleA</Name>
+		<Version Version="All">
+			<Offsets>
+				<Offset>0x4C1508</Offset>
+			</Offsets>
+		</Version>
+	</GameProcessEntry>
+
+	<GameProcessEntry Type = "MultilevelPointer" HaloProcessType="ProjectCartographer" HaloGame ="PC" >
+		<Name>CheckpointFileHandleB</Name>
+		<Version Version="All">
+			<Offsets>
+				<Offset>0x4C150C</Offset>
+			</Offsets>
+		</Version>
+	</GameProcessEntry>
+
+	<GameProcessEntry Type = "MultilevelPointer" HaloProcessType="ProjectCartographer" HaloGame ="PC" >
+		<Name>LoadedBSPCheckpointA</Name>
+		<Version Version="All">
+			<Offsets>
+				<Offset>0x47B9E8</Offset>
+			</Offsets>
+		</Version>
+	</GameProcessEntry>
+
+	<GameProcessEntry Type = "MultilevelPointer" HaloProcessType="ProjectCartographer" HaloGame ="PC" >
+		<Name>LoadedBSPCheckpointB</Name>
+		<Version Version="All">
+			<Offsets>
+				<Offset>0x47CCE0</Offset>
+			</Offsets>
+		</Version>
+	</GameProcessEntry>
+
+
+	<GameProcessEntry Type = "MultilevelPointer" HaloProcessType="ProjectCartographer" HaloGame ="PC" >
+		<Name>CheckpointOccupiedSlotA</Name>
+		<Version Version="All">
+			<Offsets>
+				<Offset>0x47A72A</Offset>
+			</Offsets>
+		</Version>
+	</GameProcessEntry>
+
+	<GameProcessEntry Type = "MultilevelPointer" HaloProcessType="ProjectCartographer" HaloGame ="PC" >
+		<Name>CheckpointOccupiedSlotB</Name>
+		<Version Version="All">
+			<Offsets>
+				<Offset>0x47A72B</Offset>
+			</Offsets>
+		</Version>
+	</GameProcessEntry>
+
+	<GameProcessEntry Type = "MultilevelPointer" HaloProcessType="ProjectCartographer" HaloGame ="PC" >
+		<Name>is_host_enum</Name>
+		<Version Version="All">
+			<Offsets>
+				<Offset>0x514648</Offset>
+			</Offsets>
+		</Version>
+	</GameProcessEntry>
+	
+	<GameProcessEntry Type="int" HaloProcessType="ProjectCartographer" HaloGame ="PC">
+		<Name>CheckpointLoadedBSPOffset</Name>
+		<Version Version="All">
+			<Offset>0x12B8</Offset>
+		</Version>
+	</GameProcessEntry>
+
+
+	<GameProcessEntry Type="int" HaloProcessType="ProjectCartographer" HaloGame ="PC">
+		<Name>CheckpointLength</Name>
+		<Version Version="All">
+			<Offset>0x40B000</Offset>
+		</Version>
+	</GameProcessEntry>
+
+	<GameProcessEntry Type="InjectRequirements" HaloProcessType="ProjectCartographer" HaloGame ="PC">
+		<Name>InjectRequirements</Name>
+		<Version Version="All">
+			<singleCheckpoint>true</singleCheckpoint>
+			<!-- It's weird. Cartographer doesn't have a alternating double slot system like the MCC games. 
+			Instead there's one slot always for your main cp, the other always for your backup (double-revert) cp. So we only need to worry about the main one for injecting/dumping
+			-->
+			<preserveLocations>true</preserveLocations>
+			<SHA>false</SHA>
+			<BSP>true</BSP>
+		</Version>
+	</GameProcessEntry>
+
+	<!-- #region preserveLocations-->
+	<GameProcessEntry Type="PreserveLocationArray" HaloProcessType="ProjectCartographer" HaloGame ="PC">
+		<Name>PreserveLocationArray</Name>
+		<Version Version="All">
+			<!--<PreserveLocation>
+				<Offset>0x4B90</Offset>
+				<Length>0x10</Length>
+			</PreserveLocation>-->
+			<!--<PreserveLocation>
+				<Offset>0x4CBA</Offset>
+				<Length>8</Length>
+			</PreserveLocation>-->
+
+			<!-- this one is actually a view angle  <PreserveLocation>
+				<Offset>0x4CD0</Offset>
+				<Length>4</Length>
+			</PreserveLocation>-->
+
+			<!--player array stuff below- not 100% sure on these offsets-->
+			<!--<PreserveLocation>
+				<Offset>0x28E8</Offset>
+				<Length>8</Length>
+			</PreserveLocation>
+			<PreserveLocation>
+				<Offset>0x28F8</Offset>
+				<Length>4</Length>
+			</PreserveLocation>
+			<PreserveLocation>
+				<Offset>0x2938</Offset>
+				<Length>4</Length>
+			</PreserveLocation>-->
+
+			<!--<PreserveLocation>
+				<Offset>0x2B40</Offset>
+				<Length>8</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x2B1C</Offset>
+				<Length>8</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x2B2C</Offset>
+				<Length>8</Length>
+			</PreserveLocation>-->
+
+			<PreserveLocation>
+				<Offset>0x2B20</Offset>
+				<Length>2</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x2B2C</Offset>
+				<Length>8</Length>
+			</PreserveLocation>
+
+			<!--player datum --> 
+			<!--<PreserveLocation>
+				<Offset>0x2B44</Offset>
+				<Length>4</Length>
+			</PreserveLocation>-->
+
+			<!--<PreserveLocation>
+				<Offset>0x2CD8</Offset>
+				<Length>0x40</Length>
+			</PreserveLocation>-->
+
+
+<!--id stuff as 2x8 byte pair-->
+			<PreserveLocation>
+				<Offset>0x508</Offset>
+				<Length>8</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x56E</Offset>
+				<Length>8</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x580</Offset>
+				<Length>8</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x1B30</Offset>
+				<Length>8</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x1B96</Offset>
+				<Length>8</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x1BA8</Offset>
+				<Length>8</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x4B90</Offset>
+				<Length>8</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x4BF6</Offset>
+				<Length>8</Length>
+			</PreserveLocation>
+
+
+			<!--2 byte id-->
+			<!--<PreserveLocation>
+				<Offset>0x586</Offset>
+				<Length>2</Length>
+			</PreserveLocation>
+			<PreserveLocation>
+				<Offset>0x1BAE</Offset>
+				<Length>2</Length>
+			</PreserveLocation>
+			<PreserveLocation>
+				<Offset>0x2B20</Offset>
+				<Length>2</Length>
+			</PreserveLocation>-->
+
+			<PreserveLocation>
+				<Offset>0x140</Offset>
+				<Length>0x10</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x1768</Offset>
+				<Length>0x10</Length>
+			</PreserveLocation>
+
+			<!--actually view angles<PreserveLocation>
+				<Offset>0x5004</Offset>
+				<Length>0x4</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x5064</Offset>
+				<Length>0x4</Length>
+			</PreserveLocation>-->
+
+			<!--<PreserveLocation>
+				<Offset>0x56D0</Offset>
+				<Length>0x8</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x28E9</Offset>
+				<Length>0x1</Length>
+			</PreserveLocation>-->
+
+			<!--pointers-->
+			<PreserveLocation>
+				<Offset>0x1FA52C</Offset>
+				<Length>0x4</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x1FA5AC</Offset>
+				<Length>0x4</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x1FA62C</Offset>
+				<Length>0x4</Length>
+			</PreserveLocation>
+
+			<PreserveLocation>
+				<Offset>0x1FA6AC</Offset>
+				<Length>0x4</Length>
+			</PreserveLocation>
+		</Version>
+	</GameProcessEntry>
+</Root>
