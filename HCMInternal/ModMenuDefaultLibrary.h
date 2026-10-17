@@ -36,7 +36,7 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
   group="name" makes buttons one-at-a-time: running one forgets the others in the group (Become forms use this).
   A reapply button in a group is remembered and run again after deaths, reverts and level loads.
 -->
-<ModMenuLibrary version="11" title="Mod Menu">
+<ModMenuLibrary version="12" title="Mod Menu">
 
   <!-- ================================================================== -->
   <Category id="spartan" name="Spartan" desc="Your body: armour, health, size and movement.">
@@ -224,7 +224,7 @@ R"MML(        <Run>(object_set_velocity {player} 20 0 1.5)</Run>
     </Mod>
 
     <Mod id="possessaim" type="hcm-action" hcm="possessAimed" games="HaloReach" tag="TRUE BODY SWAP" name="Take Over What You're Aiming At"
-         desc="Aim at any creature (a Hunter, an Elite, a Brute, a Grunt, a Marine) and press Activate, or stand right next to one. You become it: its eyes, its legs, its weapons, its strength. Your old body stays standing where you left it." />
+         desc="Aim at any creature (a Hunter, an Elite, a Brute, a Grunt, a Marine, or a body you spawned) and press Activate, or stand right next to one. You become it: its eyes, its legs, its weapons, its strength. Your old body stays standing where you left it." />
 
     <Mod id="possessreturn" type="hcm-action" hcm="possessReturn" games="HaloReach" tag="TRUE BODY SWAP" name="Return to Your Body"
          desc="Leave the creature (it gets its own mind back) and jump back into the body you started in. Dying or reloading a checkpoint also puts you back." />

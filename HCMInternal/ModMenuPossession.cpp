@@ -9,6 +9,7 @@
 #include "IGetMCCVersion.h"
 #include "Datum.h"
 #include "DirPathContainer.h"
+#include "GetObjectHealth.h"
 #include <atomic>
 #include <chrono>
 
@@ -66,6 +67,7 @@ private:
 
 	std::weak_ptr<GameTickEventHook> tickWeak;
 	std::weak_ptr<GetPlayerViewAngle> viewWeak;
+	std::weak_ptr<GetObjectHealth> healthWeak;	// tells an empty body (one you spawned) from a corpse
 
 	std::mutex mMutex;
 	struct Request { uint32_t target; bool returning; std::string label; bool silenceAI = true; };
@@ -107,6 +109,14 @@ private:
 		if (mOriginalBody) return;
 		auto recalled = recalledOriginalBody();
 		if (recalled && *recalled != current && isFreeBody(*recalled)) mOriginalBody = recalled;
+	}
+
+	bool isAlive(uint32_t datum)
+	{
+		auto health = healthWeak.lock();
+		if (!health) return false;
+		try { return health->getObjectHealth(Datum((uint16_t)(datum & 0xFFFF), (uint16_t)(datum >> 16))).value > 0.f; }
+		catch (HCMRuntimeException) { return false; }
 	}
 
 	// an empty body nobody drives: a biped with no player and no AI brain
@@ -287,6 +297,8 @@ public:
 		headerPointer = *ptr->getData<std::shared_ptr<int64_t>>("objectOffsetOffset", game);
 
 		tickWeak = resolveDependentCheat(GameTickEventHook);
+		try { healthWeak = resolveDependentCheat(GetObjectHealth); }
+		catch (HCMInitException ex) { PLOG_ERROR << "possession: no object health, empty bodies can only be entered with BECOME: " << ex.what(); }
 		try { viewWeak = resolveDependentCheat(GetPlayerViewAngle); }
 		catch (HCMInitException ex) { PLOG_ERROR << "possession: no view angle, will pick the nearest creature instead: " << ex.what(); }
 	}
@@ -340,8 +352,9 @@ public:
 			if (datum == current) continue;
 
 			uint32_t actor = kNone, player = kNone;
-			if (!readSafe(object + L.unitActor, actor) || actor == kNone) continue;		// no AI brain: a corpse or a player
-			if (!readSafe(object + L.unitPlayer, player) || player != kNone) continue;
+			if (!readSafe(object + L.unitPlayer, player) || player != kNone) continue;	// someone's driving it
+			if (!readSafe(object + L.unitActor, actor)) continue;
+			if (actor == kNone && !isAlive(datum)) continue;	// no AI brain and no health: a corpse
 			SimpleMath::Vector3 position;
 			if (!readPosition(object, position)) continue;
 
@@ -369,13 +382,18 @@ public:
 		if (best == kNone)
 			return aim ? "Aim right at a creature (Hunter, Elite, Grunt, Marine...) or stand next to one, and try again." : "No creature close enough to take over.";
 
+		// aimed at the body you started in: that's just going back
+		if (mOriginalBody && best == *mOriginalBody) return returnToBody();
+
 		// leaving a body we'd already taken over: give it its brain back first
 		if (mOriginalBody && current != *mOriginalBody)
 			send("(ai_braindead (object_get_ai (player_get 0)) false)");
 
+		uint32_t bestActor = kNone;
+		readSafe(objectAddress(best) + L.unitActor, bestActor);
 		try
 		{
-			queue(Request{ best, false, std::format("You took over that creature ({:.0f} m away). \"Return to Your Body\" takes you back.", bestDistance * 3.048f) });
+			queue(Request{ best, false, std::format("You took over that creature ({:.0f} m away). \"Return to Your Body\" takes you back.", bestDistance * 3.048f), bestActor != kNone });
 		}
 		catch (HCMRuntimeException ex)
 		{

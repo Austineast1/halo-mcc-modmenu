@@ -111,7 +111,21 @@ namespace
 	{
 		auto slash = path.find_last_of("\\/");
 		std::string last(slash == std::string_view::npos ? path : path.substr(slash + 1));
-		return titleCase(last);
+		std::string name = titleCase(last);
+		// "Elite Ai" -> "Elite (AI)", "Spartans" -> "Spartan", "Dmr" -> "DMR"
+		if (name.ends_with(" Ai")) name = name.substr(0, name.size() - 3) + " (AI)";
+		if (name.starts_with("Spartans")) name = "Spartan" + name.substr(8);
+		static const std::pair<const char*, const char*> fixes[] = {
+			{ "Dmr", "DMR" }, { "Smg", "SMG" }, { "Br", "BR" }, { "Odst", "ODST" }, { "Reach Moa", "Moa" }, { "Unsc", "UNSC" },
+		};
+		for (auto& [from, to] : fixes)
+		{
+			std::string f = from;
+			if (name == f) { name = to; break; }
+			if (name.starts_with(f + " ")) { name = std::string(to) + name.substr(f.size()); break; }
+			if (name.ends_with(" " + f)) { name = name.substr(0, name.size() - f.size()) + to; break; }
+		}
+		return name;
 	}
 
 	std::optional<SpawnKind> kindOf(int32_t groupMagic)
