@@ -2151,6 +2151,16 @@ std::string ModMenuGUI::devCommand(const std::string& rawLine)
 			case ModType::Button: runButton(*mod); return std::format("ran {}", id);
 			case ModType::Text: runText(*mod, arg); return std::format("{} '{}'", id, arg);
 			case ModType::HCMToggle: setHcmBool(*mod, arg != "off"); return std::format("{} {}", id, arg != "off" ? "on" : "off");
+			case ModType::HCMSlider:
+			{
+				auto setting = hcmDouble(mod->hcmKey);
+				if (!setting) return std::format("unknown HCM slider {}", mod->hcmKey);
+				float v = std::clamp(arg.empty() ? mod->maxValue : std::stof(arg), mod->minValue, mod->maxValue);
+				setting->GetValueDisplay() = (double)v;
+				setting->UpdateValueWithInput();
+				runtime(*mod).value = v;
+				return std::format("{} = {}", id, ModMenuText::formatNumber(v));
+			}
 			case ModType::HCMAction:
 				if (mod->hcmKey.starts_with("possess")) return mCustomAction ? mCustomAction(mod->hcmKey) : "possession unavailable";
 				if (auto ev = hcmAction(mod->hcmKey)) { ev->operator()(); return std::format("fired {}", mod->hcmKey); }
