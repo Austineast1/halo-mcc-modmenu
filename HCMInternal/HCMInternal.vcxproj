@@ -240,6 +240,10 @@ IF EXIST "C:\Program Files\LockHunter\LockHunter.exe"  (
     <ClInclude Include="CheckpointDumpNameDialog.h" />
     <ClInclude Include="CommandConsoleGUI.h" />
     <ClInclude Include="CommandConsoleManager.h" />
+    <ClInclude Include="ModMenuDefaultLibrary.h" />
+    <ClInclude Include="ModMenuGUI.h" />
+    <ClInclude Include="ModMenuLibrary.h" />
+    <ClInclude Include="ModMenuManager.h" />
     <ClInclude Include="CustomErrors.h" />
     <ClInclude Include="DirectXRenderEvent.h" />
     <ClInclude Include="DisableBarriers.h" />
@@ -569,6 +573,9 @@ IF EXIST "C:\Program Files\LockHunter\LockHunter.exe"  (
     <ClCompile Include="ChangeOOBBackground.cpp" />
     <ClCompile Include="CommandConsoleGUI.cpp" />
     <ClCompile Include="CommandConsoleManager.cpp" />
+    <ClCompile Include="ModMenuGUI.cpp" />
+    <ClCompile Include="ModMenuLibrary.cpp" />
+    <ClCompile Include="ModMenuManager.cpp" />
     <ClCompile Include="DisableBarriers.cpp" />
     <ClCompile Include="DisableFog.cpp" />
     <ClCompile Include="EditPlayerViewAngleID.cpp" />

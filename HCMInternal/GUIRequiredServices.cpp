@@ -453,6 +453,10 @@ const std::map <GUIElementEnum, std::vector<OptionalCheatEnum>> GUIRequiredServi
 {OptionalCheatEnum::SkullToggler}
 		},
 
+	{ GUIElementEnum::modMenuGUI,
+{OptionalCheatEnum::ModMenuManager}
+	},
+
 	{ GUIElementEnum::consoleCommandGUI,
 {OptionalCheatEnum::CommandConsoleManager}
 	},

@@ -23,6 +23,7 @@
 #include "GetObjectAddress.h"
 #include "AIFreeze.h"
 #include "CommandConsoleManager.h"
+#include "ModMenuManager.h"
 #include "GetCurrentDifficulty.h"
 #include "IgnoreCheckpointChecksum.h"
 #include "AdvanceTicks.h"

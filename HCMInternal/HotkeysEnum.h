@@ -61,7 +61,8 @@ abilityMeterToggleHotkey,\
 sensResetCountHotkey,\
 sensDriftOverlayToggleHotkey,\
 toggleViewAngleLine3D,\
-shieldInputPrinterToggleHotkey
+shieldInputPrinterToggleHotkey,\
+modMenuHotkey
 
 
 

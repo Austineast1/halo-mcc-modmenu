@@ -92,6 +92,10 @@ private:
 		mSettings->shieldInputPrinterHotkeyEvent,
 		vsk{}),
 
+		initEventOnPressHotkey_ignoreDisabler(modMenuHotkey,
+		mSettings->modMenuHotkeyEvent,
+		vsk{{ ImGuiKey_Insert }}),
+
 		initEventOnPressHotkey(toggleGUI,
 		mSettings->toggleGUIHotkeyEvent,
 		vsk{{ ImGuiKey_GraveAccent }}),

@@ -79,6 +79,7 @@ public:
 	std::shared_ptr<ActionEvent> dumpCoreEvent = std::make_shared<ActionEvent>();
 	std::shared_ptr<ActionEvent> forceMissionRestartEvent = std::make_shared<ActionEvent>();
 	std::shared_ptr<ActionEvent> commandConsoleHotkeyEvent = std::make_shared<ActionEvent>();
+	std::shared_ptr<ActionEvent> modMenuHotkeyEvent = std::make_shared<ActionEvent>();
 	std::shared_ptr<ActionEvent> commandConsoleExecuteBufferEvent = std::make_shared<ActionEvent>();
 	std::shared_ptr<ActionEvent> getObjectAddressEvent = std::make_shared<ActionEvent>();
 	std::shared_ptr<ActionEvent> getTagAddressEvent = std::make_shared<ActionEvent>();

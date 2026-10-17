@@ -1,0 +1,113 @@
+name: Build HCM Mod Menu
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # vcpkg release whose ports match what HCM was written against (imgui 1.91.x, pre-1.92 font API)
+  VCPKG_TAG: 2025.06.13
+  VCPKG_ROOT: C:\vcpkg-pinned
+  VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}\.vcpkg-cache,readwrite
+  VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\.vcpkg-cache
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 150
+
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Restore vcpkg binary cache
+        id: vcpkgcache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}\.vcpkg-cache
+          key: vcpkg-${{ env.VCPKG_TAG }}-${{ hashFiles('HCMInternal/vcpkg.json', 'HCMInterproc/vcpkg.json', 'HCMSpeedhack/vcpkg.json') }}
+          restore-keys: vcpkg-${{ env.VCPKG_TAG }}-
+
+      - name: Set up pinned vcpkg
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}\.vcpkg-cache" | Out-Null
+          git clone --depth 1 --branch $env:VCPKG_TAG https://github.com/microsoft/vcpkg $env:VCPKG_ROOT
+          & "$env:VCPKG_ROOT\bootstrap-vcpkg.bat" -disableMetrics
+          & "$env:VCPKG_ROOT\vcpkg.exe" integrate install
+
+      - name: Set up .NET 7 targeting
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            7.0.x
+            8.0.x
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Regenerate embedded mod library
+        shell: pwsh
+        run: python tools/embed_modmenu_library.py
+
+      - name: Build HCM + Mod Menu (Release x64)
+        shell: pwsh
+        run: |
+          msbuild HaloCheckpointManager.sln -restore -m `
+            /t:HCMExternal `
+            /p:Configuration=Release /p:Platform=x64 `
+            /p:VcpkgRoot="$env:VCPKG_ROOT\" `
+            /p:VcpkgEnableManifest=true `
+            /v:minimal /nologo
+
+      - name: Save vcpkg binary cache (even if the build failed)
+        if: always() && steps.vcpkgcache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}\.vcpkg-cache
+          key: vcpkg-${{ env.VCPKG_TAG }}-${{ hashFiles('HCMInternal/vcpkg.json', 'HCMInterproc/vcpkg.json', 'HCMSpeedhack/vcpkg.json') }}
+
+      - name: Package
+        id: package
+        shell: pwsh
+        run: |
+          $bin = "HCMExternal\bin\x64\Release\net7.0-windows"
+          if (-not (Test-Path "$bin\HCMInternal.dll")) { throw "HCMInternal.dll missing from $bin" }
+          $out = "package\HCM-ModMenu"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          Copy-Item "$bin\*" $out -Recurse -Exclude *.pdb
+          Copy-Item "HCMInternal\ModMenuLibrary.xml" $out -Force
+          Copy-Item "HCMInternal\InternalPointerData.xml" $out -Force
+          Copy-Item "MODMENU-README.txt" "$out\MOD MENU - READ ME.txt" -Force
+          Copy-Item "LICENSE" "$out\LICENSE.txt" -Force
+          $zip = "HCM-ModMenu.zip"
+          Compress-Archive -Path "$out\*" -DestinationPath $zip -Force
+          "zip=$zip" >> $env:GITHUB_OUTPUT
+          Get-ChildItem $out | Select-Object Name, Length | Format-Table -AutoSize
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HCM-ModMenu
+          path: package/HCM-ModMenu
+
+      - name: Publish rolling "latest" release
+        if: github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag 2>$null
+          $notes = "Automatic build of commit ${{ github.sha }}. Download HCM-ModMenu.zip, unzip it anywhere, and run HaloCheckpointManager.exe. Full steps are in 'MOD MENU - READ ME.txt' inside the zip."
+          gh release create latest "${{ steps.package.outputs.zip }}" --title "HCM Mod Menu (latest build)" --notes $notes --target ${{ github.sha }}

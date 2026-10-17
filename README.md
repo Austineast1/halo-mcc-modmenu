@@ -1,3 +1,20 @@
+# HCM Mod Menu
+*An in-game mod menu for Halo: The Master Chief Collection campaign, built on HaloCheckpointManager.*
+
+**Download:** [latest build](../../releases/tag/latest) (`HCM-ModMenu.zip`). Unzip it, launch MCC with *Anti-Cheat Disabled*, run `HaloCheckpointManager.exe`, press **Insert** in a mission.
+
+What this fork adds:
+* **Mod Menu window** (Insert): 60+ mods in 10 tabs for Halo CE, 2, 3, ODST, Reach and 4, with search, per-game support chips, and a live log of every engine command and reply.
+* **Body Swap** in Halo CE (the engine's hidden bump-possession cheat): walk into a Hunter and become it.
+* **Live skulls** tab showing the real on/off state of every skull in the current game.
+* **Auto re-apply**: gravity, size, camo, allegiances and other persistent mods come back after reverts and level loads.
+* **Editable library**: every mod lives in `ModMenuLibrary.xml` next to the exe. Add your own and press *Reload library*, no rebuild.
+* Builds automatically on GitHub Actions (`.github/workflows/build.yml`).
+
+Mods are HaloScript commands sent through MCC's own engine command interface, so they don't depend on per-patch memory offsets. HCM's own cheats (invulnerability, speedhack, AI freeze, free camera and more) are bridged into the same menu.
+
+---
+
 # HaloCheckpointManager
 *A practice tool for [Halo: The Master Chief Collection](https://store.steampowered.com/app/976730/Halo_The_Master_Chief_Collection/)*
 

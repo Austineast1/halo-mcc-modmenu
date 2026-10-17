@@ -405,6 +405,7 @@ private:
 				return std::optional<std::shared_ptr<IGUIElement>>(std::make_shared<GUIHeading>
 					(game, ToolTipCollection("Stuff like invulnerabiltiy, speedhack, teleport, ai disable etc"), "Useful Cheats", headerChildElements
 						{
+							createNestedElement(GUIElementEnum::modMenuGUI),
 							createNestedElement(GUIElementEnum::speedhackGUI),
 							createNestedElement(GUIElementEnum::invulnGUI),
 							createNestedElement(GUIElementEnum::invulnerabilitySettingsSubheading),
@@ -692,6 +693,11 @@ private:
 						(game, ToolTipCollection("Directly set the players health and shields"), std::nullopt,
 							"Copy Position to Clipboard",
 							settings->playerPositionToClipboardEvent));
+
+				case GUIElementEnum::modMenuGUI:
+					return std::optional<std::shared_ptr<IGUIElement>>(std::make_shared<GUISimpleButton<true>>
+						(game, ToolTipCollection("Opens the in-game Mod Menu: dozens of organised mods for every game, live skulls, and Body Swap in Halo CE. Mods live in ModMenuLibrary.xml next to HCM."), RebindableHotkeyEnum::modMenuHotkey,
+							"Mod Menu", settings->modMenuHotkeyEvent));
 
 				case GUIElementEnum::consoleCommandGUI:
 					return std::optional<std::shared_ptr<IGUIElement>>(std::make_shared<GUISimpleButton<true>>
