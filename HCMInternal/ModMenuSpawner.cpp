@@ -112,6 +112,26 @@ namespace
 		return std::nullopt;
 	}
 
+	// Leave out what isn't fun or useful to spawn on its own: first-person arms, test content, debris pieces,
+	// cinematic heads, vehicle parts and weapons that only exist bolted to a vehicle.
+	bool worthListing(SpawnKind kind, const std::string& p) // p is the lower-case tag path
+	{
+		for (auto* junk : { "fp_", "first_person", "\\fp\\", "test", "garbage", "_broken", "\\heads\\", "\\attachments\\", "\\projectiles\\", "\\null\\" })
+			if (p.contains(junk)) return false;
+		bool onAVehicle = p.starts_with("objects\\vehicles\\");
+		bool standaloneTurret = p.contains("vehicles\\human\\turrets\\") || p.contains("vehicles\\covenant\\turrets\\");
+		switch (kind)
+		{
+		case SpawnKind::Weapon:
+			if (p.ends_with("unarmed") || p.contains("horn") || p.contains("sheath")) return false;
+			return !onAVehicle || standaloneTurret || p.substr(p.find_last_of('\\') + 1).contains("turret");
+		case SpawnKind::Vehicle:
+			return !p.contains("\\turrets\\") || standaloneTurret;
+		default:
+			return true;
+		}
+	}
+
 	// how far in front of the player each kind appears (world units; 1 wu is about 3 m), and how high
 	float spawnDistance(SpawnKind k) { switch (k) { case SpawnKind::Vehicle: return 1.8f; case SpawnKind::Character: return 0.8f; case SpawnKind::Prop: return 0.7f; default: return 0.45f; } }
 	float spawnHeight(SpawnKind k) { switch (k) { case SpawnKind::Vehicle: return 0.35f; case SpawnKind::Character: return 0.15f; default: return 0.25f; } }
@@ -237,25 +257,33 @@ private:
 			}
 			catch (HCMRuntimeException) {}
 			if (path.empty()) continue;
-			// skip first-person arms, HUD-only and test content
 			std::string lowered = path;
 			std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](unsigned char c) { return (char)std::tolower(c); });
-			if (lowered.contains("fp_") || lowered.contains("first_person") || lowered.contains("\\fp\\") || lowered.contains("test")) continue;
+			if (!worthListing(*kind, lowered)) continue;
 
 			ModMenuSpawnEntry entry{ (uint32_t)tag.tagDatum, *kind, prettyName(path), path };
 			nameCounts[entry.name]++;
 			mCatalogue.push_back(std::move(entry));
 		}
-		// two tags with the same short name: add the folder so they're told apart
+		// two tags with the same short name: add the nearest folder that tells them apart
 		for (auto& e : mCatalogue)
 		{
 			if (nameCounts[e.name] < 2) continue;
 			std::string_view p = e.path;
-			auto last = p.find_last_of("\\/");
-			if (last == std::string_view::npos) continue;
-			auto prev = p.substr(0, last).find_last_of("\\/");
-			auto folder = p.substr(prev == std::string_view::npos ? 0 : prev + 1, last - (prev == std::string_view::npos ? 0 : prev + 1));
-			if (titleCase(std::string(folder)) != e.name) e.name += " (" + titleCase(std::string(folder)) + ")";
+			auto end = p.find_last_of("\\/");
+			while (end != std::string_view::npos && end > 0)
+			{
+				auto start = p.substr(0, end).find_last_of("\\/");
+				size_t from = start == std::string_view::npos ? 0 : start + 1;
+				auto folder = titleCase(std::string(p.substr(from, end - from)));
+				if (folder != e.name && folder != "Weapon" && folder != "Weapons")
+				{
+					e.name += " (" + folder + ")";
+					break;
+				}
+				if (start == std::string_view::npos) break;
+				end = start;
+			}
 		}
 		std::sort(mCatalogue.begin(), mCatalogue.end(), [](const auto& a, const auto& b)
 			{ return a.kind != b.kind ? a.kind < b.kind : a.name < b.name; });

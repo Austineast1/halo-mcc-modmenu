@@ -21,18 +21,19 @@ namespace
 		int64_t unitFieldInPlayer;		// offset of the unit datum inside the player record (= last offset of the playerDatum pointer)
 		int64_t unitPlayer;				// unit -> controlling player datum
 		int64_t unitActor;				// unit -> AI actor datum
-		int64_t objectPosition;			// object -> world position (3 floats)
+		int64_t objectPosition;			// object -> bounding-sphere centre, always in world space (the "position" field is
+										// relative to the parent while seated in a vehicle)
 		std::array<int64_t, 2> mappingSlots;	// per-local-user "which unit" slots, relative to the player record
 		int64_t mappingPlayerBefore;	// each slot has the player's datum this many bytes before it
 		uint8_t bipedType;
 		int maxObjects;
-		float eyeHeight;				// world units above the object's origin
+		float eyeHeight;				// world units from that centre up to the eyes
 	};
 
 	std::optional<Layout> layoutFor(GameState game, std::string_view mccVersion)
 	{
 		if (game.operator GameState::Value() == GameState::Value::HaloReach && mccVersion == "1.3528.0.0")
-			return Layout{ 0x28, 0x1CC, 0x1BC, 0x44, { 0x4A2C, 0x4AE0 }, 0x10, 0, 2048, 0.25f };
+			return Layout{ 0x28, 0x1CC, 0x1BC, 0x20, { 0x4A2C, 0x4AE0 }, 0x10, 0, 2048, 0.2f };
 		return std::nullopt;
 	}
 
