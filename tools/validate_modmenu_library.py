@@ -31,6 +31,10 @@ TEAMS = {
 ALL_TEAMS = set().union(*TEAMS.values())
 DIFFICULTIES = {"easy", "normal", "hard", "impossible"}
 ENUM_VALUES = {g: t | DIFFICULTIES for g, t in TEAMS.items()}
+# Functions that exist in the docs but crash the retail game. Never ship these.
+KNOWN_CRASHERS = {
+    "object_set_shadowless": "crashed Halo: Reach (null pointer inside haloreach.dll) when called on the player, Oct 2026",
+}
 SPECIAL_FORMS = {"begin", "begin_random", "if", "cond", "set", "and", "or", "+", "-", "*", "/", "=", "!=", ">", "<", ">=", "<=",
                  "min", "max", "sleep", "sleep_until", "wake", "inspect", "unit", "not", "print", "list_get", "players", "player_get"}
 
@@ -101,6 +105,8 @@ def check_expr(expr, game, docs, problems, where):
         elif args[0] not in globs: problems.append(f"{where}: {game} has no global '{args[0]}'")
         elif args[1] in ("true", "false") and globs[args[0]] != "boolean":
             problems.append(f"{where}: global '{args[0]}' is {globs[args[0]]}, not boolean")
+    elif head in KNOWN_CRASHERS:
+        problems.append(f"{where}: '{head}' is banned: {KNOWN_CRASHERS[head]}")
     elif head in SPECIAL_FORMS:
         pass
     elif head not in funcs:

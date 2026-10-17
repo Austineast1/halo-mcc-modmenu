@@ -15,6 +15,8 @@
 #include "RevertEventHook.h"
 #include "GameEngineFunctions.h"
 #include "DirPathContainer.h"
+#include "GameTickEventHook.h"
+#include "GetPlayerDatum.h"
 
 class ModMenuManager::ModMenuManagerImpl
 {
@@ -32,11 +34,21 @@ private:
 	std::weak_ptr<IMCCStateHook> mccStateHookWeak;
 	std::weak_ptr<SettingsStateAndEvents> settingsWeak;
 	std::shared_ptr<RuntimeExceptionHandler> runtimeExceptions;
+	std::weak_ptr<IMessagesGUI> messagesWeak; // HCM's on-screen messages, used to say mods were restored
 
 	// optional engine events
 	std::optional<std::shared_ptr<ObservedEvent<HSOutputEvent>>> haloScriptOutputEvent;
 	std::optional<std::shared_ptr<ObservedEvent<ActionEvent>>> revertEvent;
 	std::unique_ptr<ScopedCallback<ActionEvent>> revertCallback; // only held while a reapply mod is active
+
+	// Death / revert detection that works in every game: the revert hook above only has pointer data for Halo CE,
+	// but the game tick counter and the player's unit datum exist for all six. A tick that goes backwards means a
+	// checkpoint revert (which is also what dying in solo campaign does) or a restart; a new player unit means a respawn.
+	std::weak_ptr<GameTickEventHook> tickSourceWeak;
+	std::weak_ptr<GetPlayerDatum> playerDatumWeak;
+	std::optional<uint32_t> lastTick;
+	std::optional<Datum> lastPlayerUnit;
+	int64_t nextResetPollMs = 0;
 
 	// requests held while the menu is open
 	struct OpenRequests
@@ -138,6 +150,7 @@ private:
 			return;
 		}
 		// our game loaded (or reloaded) a level: give the player a few seconds to spawn, then re-apply
+		if (gui) gui->onLevelLoaded();
 		reapplyReason = 1;
 		reapplyAtMs = nowMs() + 3000;
 	}
@@ -146,6 +159,55 @@ private:
 	{
 		reapplyReason = 0;
 		reapplyAtMs = nowMs() + 800;
+	}
+
+	void scheduleReapply(int reason, int64_t delayMs)
+	{
+		reapplyReason = reason;
+		reapplyAtMs = nowMs() + delayMs;
+	}
+
+	// polled a few times a second on the render thread while our game is being played
+	void pollForResets(bool ourGamePlaying)
+	{
+		// keep the last values while not playing (loading screens, menus) so a revert or restart that passes
+		// through a loading screen is still seen as the tick going backwards
+		if (!ourGamePlaying) return;
+		auto now = nowMs();
+		if (now < nextResetPollMs) return;
+		nextResetPollMs = now + 200;
+		bool wanted = gui->autoReapply() && gui->hasActiveReapplyMods();
+
+		if (auto tickSource = tickSourceWeak.lock())
+		{
+			try
+			{
+				uint32_t tick = tickSource->getCurrentGameTick();
+				if (lastTick && tick + 2 < *lastTick && wanted)
+				{
+					// near zero means the mission restarted or a new level began, so give the player time to spawn
+					bool freshStart = tick < 90;
+					PLOG_DEBUG << "ModMenu: game tick went back from " << *lastTick << " to " << tick << ", re-applying mods";
+					scheduleReapply(freshStart ? 1 : 0, freshStart ? 3000 : 800);
+				}
+				lastTick = tick;
+			}
+			catch (HCMRuntimeException) { lastTick.reset(); }
+		}
+
+		if (auto playerDatum = playerDatumWeak.lock())
+		{
+			Datum unit = playerDatum->getPlayerDatum();
+			if (!unit.isNull())
+			{
+				if (lastPlayerUnit && unit != *lastPlayerUnit && wanted && reapplyAtMs.load() == 0)
+				{
+					PLOG_DEBUG << "ModMenu: player unit changed (" << *lastPlayerUnit << " -> " << unit << "), re-applying mods";
+					scheduleReapply(2, 600);
+				}
+				lastPlayerUnit = unit;
+			}
+		}
 	}
 
 	void updateRevertSubscription()
@@ -173,13 +235,25 @@ private:
 			if (closeAsap.exchange(false) || (openRequests && !ourGamePlaying))
 				close();
 
+			pollForResets(ourGamePlaying);
+
 			// pending re-apply after revert / level load
 			auto due = reapplyAtMs.load();
 			if (due != 0 && nowMs() >= due)
 			{
 				reapplyAtMs = 0;
 				if (ourGamePlaying && gui->autoReapply())
-					gui->reapplyActive(reapplyReason.load() == 0 ? "a checkpoint revert" : "a level load");
+				{
+					int reason = reapplyReason.load();
+					int count = gui->reapplyActive(reason == 0 ? "a death or checkpoint" : reason == 1 ? "a level load" : "a respawn");
+					if (count > 0)
+					{
+						auto text = std::format("Mod Menu: restored {} mod{} after {}", count, count == 1 ? "" : "s",
+							reason == 0 ? "that checkpoint" : reason == 1 ? "loading in" : "respawning");
+						gui->notify(text);
+						if (auto messages = messagesWeak.lock()) messages->addMessage(text);
+					}
+				}
 			}
 
 			if (!ourGamePlaying) return;
@@ -213,7 +287,8 @@ public:
 		: mGame(game),
 		mccStateHookWeak(dicon.Resolve<IMCCStateHook>()),
 		settingsWeak(dicon.Resolve<SettingsStateAndEvents>()),
-		runtimeExceptions(dicon.Resolve<RuntimeExceptionHandler>())
+		runtimeExceptions(dicon.Resolve<RuntimeExceptionHandler>()),
+		messagesWeak(dicon.Resolve<IMessagesGUI>())
 	{
 		auto engine = resolveDependentCheat(GameEngineFunctions); // throws HCMInitException if the engine command interface isn't available
 		auto dirPath = dicon.Resolve<DirPathContainer>().lock()->dirPath;
@@ -237,12 +312,30 @@ public:
 
 		try
 		{
+			tickSourceWeak = resolveDependentCheat(GameTickEventHook);
+		}
+		catch (HCMInitException ex)
+		{
+			PLOG_ERROR << "ModMenu: no game tick for " << game.toString() << ", deaths and reverts won't be detected. Error: " << ex.what();
+		}
+
+		try
+		{
+			playerDatumWeak = resolveDependentCheat(GetPlayerDatum);
+		}
+		catch (HCMInitException ex)
+		{
+			PLOG_ERROR << "ModMenu: no player datum for " << game.toString() << ", respawns won't be detected. Error: " << ex.what();
+		}
+
+		try
+		{
 			auto revertEventProvider = resolveDependentCheat(RevertEventHook);
 			revertEvent = revertEventProvider->getRevertEvent();
 		}
 		catch (HCMInitException ex)
 		{
-			PLOG_ERROR << "ModMenu: no revert event for " << game.toString() << ", mods won't auto re-apply after reverts. Error: " << ex.what();
+			PLOG_INFO << "ModMenu: no revert hook for " << game.toString() << " (fine, the game tick is used instead): " << ex.what();
 		}
 
 		auto settings = settingsWeak.lock();

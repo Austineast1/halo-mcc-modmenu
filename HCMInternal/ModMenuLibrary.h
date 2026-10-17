@@ -51,6 +51,7 @@ struct ModDef
 	float step = 0.1f;
 	float defaultValue = 0.f;
 	bool reapply = false;
+	std::string group;		// buttons sharing a group are one-at-a-time (e.g. Become forms); the last one run is remembered
 	std::vector<ModChoiceOption> options;
 	std::map<GameState::Value, ModCommands> perGame;
 	std::set<GameState::Value> games; // every game this mod appears in

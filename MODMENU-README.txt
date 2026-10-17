@@ -32,7 +32,8 @@ Inside the Mod Menu:
 - SETTINGS (bottom right): re-apply mods after death, pause while the menu
   is open, show the engine log (every command sent to MCC), and text size.
 - Mods that are on turn themselves back on after you die, revert a
-  checkpoint, or load the next level.
+  checkpoint, respawn in co-op, or load the next level. A short note in the
+  corner of the screen tells you when that happens.
 
 
 BECOME
@@ -46,15 +47,23 @@ Reach and Halo 4: "Join the Covenant" (and "Join the Brutes" in Reach) puts
 Every game: one-press transformations (Hunter, Elite, Grunt, Brute, Drone,
           Engineer, Guta, Flood, Sentinel, Monitor, Prophet, Knight, Titan and
           more) that change your size, toughness, abilities and allies.
-          "Back to Spartan" undoes them.
+          Your form stays on after you die until you pick another one or
+          press "Back to Spartan".
 Tip: HUD and Camera > "Hide First-Person Weapon" makes it feel even more real.
+
+
+STEAM WORKSHOP MODS
+-------------------
+The menu also works in Workshop campaign mods (they need "Anti-Cheat
+Disabled" too). Mods that change creatures, teams or scripts can make some
+Become forms and team switches act differently.
 
 
 ADD YOUR OWN MODS
 -----------------
 ModMenuLibrary.xml in this folder holds every mod. Open it in Notepad,
-copy an existing <Mod> block, change it, save, then press RELOAD LIBRARY in
-the menu. No rebuild needed. The top of the file explains every option.
+copy an existing <Mod> block, change it, save, then press RELOAD (bottom right of
+the menu). No rebuild needed. The top of the file explains every option.
 
 
 CO-OP

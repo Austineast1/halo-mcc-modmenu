@@ -493,11 +493,62 @@ void ModMenuGUI::onHaloScriptOutput(const std::string& outputString, const HSOut
 
 // ------------------------------------------------------------------ execution
 
+// Splits "(ai_allegiance a b)" / "(ai_allegiance_remove a b)" into its parts. Returns false for anything else.
+static bool parseAllegiance(const std::string& command, bool& isRemove, std::pair<std::string, std::string>& teams)
+{
+	std::istringstream in(command);
+	std::string head, a, b;
+	if (!(in >> head >> a >> b)) return false;
+	if (head == "(ai_allegiance") isRemove = false;
+	else if (head == "(ai_allegiance_remove") isRemove = true;
+	else return false;
+	if (!b.empty() && b.back() == ')') b.pop_back();
+	if (a.empty() || b.empty()) return false;
+	teams = a < b ? std::make_pair(a, b) : std::make_pair(b, a);
+	return true;
+}
+
 void ModMenuGUI::sendLines(const std::vector<std::string>& lines, const std::string& value)
 {
+	if (mForgetAlliances.exchange(false)) { mAlliancesWeMade.clear(); mPlayerTeamChanged = false; }
 	for (auto& line : lines)
 	{
 		auto command = ModMenuText::expand(line, mGame, value);
+
+		// Only ever break an alliance this menu made. Removing one the game or a Workshop mod set up
+		// (or one that doesn't exist) is asking for trouble.
+		bool isRemove = false;
+		std::pair<std::string, std::string> teams;
+		if (parseAllegiance(command, isRemove, teams))
+		{
+			if (isRemove)
+			{
+				if (!mAlliancesWeMade.contains(teams))
+				{
+					addLog(std::format("skipped {} (the menu didn't make that alliance)", command), LogLine::Kind::Info);
+					continue;
+				}
+				mAlliancesWeMade.erase(teams);
+			}
+			else
+			{
+				mAlliancesWeMade.insert(teams);
+			}
+		}
+
+		// Same idea for the player's own team: only put it back to "player" if this menu moved it.
+		// In mods where you start on another team (playing as an Elite, say) the reset would turn your allies on you.
+		if (command.starts_with("(object_set_allegiance "))
+		{
+			bool backToPlayer = command.ends_with(" player)");
+			if (backToPlayer && !mPlayerTeamChanged)
+			{
+				addLog(std::format("skipped {} (the menu didn't change your team)", command), LogLine::Kind::Info);
+				continue;
+			}
+			mPlayerTeamChanged = !backToPlayer;
+		}
+
 		addLog(command, LogLine::Kind::Command);
 		mCommandsSent++;
 		try
@@ -575,6 +626,16 @@ void ModMenuGUI::runButton(const ModDef& mod)
 	auto cmds = mod.commandsFor(mGame);
 	if (!cmds) return;
 	sendLines(cmds->run, "");
+
+	// one-at-a-time groups (Become forms): the newest one replaces the rest, and is remembered
+	// so it can be put back after a death or checkpoint revert if it's marked reapply
+	if (!mod.group.empty())
+	{
+		for (auto& cat : mLibrary.categories)
+			for (auto& other : cat.mods)
+				if (other.group == mod.group) runtime(other).on = false;
+	}
+	if (mod.reapply) runtime(mod).on = true;
 }
 
 void ModMenuGUI::runText(const ModDef& mod, const std::string& text)
@@ -607,6 +668,9 @@ int ModMenuGUI::reapplyActive(const std::string& reason)
 			case ModType::Choice:
 				if (rt.applied) { sendLines(cmds->apply, mod.options[rt.option].value); count++; }
 				break;
+			case ModType::Button:
+				if (rt.on) { sendLines(cmds->run, ""); count++; }
+				break;
 			default:
 				break;
 			}
@@ -626,6 +690,23 @@ bool ModMenuGUI::hasActiveReapplyMods()
 
 void ModMenuGUI::turnEverythingOff()
 {
+	// remembered one-at-a-time forms: forget them and run their group's reset button once (e.g. Back to Spartan)
+	std::set<std::string> groupsToReset;
+	for (auto& cat : mLibrary.categories)
+		for (auto& mod : cat.mods)
+			if (mod.type == ModType::Button && mod.supports(mGame) && runtime(mod).on)
+			{
+				runtime(mod).on = false;
+				if (!mod.group.empty()) groupsToReset.insert(mod.group);
+			}
+	for (auto& cat : mLibrary.categories)
+		for (auto& mod : cat.mods)
+			if (mod.type == ModType::Button && !mod.reapply && groupsToReset.contains(mod.group) && mod.supports(mGame))
+			{
+				if (auto cmds = mod.commandsFor(mGame)) sendLines(cmds->run, "");
+				groupsToReset.erase(mod.group);
+			}
+
 	for (auto& cat : mLibrary.categories)
 	{
 		for (auto& mod : cat.mods)
@@ -776,6 +857,7 @@ bool ModMenuGUI::isActive(const ModDef& mod)
 	case ModType::Slider: return rt.applied;
 	case ModType::Choice: return rt.applied;
 	case ModType::HCMToggle: return hcmBoolValue(mod);
+	case ModType::Button: return mod.reapply && rt.on; // a remembered Become form
 	default: return false;
 	}
 }
@@ -1157,13 +1239,15 @@ void ModMenuGUI::renderMod(const ModDef& mod)
 	default:
 		break;
 	}
-	const char* actionLabel = "ACTIVATE";
+	bool formOn = mod.type == ModType::Button && mod.reapply && rt.on;
+	const char* actionLabel = formOn ? "ACTIVE" : "ACTIVATE";
+	const Btn actionStyle = formOn ? Btn::Primary : Btn::Outline;
 
 	Card card = beginCard(S);
 	float innerW = card.innerWidth();
 	ImVec2 controlSize(0.f, 0.f);
 	if (ctl == Ctl::Switch) controlSize = switchSize(S);
-	else if (ctl == Ctl::Action) controlSize = ImVec2(buttonWidth(actionLabel, Btn::Outline, B, S), buttonHeight(B, S));
+	else if (ctl == Ctl::Action) controlSize = ImVec2(buttonWidth(actionLabel, actionStyle, B, S), buttonHeight(B, S));
 	float textW = std::max(140.f * S, innerW - controlSize.x - (ctl == Ctl::None ? 0.f : 32.f * S));
 
 	// left: name, tag, description
@@ -1197,7 +1281,7 @@ void ModMenuGUI::renderMod(const ModDef& mod)
 				toast(std::format("{} {}", mod.name, want ? "on" : "off"));
 			}
 		}
-		else if (luxButton(actionLabel, Btn::Outline, B, S))
+		else if (luxButton(actionLabel, actionStyle, B, S))
 		{
 			if (mod.type == ModType::Toggle) applyToggle(mod, true);
 			else if (mod.type == ModType::Button) runButton(mod);

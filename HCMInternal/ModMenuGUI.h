@@ -62,6 +62,11 @@ private:
 	bool mScrollLogToBottom = false;
 	int mCommandsSent = 0;
 
+	// alliances (ai_allegiance a b) this menu created; only these are ever removed again
+	std::set<std::pair<std::string, std::string>> mAlliancesWeMade;
+	bool mPlayerTeamChanged = false; // the menu moved the player to another team (object_set_allegiance)
+	std::atomic_bool mForgetAlliances = false; // set on level load (a new level starts with the map's own alliances)
+
 	// one-line confirmation shown in the footer ("Hunter Mode activated")
 	std::string mToastText;
 	bool mToastIsError = false;
@@ -121,6 +126,12 @@ public:
 	// Re-sends every active mod marked reapply="true". Called by ModMenuManager after reverts and level loads.
 	int reapplyActive(const std::string& reason);
 	bool hasActiveReapplyMods();
+
+	// a new level was loaded: alliances made on the previous one no longer exist
+	void onLevelLoaded() { mForgetAlliances = true; }
+
+	// shows a line in the menu's footer next time it's open
+	void notify(const std::string& text) { toast(text); }
 
 	bool pauseWhileOpen() const { return mPauseWhileOpen; }
 	bool autoReapply() const { return mAutoReapply; }

@@ -213,6 +213,7 @@ std::expected<ModLibrary, std::string> ModLibrary::parse(const std::string& xmlT
 			mod.hcmKey = modNode.attribute("hcm").as_string();
 			mod.skullKey = modNode.attribute("skull").as_string();
 			mod.reapply = modNode.attribute("reapply").as_bool(false);
+			mod.group = modNode.attribute("group").as_string();
 			mod.minValue = modNode.attribute("min").as_float(0.f);
 			mod.maxValue = modNode.attribute("max").as_float(1.f);
 			mod.step = modNode.attribute("step").as_float(0.1f);

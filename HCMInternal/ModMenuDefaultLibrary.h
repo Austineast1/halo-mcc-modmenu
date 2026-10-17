@@ -7,7 +7,7 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
 <!--
   HCM MOD MENU LIBRARY
   ====================
-  Every mod in the in-game Mod Menu comes from this file. Edit it, then press "Reload library"
+  Every mod in the in-game Mod Menu comes from this file. Edit it, then press "RELOAD"
   in the menu (no rebuild needed). If you break it, delete the file and HCM writes a fresh copy.
 
   Mod types
@@ -32,9 +32,11 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
     {bool}     true / false for toggles that use <Set>
 
   One command per line. Lines starting with ; are ignored.
-  reapply="true" re-sends the mod after a checkpoint revert or level load.
+  reapply="true" re-sends the mod after a death, checkpoint revert, respawn or level load.
+  group="name" makes buttons one-at-a-time: running one forgets the others in the group (Become forms use this).
+  A reapply button in a group is remembered and run again after deaths, reverts and level loads.
 -->
-<ModMenuLibrary version="5" title="Mod Menu">
+<ModMenuLibrary version="7" title="Mod Menu">
 
   <!-- ================================================================== -->
   <Category id="spartan" name="Spartan" desc="Your body: armour, health, size and movement.">
@@ -148,13 +150,6 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
          desc="Hides your model from the world. Best seen in third person or by your co-op partner.">
       <Game games="gen2up">
         <Set>(object_hide {player} {bool})</Set>
-      </Game>
-    </Mod>
-
-    <Mod id="noshadow" type="toggle" reapply="true" name="No Shadow"
-         desc="Your body stops casting a shadow. Pair it with camo for a true ghost.">
-      <Game games="gen2up">
-        <Set>(object_set_shadowless {player} {bool})</Set>
       </Game>
     </Mod>
 
@@ -289,7 +284,7 @@ R"MML(        <Run>(object_set_velocity {player} 20 0 1.5)</Run>
 
     <!-- presets: size, toughness, abilities and allies in one press -->
 
-    <Mod id="huntermode" type="button" tag="PRESET" name="Hunter"
+    <Mod id="huntermode" type="button" reapply="true" group="form" tag="PRESET" name="Hunter"
          desc="Mgalekgolo. Hunter-sized, Hunter-tough, unflinching, and the Covenant on your side so Hunters fight with you.">
       <Game games="all">
         <Run>(object_set_scale {player} 1.6 45)
@@ -306,7 +301,7 @@ R"MML(        <Run>(object_set_velocity {player} 20 0 1.5)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_elite" type="button" tag="PRESET" name="Elite"
+    <Mod id="p_elite" type="button" reapply="true" group="form" tag="PRESET" name="Elite"
          desc="Sangheili warrior. Taller, strong shields, and the Covenant fighting alongside you.">
       <Game games="all">
         <Run>(object_set_scale {player} 1.15 45)
@@ -316,7 +311,7 @@ R"MML(        <Run>(object_set_velocity {player} 20 0 1.5)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_zealot" type="button" tag="PRESET" name="Elite Zealot"
+    <Mod id="p_zealot" type="button" reapply="true" group="form" tag="PRESET" name="Elite Zealot"
          desc="The Covenant's assassins. Elite-sized, heavy shields and permanent active camo.">
       <Game games="all">
         <Run>(object_set_scale {player} 1.15 45)
@@ -332,7 +327,7 @@ R"MML(        <Run>(object_set_velocity {player} 20 0 1.5)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_arbiter" type="button" tag="PRESET" name="Arbiter"
+    <Mod id="p_arbiter" type="button" reapply="true" group="form" tag="PRESET" name="Arbiter"
          desc="Thel 'Vadam. Elite build, deep shields, camo on demand and the Covenant at your back.">
       <Game games="Halo2,Halo3">
         <Run>(object_set_scale {player} 1.12 45)
@@ -343,7 +338,7 @@ R"MML(        <Run>(object_set_velocity {player} 20 0 1.5)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_grunt" type="button" tag="PRESET" name="Grunt"
+    <Mod id="p_grunt" type="button" reapply="true" group="form" tag="PRESET" name="Grunt"
          desc="Unggoy. Tiny, fragile, no shields, and every Grunt on the map is your friend. Panic is optional.">
       <Game games="all">
         <Run>(object_set_scale {player} 0.55 45)
@@ -353,7 +348,7 @@ R"MML(        <Run>(object_set_velocity {player} 20 0 1.5)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_jackal" type="button" tag="PRESET" name="Jackal"
+    <Mod id="p_jackal" type="button" reapply="true" group="form" tag="PRESET" name="Jackal"
          desc="Kig-Yar. Wiry and quick to drop, but the Covenant lines welcome you.">
       <Game games="all">
         <Run>(object_set_scale {player} 0.85 45)
@@ -363,22 +358,22 @@ R"MML(        <Run>(object_set_velocity {player} 20 0 1.5)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_brute" type="button" tag="PRESET" name="Brute"
+    <Mod id="p_brute" type="button" reapply="true" group="form" tag="PRESET" name="Brute"
          desc="Jiralhanae. Big, heavily armoured, unflinching, with the pack on your side.">
       <Game games="Halo2,Halo3,Halo3ODST,HaloReach">
         <Run>(object_set_scale {player} 1.25 45)
 (unit_set_maximum_vitality {player} 450 200)
-(unit_set_current_vitality {player} 450 200)
+)MML",
+R"MML((unit_set_current_vitality {player} 450 200)
 (unit_impervious {player} true)
 (ai_allegiance covenant player)</Run>
       </Game>
       <Game games="HaloReach">
-)MML",
-R"MML(        <Run>(ai_allegiance brute player)</Run>
+        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_chieftain" type="button" tag="PRESET" name="Brute Chieftain"
+    <Mod id="p_chieftain" type="button" reapply="true" group="form" tag="PRESET" name="Brute Chieftain"
          desc="Tartarus-class. Huge, nearly unkillable, only your own side can hurt you, and fall damage is gone.">
       <Game games="Halo2,Halo3,Halo3ODST,HaloReach">
         <Run>(object_set_scale {player} 1.35 45)
@@ -396,7 +391,7 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_drone" type="button" tag="PRESET" name="Drone"
+    <Mod id="p_drone" type="button" reapply="true" group="form" tag="PRESET" name="Drone"
          desc="Yanme'e. Small and light, gravity lets go of you so you drift through the air, and the hive is friendly.">
       <Game games="Halo2,Halo3,Halo3ODST,HaloReach">
         <Run>(object_set_scale {player} 0.75 45)
@@ -407,7 +402,7 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_engineer" type="button" tag="PRESET" name="Engineer"
+    <Mod id="p_engineer" type="button" reapply="true" group="form" tag="PRESET" name="Engineer"
          desc="Huragok. You float, enemies ignore you, and the Covenant keep you safe. Pure support.">
       <Game games="Halo3ODST,HaloReach">
         <Run>(object_set_scale {player} 0.9 45)
@@ -419,7 +414,7 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_guta" type="button" tag="PRESET" name="Guta"
+    <Mod id="p_guta" type="button" reapply="true" group="form" tag="PRESET" name="Guta"
          desc="Reach's two-ton alien predator. Massive, brutal and unflinching, and the other Guta treat you as family.">
       <Game games="HaloReach">
         <Run>(object_set_scale {player} 2.2 45)
@@ -431,7 +426,7 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_flood" type="button" tag="PRESET" name="Flood Combat Form"
+    <Mod id="p_flood" type="button" reapply="true" group="form" tag="PRESET" name="Flood Combat Form"
          desc="A reanimated host. No shields, plenty of flesh, and the Flood treat you as part of the Gravemind.">
       <Game games="Halo1,Halo2,Halo3">
         <Run>(object_set_scale {player} 1.05 45)
@@ -441,7 +436,7 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_infection" type="button" tag="PRESET" name="Infection Form"
+    <Mod id="p_infection" type="button" reapply="true" group="form" tag="PRESET" name="Infection Form"
          desc="A tiny Flood spore. One hit kills you, but you can squeeze anywhere and the Flood love you.">
       <Game games="Halo1,Halo2,Halo3">
         <Run>(object_set_scale {player} 0.3 45)
@@ -451,7 +446,7 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_floodtank" type="button" tag="PRESET" name="Flood Tank"
+    <Mod id="p_floodtank" type="button" reapply="true" group="form" tag="PRESET" name="Flood Tank"
          desc="A pure-form brute of the Flood. Enormous health, unflinching, no fall damage.">
       <Game games="Halo3">
         <Run>(object_set_scale {player} 1.4 45)
@@ -463,7 +458,7 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_sentinel" type="button" tag="PRESET" name="Sentinel"
+    <Mod id="p_sentinel" type="button" reapply="true" group="form" tag="PRESET" name="Sentinel"
          desc="A Forerunner construct. You hover, carry hard shields, and the Sentinels hold their fire.">
       <Game games="Halo1,Halo2,Halo3">
         <Run>(object_set_scale {player} 0.8 45)
@@ -474,7 +469,7 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_monitor" type="button" tag="PRESET" name="Monitor"
+    <Mod id="p_monitor" type="button" reapply="true" group="form" tag="PRESET" name="Monitor"
          desc="343 Guilty Spark. Small, floating, impossible to kill, and nothing bothers to shoot at you.">
       <Game games="Halo1,Halo2,Halo3">
         <Run>(object_set_scale {player} 0.35 45)
@@ -490,7 +485,7 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_prophet" type="button" tag="PRESET" name="Prophet"
+    <Mod id="p_prophet" type="button" reapply="true" group="form" tag="PRESET" name="Prophet"
          desc="A Hierarch on a gravity throne. You float, your shields are enormous, and the Prophets' guard protects you.">
       <Game games="Halo2">
         <Run>(object_set_scale {player} 1.05 45)
@@ -502,7 +497,7 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_knight" type="button" tag="PRESET" name="Promethean Knight"
+    <Mod id="p_knight" type="button" reapply="true" group="form" tag="PRESET" name="Promethean Knight"
          desc="Forerunner war machine. Tall, armoured, unflinching and only your own side can hurt you.">
       <Game games="Halo4">
         <Run>(object_set_scale {player} 1.35 45)
@@ -514,7 +509,7 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_crawler" type="button" tag="PRESET" name="Crawler"
+    <Mod id="p_crawler" type="button" reapply="true" group="form" tag="PRESET" name="Crawler"
          desc="A Promethean pack hunter. Low to the ground and fragile.">
       <Game games="Halo4">
         <Run>(object_set_scale {player} 0.6 45)
@@ -523,7 +518,7 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_watcher" type="button" tag="PRESET" name="Watcher"
+    <Mod id="p_watcher" type="button" reapply="true" group="form" tag="PRESET" name="Watcher"
          desc="A Promethean support drone. You float, and enemies don't consider you a threat.">
       <Game games="Halo4">
         <Run>(object_set_scale {player} 0.6 45)
@@ -534,7 +529,7 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_marine" type="button" tag="PRESET" name="Marine"
+    <Mod id="p_marine" type="button" reapply="true" group="form" tag="PRESET" name="Marine"
          desc="A UNSC rifleman. Normal height, no shields, and a lot more careful.">
       <Game games="all">
         <Run>(object_set_scale {player} 0.95 45)
@@ -543,7 +538,7 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_odst" type="button" tag="PRESET" name="ODST"
+    <Mod id="p_odst" type="button" reapply="true" group="form" tag="PRESET" name="ODST"
          desc="Feet first into hell. No shields, but tougher than a Marine and no fall damage where the game allows it.">
       <Game games="all">
         <Run>(object_set_scale {player} 1 45)
@@ -555,16 +550,16 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_ghostop" type="button" tag="PRESET" name="Phantom Operative"
-         desc="Invisible, shadowless and ignored by every AI. You were never here.">
+    <Mod id="p_ghostop" type="button" reapply="true" group="form" tag="PRESET" name="Phantom Operative"
+         desc="Invisible and ignored by every AI. You were never here.">
       <Game games="gen2up">
         <Run>(unit_set_active_camo {player} true 99999)
-(object_set_shadowless {player} true)
-(ai_disregard {players} true)</Run>
+)MML",
+R"MML((ai_disregard {players} true)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_legend" type="button" tag="PRESET" name="Legendary Spartan"
+    <Mod id="p_legend" type="button" reapply="true" group="form" tag="PRESET" name="Legendary Spartan"
          desc="Myth made real. Normal size, a thousand points of health and shields, and nothing knocks you down.">
       <Game games="all">
         <Run>(object_set_scale {player} 1 45)
@@ -574,9 +569,8 @@ R"MML(        <Run>(ai_allegiance brute player)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_titan" type="button" tag="PRESET" name="Titan"
-)MML",
-R"MML(         desc="Four times your size and practically indestructible. Walk through the battle.">
+    <Mod id="p_titan" type="button" reapply="true" group="form" tag="PRESET" name="Titan"
+         desc="Four times your size and practically indestructible. Walk through the battle.">
       <Game games="all">
         <Run>(object_set_scale {player} 4 60)
 (unit_set_maximum_vitality {player} 20000 20000)
@@ -588,7 +582,7 @@ R"MML(         desc="Four times your size and practically indestructible. Walk t
       </Game>
     </Mod>
 
-    <Mod id="unbecome" type="button" tag="RESET" name="Back to Spartan"
+    <Mod id="unbecome" type="button" group="form" tag="RESET" name="Back to Spartan"
          desc="Undoes every form above: normal size, gravity back on, no camo, no alliances. Your health returns to normal at your next checkpoint load or death.">
       <Game games="all">
         <Run>(object_set_scale {player} 1 30)
@@ -599,7 +593,6 @@ R"MML(         desc="Four times your size and practically indestructible. Walk t
       </Game>
       <Game games="gen2up">
         <Run>(unit_set_active_camo {player} false 0)
-(object_set_shadowless {player} false)
 (object_hide {player} false)
 (object_cannot_die {player} false)
 (unit_only_takes_damage_from_players_team {player} false)</Run>
@@ -761,7 +754,8 @@ R"MML(         desc="Four times your size and practically indestructible. Walk t
     <Mod id="gravpreset" type="choice" reapply="true" name="Gravity of Another World"
          desc="Pick a place and the whole level obeys its gravity.">
       <Option label="Deep Space (0.02)" value="0.02" games="all" />
-      <Option label="The Moon (0.17)" value="0.17" games="all" />
+)MML",
+R"MML(      <Option label="The Moon (0.17)" value="0.17" games="all" />
       <Option label="Mars (0.38)" value="0.38" games="all" />
       <Option label="Halo Ring (0.7)" value="0.7" games="all" />
       <Option label="Earth (1)" value="1" games="all" />
@@ -772,8 +766,7 @@ R"MML(         desc="Four times your size and practically indestructible. Walk t
         <Apply>(physics_set_gravity {value})</Apply>
         <Off>(physics_set_gravity 1)</Off>
       </Game>
-)MML",
-R"MML(    </Mod>
+    </Mod>
 
     <Mod id="physreset" type="button" name="Reset Physics"
          desc="Puts gravity and every physics constant back to Earth normal.">
@@ -971,7 +964,8 @@ R"MML(    </Mod>
 (ai_allegiance_remove prophet player)
 (ai_allegiance_remove prophet human)</Run>
       </Game>
-      <Game games="Halo3">
+)MML",
+R"MML(      <Game games="Halo3">
         <Run>(ai_allegiance_remove guilty player)
 (ai_allegiance_remove guilty human)</Run>
       </Game>
@@ -987,8 +981,7 @@ R"MML(    </Mod>
          desc="Every friendly soldier you pass can join your squad. Build an army.">
       <Game games="HaloReach,Halo4">
         <Run>(ai_player_set_fireteam_no_max {player})</Run>
-)MML",
-R"MML(      </Game>
+      </Game>
     </Mod>
 
     <Mod id="fireteamsize" type="slider" min="0" max="12" step="1" default="4" name="Fireteam Size"
@@ -1188,7 +1181,8 @@ R"MML(      </Game>
       </Game>
     </Mod>
 
-    <Mod id="info2d" type="hcm-toggle" hcm="display2DInfo" games="all" name="Live Info Overlay"
+)MML",
+R"MML(    <Mod id="info2d" type="hcm-toggle" hcm="display2DInfo" games="all" name="Live Info Overlay"
          desc="HCM's on-screen readout: position, speed, health and more." />
 
     <Mod id="console" type="hcm-action" hcm="commandConsole" games="all" name="Open Script Console"
@@ -1198,8 +1192,7 @@ R"MML(      </Game>
   <!-- ================================================================== -->
   <Category id="director" name="Director" desc="Cinematic tools for screenshots and clips.">
 
-)MML",
-R"MML(    <Mod id="photomode" type="toggle" tag="PRESET" name="Photo Mode"
+    <Mod id="photomode" type="toggle" tag="PRESET" name="Photo Mode"
          desc="One switch for a clean frame: HUD off, weapon hidden, cinema bars on.">
       <Game games="gen3">
         <On>(chud_show false)
@@ -1414,7 +1407,8 @@ R"MML(    <Mod id="photomode" type="toggle" tag="PRESET" name="Photo Mode"
     <Mod id="ceclip" type="toggle" reapply="true" name="Bottomless Clip (engine)"
          desc="The engine's own bottomless clip cheat.">
       <Game games="Halo1">
-        <Set>(set cheat_bottomless_clip {bool})</Set>
+)MML",
+R"MML(        <Set>(set cheat_bottomless_clip {bool})</Set>
       </Game>
     </Mod>
 
@@ -1430,8 +1424,7 @@ R"MML(    <Mod id="photomode" type="toggle" tag="PRESET" name="Photo Mode"
       <Game games="Halo1">
         <Set>(set cheat_reflexive_damage_effects {bool})</Set>
       </Game>
-)MML",
-R"MML(    </Mod>
+    </Mod>
 
     <Mod id="cecamo" type="button" name="Active Camo (cheat)"
          desc="Bungie's camo cheat: a dose of active camouflage for the whole fireteam.">
