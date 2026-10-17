@@ -34,13 +34,34 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
   One command per line. Lines starting with ; are ignored.
   reapply="true" re-sends the mod after a checkpoint revert or level load.
 -->
-<ModMenuLibrary version="4" title="Mod Menu">
+<ModMenuLibrary version="5" title="Mod Menu">
 
   <!-- ================================================================== -->
-  <Category id="spartan" name="Spartan" desc="Your body: health, size, camo and movement.">
+  <Category id="spartan" name="Spartan" desc="Your body: armour, health, size and movement.">
 
     <Mod id="god" type="hcm-toggle" hcm="invulnerability" games="all" name="God Mode"
          desc="Nothing can hurt or kill you, including kill barriers. Uses HCM's built-in invulnerability." />
+
+    <Mod id="unkillable" type="toggle" reapply="true" name="Unkillable"
+         desc="You still take hits and your health still drains, but you never actually die.">
+      <Game games="gen2up">
+        <Set>(object_cannot_die {player} {bool})</Set>
+      </Game>
+    </Mod>
+
+    <Mod id="bossarmor" type="toggle" reapply="true" name="Boss Armour"
+         desc="Bungie's trick from the Tartarus fight: only your own team can hurt you, so enemy fire does nothing.">
+      <Game games="gen2up">
+        <Set>(unit_only_takes_damage_from_players_team {player} {bool})</Set>
+      </Game>
+    </Mod>
+
+    <Mod id="friendlyproof" type="toggle" reapply="true" name="Friendly-Fire Proof"
+         desc="Your allies' stray rockets and grenades stop hurting you. Works on every player in co-op.">
+      <Game games="HaloReach,Halo4">
+        <Set>(object_immune_to_friendly_damage {players} {bool})</Set>
+      </Game>
+    </Mod>
 
     <Mod id="camo" type="toggle" reapply="true" name="Permanent Active Camo"
          desc="Stay cloaked. In Halo CE the camo is a timed power-up, so toggle again when it fades.">
@@ -53,7 +74,7 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
       </Game>
     </Mod>
 
-    <Mod id="scale" type="slider" reapply="true" min="0.25" max="4" step="0.05" default="1" name="Spartan Size"
+    <Mod id="scale" type="slider" reapply="true" min="0.2" max="4" step="0.05" default="1" name="Spartan Size"
          desc="Grow into a giant or shrink to Grunt height. 1 is normal. Your hitbox scales too.">
       <Game games="all">
         <Apply>(object_set_scale {player} {value} 30)</Apply>
@@ -75,10 +96,44 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
       </Game>
     </Mod>
 
+    <Mod id="shieldsnow" type="button" name="Recharge Shields"
+         desc="Snaps your shields back to full and skips the recharge delay.">
+      <Game games="gen2up">
+        <Run>(object_set_shield_stun {player} 0)
+(object_set_shield {player} 1)</Run>
+      </Game>
+      <Game games="Halo1">
+        <Run>(object_set_shield {player} 1)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="noshields" type="toggle" reapply="true" name="No Shields"
+         desc="Hardcore ODST rules for a Spartan: your shields drop and never come back until you turn this off.">
+      <Game games="gen2up">
+        <On>(object_set_shield {player} 0)
+(object_set_shield_stun_infinite {player})</On>
+        <Off>(object_set_shield_stun {player} 0)</Off>
+      </Game>
+    </Mod>
+
     <Mod id="nofall" type="toggle" reapply="true" name="No Fall Damage"
          desc="Drop from any height without dying.">
       <Game games="gen3">
         <Set>(unit_falling_damage_disable {player} {bool})</Set>
+      </Game>
+    </Mod>
+
+    <Mod id="hover" type="toggle" reapply="true" name="Anti-Gravity"
+         desc="Gravity stops working on you. Jump and you drift upward; stand still and you hang in the air.">
+      <Game games="all">
+        <Set>(unit_suspended {player} {bool})</Set>
+      </Game>
+    </Mod>
+
+    <Mod id="unflinching" type="toggle" reapply="true" name="Unflinching"
+         desc="Hits no longer knock you around or make you flinch. Like a Hunter shrugging off a grenade.">
+      <Game games="all">
+        <Set>(unit_impervious {players} {bool})</Set>
       </Game>
     </Mod>
 
@@ -96,6 +151,23 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
       </Game>
     </Mod>
 
+    <Mod id="noshadow" type="toggle" reapply="true" name="No Shadow"
+         desc="Your body stops casting a shadow. Pair it with camo for a true ghost.">
+      <Game games="gen2up">
+        <Set>(object_set_shadowless {player} {bool})</Set>
+      </Game>
+    </Mod>
+
+    <Mod id="flashlight" type="toggle" name="Flashlight"
+         desc="Switches your helmet light on or off from the menu.">
+      <Game games="gen3">
+        <Set>(unit_set_integrated_flashlight {player} {bool})</Set>
+      </Game>
+      <Game games="Halo1">
+        <Set>(unit_set_desired_flashlight_state {player} {bool})</Set>
+      </Game>
+    </Mod>
+
     <Mod id="vision" type="toggle" name="Vision Mode"
          desc="Turns on the unit's vision mode. In ODST this is VISR.">
       <Game games="Halo3,Halo3ODST">
@@ -107,6 +179,28 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
          desc="Fires you straight up. Pair with No Fall Damage.">
       <Game games="gen2up">
         <Run>(object_set_velocity {player} 0 0 9)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="leap" type="button" name="Long Jump"
+         desc="A huge forward leap, like an Elite clearing a canyon.">
+      <Game games="gen2up">
+        <Run>(object_set_velocity {player} 12 0 7)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="dash" type="button" name="Dash"
+         desc="A burst of speed in the direction you're facing.">
+      <Game games="gen2up">
+)MML",
+R"MML(        <Run>(object_set_velocity {player} 20 0 1.5)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="backflip" type="button" name="Evade Backwards"
+         desc="Throws you back and up, out of a grenade's way.">
+      <Game games="gen2up">
+        <Run>(object_set_velocity {player} -10 0 5)</Run>
       </Game>
     </Mod>
 
@@ -125,49 +219,48 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
   </Category>
 
   <!-- ================================================================== -->
-  <Category id="become" name="Become" desc="Take over other bodies. Hunters included.">
+  <Category id="become" name="Become" desc="Take another form. A true body swap in Halo CE, and full transformations everywhere else.">
 
-    <Mod id="possess" type="toggle" reapply="true" name="Body Swap (Bump Possession)"
-         desc="Halo CE's hidden developer cheat. Walk into ANY unit (a Hunter, an Elite, a Marine, a Flood form) and you become it. Toggle off to stop swapping.">
+    <Mod id="possess" type="toggle" reapply="true" tag="BODY SWAP" name="Possess Anything"
+         desc="Halo CE's hidden developer cheat. Walk into ANY unit (a Hunter, an Elite, a Marine, a Flood form) and you become it, with its weapons and its eyes. Toggle off to stop swapping.">
       <Game games="Halo1">
         <Set>(set cheat_bump_possession {bool})</Set>
       </Game>
     </Mod>
 
-    <Mod id="allchars" type="button" tag="CROWD" name="Summon Every Character"
-         desc="Spawns one of every character the level has loaded, right in front of you. Then walk into the one you want to be.">
+    <Mod id="allchars" type="button" tag="BODY SWAP" name="Summon Every Character"
+         desc="Spawns one of every character the level has loaded, right in front of you. Turn on Possess Anything, then walk into the one you want to be.">
       <Game games="Halo1">
         <Run>(cheat_all_chars)</Run>
       </Game>
     </Mod>
 
-    <Mod id="huntermode" type="button" tag="PRESET" name="Hunter Mode"
-         desc="Not a true body swap in this game: makes your Spartan Hunter-sized and Hunter-tough, kills fall damage, and puts the Covenant on your side so Hunters fight with you.">
-      <Game games="Halo3,Halo3ODST,HaloReach,Halo4">
-        <Run>(object_set_scale {player} 1.6 45)
-(unit_set_maximum_vitality {player} 2500 2500)
-(unit_set_current_vitality {player} 2500 2500)
-(unit_falling_damage_disable {player} true)
-(ai_allegiance covenant player)
-(ai_allegiance covenant human)</Run>
+    <Mod id="defectcov" type="toggle" reapply="true" tag="TRUE TEAM" name="Join the Covenant"
+         desc="You stop being human. The game puts you on the Covenant team: Grunts and Elites treat you as one of their own, and the humans open fire.">
+      <Game games="HaloReach,Halo4">
+        <On>(object_set_allegiance {player} covenant)</On>
+        <Off>(object_set_allegiance {player} player)</Off>
       </Game>
-      <Game games="Halo2">
-        <Run>(object_set_scale {player} 1.6 45)
-(unit_set_maximum_vitality {player} 2500 2500)
-(unit_set_current_vitality {player} 2500 2500)
-(ai_allegiance covenant player)
-(ai_allegiance covenant human)</Run>
+    </Mod>
+
+    <Mod id="defectbrute" type="toggle" reapply="true" tag="TRUE TEAM" name="Join the Brutes"
+         desc="Reach keeps its Brutes on their own team. Join them and the pack fights at your side.">
+      <Game games="HaloReach">
+        <On>(object_set_allegiance {player} brute)</On>
+        <Off>(object_set_allegiance {player} player)</Off>
       </Game>
     </Mod>
 
     <Mod id="ally" type="choice" reapply="true" name="Switch Sides"
-         desc="Make a faction your ally. Pick one and press Apply. Undo breaks the alliance again.">
+         desc="Make a whole faction your ally. Pick one and press Apply. Undo breaks the alliance again.">
       <Option label="Covenant" value="covenant" games="all" />
+      <Option label="Brutes" value="brute" games="HaloReach" />
+      <Option label="Guta (Mules)" value="mule" games="HaloReach" />
       <Option label="Flood" value="flood" games="Halo1,Halo2,Halo3" />
       <Option label="Sentinels" value="sentinel" games="Halo1,Halo2,Halo3" />
       <Option label="Heretics" value="heretic" games="Halo2" />
       <Option label="Prophets" value="prophet" games="Halo2" />
-      <Option label="Prometheans" value="forerunner" games="Halo4" />
+      <Option label="343 Guilty Spark" value="guilty" games="Halo3" />
       <Game games="all">
         <Apply>(ai_allegiance {value} player)
 (ai_allegiance {value} human)</Apply>
@@ -175,11 +268,368 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
 (ai_allegiance_remove {value} human)</Off>
       </Game>
     </Mod>
+
+    <Mod id="bodysize" type="choice" reapply="true" name="Body Size"
+         desc="Take on another species' size. Your hitbox changes with you.">
+      <Option label="Infection Form" value="0.3" games="Halo1,Halo2,Halo3" />
+      <Option label="Grunt" value="0.55" games="all" />
+      <Option label="Crawler" value="0.6" games="Halo4" />
+      <Option label="Jackal" value="0.85" games="all" />
+      <Option label="Elite" value="1.15" games="all" />
+      <Option label="Brute" value="1.25" games="Halo2,Halo3,Halo3ODST,HaloReach" />
+      <Option label="Promethean Knight" value="1.35" games="Halo4" />
+      <Option label="Hunter" value="1.6" games="all" />
+      <Option label="Guta" value="2.2" games="HaloReach" />
+      <Option label="Titan" value="4" games="all" />
+      <Game games="all">
+        <Apply>(object_set_scale {player} {value} 45)</Apply>
+        <Off>(object_set_scale {player} 1 30)</Off>
+      </Game>
+    </Mod>
+
+    <!-- presets: size, toughness, abilities and allies in one press -->
+
+    <Mod id="huntermode" type="button" tag="PRESET" name="Hunter"
+         desc="Mgalekgolo. Hunter-sized, Hunter-tough, unflinching, and the Covenant on your side so Hunters fight with you.">
+      <Game games="all">
+        <Run>(object_set_scale {player} 1.6 45)
+(unit_set_maximum_vitality {player} 2500 2500)
+(unit_set_current_vitality {player} 2500 2500)
+(unit_impervious {player} true)
+(ai_allegiance covenant player)</Run>
+      </Game>
+      <Game games="gen3">
+        <Run>(unit_falling_damage_disable {player} true)</Run>
+      </Game>
+      <Game games="HaloReach">
+        <Run>(ai_allegiance brute player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_elite" type="button" tag="PRESET" name="Elite"
+         desc="Sangheili warrior. Taller, strong shields, and the Covenant fighting alongside you.">
+      <Game games="all">
+        <Run>(object_set_scale {player} 1.15 45)
+(unit_set_maximum_vitality {player} 150 300)
+(unit_set_current_vitality {player} 150 300)
+(ai_allegiance covenant player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_zealot" type="button" tag="PRESET" name="Elite Zealot"
+         desc="The Covenant's assassins. Elite-sized, heavy shields and permanent active camo.">
+      <Game games="all">
+        <Run>(object_set_scale {player} 1.15 45)
+(unit_set_maximum_vitality {player} 200 500)
+(unit_set_current_vitality {player} 200 500)
+(ai_allegiance covenant player)</Run>
+      </Game>
+      <Game games="gen2up">
+        <Run>(unit_set_active_camo {player} true 99999)</Run>
+      </Game>
+      <Game games="Halo1">
+        <Run>(cheat_active_camouflage_local_player 0)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_arbiter" type="button" tag="PRESET" name="Arbiter"
+         desc="Thel 'Vadam. Elite build, deep shields, camo on demand and the Covenant at your back.">
+      <Game games="Halo2,Halo3">
+        <Run>(object_set_scale {player} 1.12 45)
+(unit_set_maximum_vitality {player} 250 450)
+(unit_set_current_vitality {player} 250 450)
+(unit_set_active_camo {player} true 30)
+(ai_allegiance covenant player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_grunt" type="button" tag="PRESET" name="Grunt"
+         desc="Unggoy. Tiny, fragile, no shields, and every Grunt on the map is your friend. Panic is optional.">
+      <Game games="all">
+        <Run>(object_set_scale {player} 0.55 45)
+(unit_set_maximum_vitality {player} 45 0)
+(unit_set_current_vitality {player} 45 0)
+(ai_allegiance covenant player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_jackal" type="button" tag="PRESET" name="Jackal"
+         desc="Kig-Yar. Wiry and quick to drop, but the Covenant lines welcome you.">
+      <Game games="all">
+        <Run>(object_set_scale {player} 0.85 45)
+(unit_set_maximum_vitality {player} 60 60)
+(unit_set_current_vitality {player} 60 60)
+(ai_allegiance covenant player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_brute" type="button" tag="PRESET" name="Brute"
+         desc="Jiralhanae. Big, heavily armoured, unflinching, with the pack on your side.">
+      <Game games="Halo2,Halo3,Halo3ODST,HaloReach">
+        <Run>(object_set_scale {player} 1.25 45)
+(unit_set_maximum_vitality {player} 450 200)
+(unit_set_current_vitality {player} 450 200)
+(unit_impervious {player} true)
+(ai_allegiance covenant player)</Run>
+      </Game>
+      <Game games="HaloReach">
+)MML",
+R"MML(        <Run>(ai_allegiance brute player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_chieftain" type="button" tag="PRESET" name="Brute Chieftain"
+         desc="Tartarus-class. Huge, nearly unkillable, only your own side can hurt you, and fall damage is gone.">
+      <Game games="Halo2,Halo3,Halo3ODST,HaloReach">
+        <Run>(object_set_scale {player} 1.35 45)
+(unit_set_maximum_vitality {player} 1500 800)
+(unit_set_current_vitality {player} 1500 800)
+(unit_impervious {player} true)
+(unit_only_takes_damage_from_players_team {player} true)
+(ai_allegiance covenant player)</Run>
+      </Game>
+      <Game games="Halo3,Halo3ODST,HaloReach">
+        <Run>(unit_falling_damage_disable {player} true)</Run>
+      </Game>
+      <Game games="HaloReach">
+        <Run>(ai_allegiance brute player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_drone" type="button" tag="PRESET" name="Drone"
+         desc="Yanme'e. Small and light, gravity lets go of you so you drift through the air, and the hive is friendly.">
+      <Game games="Halo2,Halo3,Halo3ODST,HaloReach">
+        <Run>(object_set_scale {player} 0.75 45)
+(unit_set_maximum_vitality {player} 40 0)
+(unit_set_current_vitality {player} 40 0)
+(unit_suspended {player} true)
+(ai_allegiance covenant player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_engineer" type="button" tag="PRESET" name="Engineer"
+         desc="Huragok. You float, enemies ignore you, and the Covenant keep you safe. Pure support.">
+      <Game games="Halo3ODST,HaloReach">
+        <Run>(object_set_scale {player} 0.9 45)
+(unit_set_maximum_vitality {player} 300 300)
+(unit_set_current_vitality {player} 300 300)
+(unit_suspended {player} true)
+(ai_disregard {players} true)
+(ai_allegiance covenant player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_guta" type="button" tag="PRESET" name="Guta"
+         desc="Reach's two-ton alien predator. Massive, brutal and unflinching, and the other Guta treat you as family.">
+      <Game games="HaloReach">
+        <Run>(object_set_scale {player} 2.2 45)
+(unit_set_maximum_vitality {player} 3000 0)
+(unit_set_current_vitality {player} 3000 0)
+(unit_impervious {player} true)
+(unit_falling_damage_disable {player} true)
+(ai_allegiance mule player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_flood" type="button" tag="PRESET" name="Flood Combat Form"
+         desc="A reanimated host. No shields, plenty of flesh, and the Flood treat you as part of the Gravemind.">
+      <Game games="Halo1,Halo2,Halo3">
+        <Run>(object_set_scale {player} 1.05 45)
+(unit_set_maximum_vitality {player} 350 0)
+(unit_set_current_vitality {player} 350 0)
+(ai_allegiance flood player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_infection" type="button" tag="PRESET" name="Infection Form"
+         desc="A tiny Flood spore. One hit kills you, but you can squeeze anywhere and the Flood love you.">
+      <Game games="Halo1,Halo2,Halo3">
+        <Run>(object_set_scale {player} 0.3 45)
+(unit_set_maximum_vitality {player} 10 0)
+(unit_set_current_vitality {player} 10 0)
+(ai_allegiance flood player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_floodtank" type="button" tag="PRESET" name="Flood Tank"
+         desc="A pure-form brute of the Flood. Enormous health, unflinching, no fall damage.">
+      <Game games="Halo3">
+        <Run>(object_set_scale {player} 1.4 45)
+(unit_set_maximum_vitality {player} 2000 0)
+(unit_set_current_vitality {player} 2000 0)
+(unit_impervious {player} true)
+(unit_falling_damage_disable {player} true)
+(ai_allegiance flood player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_sentinel" type="button" tag="PRESET" name="Sentinel"
+         desc="A Forerunner construct. You hover, carry hard shields, and the Sentinels hold their fire.">
+      <Game games="Halo1,Halo2,Halo3">
+        <Run>(object_set_scale {player} 0.8 45)
+(unit_set_maximum_vitality {player} 150 400)
+(unit_set_current_vitality {player} 150 400)
+(unit_suspended {player} true)
+(ai_allegiance sentinel player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_monitor" type="button" tag="PRESET" name="Monitor"
+         desc="343 Guilty Spark. Small, floating, impossible to kill, and nothing bothers to shoot at you.">
+      <Game games="Halo1,Halo2,Halo3">
+        <Run>(object_set_scale {player} 0.35 45)
+(unit_suspended {player} true)
+(ai_disregard {players} true)
+(ai_allegiance sentinel player)</Run>
+      </Game>
+      <Game games="Halo2,Halo3">
+        <Run>(object_cannot_die {player} true)</Run>
+      </Game>
+      <Game games="Halo3">
+        <Run>(ai_allegiance guilty player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_prophet" type="button" tag="PRESET" name="Prophet"
+         desc="A Hierarch on a gravity throne. You float, your shields are enormous, and the Prophets' guard protects you.">
+      <Game games="Halo2">
+        <Run>(object_set_scale {player} 1.05 45)
+(unit_set_maximum_vitality {player} 300 2000)
+(unit_set_current_vitality {player} 300 2000)
+(unit_suspended {player} true)
+(ai_allegiance prophet player)
+(ai_allegiance covenant player)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_knight" type="button" tag="PRESET" name="Promethean Knight"
+         desc="Forerunner war machine. Tall, armoured, unflinching and only your own side can hurt you.">
+      <Game games="Halo4">
+        <Run>(object_set_scale {player} 1.35 45)
+(unit_set_maximum_vitality {player} 2000 1000)
+(unit_set_current_vitality {player} 2000 1000)
+(unit_impervious {player} true)
+(unit_only_takes_damage_from_players_team {player} true)
+(unit_falling_damage_disable {player} true)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_crawler" type="button" tag="PRESET" name="Crawler"
+         desc="A Promethean pack hunter. Low to the ground and fragile.">
+      <Game games="Halo4">
+        <Run>(object_set_scale {player} 0.6 45)
+(unit_set_maximum_vitality {player} 60 0)
+(unit_set_current_vitality {player} 60 0)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_watcher" type="button" tag="PRESET" name="Watcher"
+         desc="A Promethean support drone. You float, and enemies don't consider you a threat.">
+      <Game games="Halo4">
+        <Run>(object_set_scale {player} 0.6 45)
+(unit_set_maximum_vitality {player} 100 150)
+(unit_set_current_vitality {player} 100 150)
+(unit_suspended {player} true)
+(ai_disregard {players} true)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_marine" type="button" tag="PRESET" name="Marine"
+         desc="A UNSC rifleman. Normal height, no shields, and a lot more careful.">
+      <Game games="all">
+        <Run>(object_set_scale {player} 0.95 45)
+(unit_set_maximum_vitality {player} 75 0)
+(unit_set_current_vitality {player} 75 0)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_odst" type="button" tag="PRESET" name="ODST"
+         desc="Feet first into hell. No shields, but tougher than a Marine and no fall damage where the game allows it.">
+      <Game games="all">
+        <Run>(object_set_scale {player} 1 45)
+(unit_set_maximum_vitality {player} 150 0)
+(unit_set_current_vitality {player} 150 0)</Run>
+      </Game>
+      <Game games="gen3">
+        <Run>(unit_falling_damage_disable {player} true)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_ghostop" type="button" tag="PRESET" name="Phantom Operative"
+         desc="Invisible, shadowless and ignored by every AI. You were never here.">
+      <Game games="gen2up">
+        <Run>(unit_set_active_camo {player} true 99999)
+(object_set_shadowless {player} true)
+(ai_disregard {players} true)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_legend" type="button" tag="PRESET" name="Legendary Spartan"
+         desc="Myth made real. Normal size, a thousand points of health and shields, and nothing knocks you down.">
+      <Game games="all">
+        <Run>(object_set_scale {player} 1 45)
+(unit_set_maximum_vitality {player} 1000 1000)
+(unit_set_current_vitality {player} 1000 1000)
+(unit_impervious {player} true)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="p_titan" type="button" tag="PRESET" name="Titan"
+)MML",
+R"MML(         desc="Four times your size and practically indestructible. Walk through the battle.">
+      <Game games="all">
+        <Run>(object_set_scale {player} 4 60)
+(unit_set_maximum_vitality {player} 20000 20000)
+(unit_set_current_vitality {player} 20000 20000)
+(unit_impervious {player} true)</Run>
+      </Game>
+      <Game games="gen3">
+        <Run>(unit_falling_damage_disable {player} true)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="unbecome" type="button" tag="RESET" name="Back to Spartan"
+         desc="Undoes every form above: normal size, gravity back on, no camo, no alliances. Your health returns to normal at your next checkpoint load or death.">
+      <Game games="all">
+        <Run>(object_set_scale {player} 1 30)
+(unit_suspended {player} false)
+(unit_impervious {player} false)
+(ai_disregard {players} false)
+(ai_allegiance_remove covenant player)</Run>
+      </Game>
+      <Game games="gen2up">
+        <Run>(unit_set_active_camo {player} false 0)
+(object_set_shadowless {player} false)
+(object_hide {player} false)
+(object_cannot_die {player} false)
+(unit_only_takes_damage_from_players_team {player} false)</Run>
+      </Game>
+      <Game games="gen3">
+        <Run>(unit_falling_damage_disable {player} false)</Run>
+      </Game>
+      <Game games="HaloReach">
+        <Run>(object_set_allegiance {player} player)
+(ai_allegiance_remove brute player)
+(ai_allegiance_remove mule player)</Run>
+      </Game>
+      <Game games="Halo4">
+        <Run>(object_set_allegiance {player} player)</Run>
+      </Game>
+      <Game games="Halo1,Halo2,Halo3">
+        <Run>(ai_allegiance_remove flood player)
+(ai_allegiance_remove sentinel player)</Run>
+      </Game>
+      <Game games="Halo2">
+        <Run>(ai_allegiance_remove prophet player)</Run>
+      </Game>
+      <Game games="Halo3">
+        <Run>(ai_allegiance_remove guilty player)</Run>
+      </Game>
+    </Mod>
   </Category>
 
   <!-- ================================================================== -->
-)MML",
-R"MML(  <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles.">
+  <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles.">
 
     <Mod id="infammo" type="hcm-toggle" hcm="infiniteAmmo" games="Halo1,Halo2" name="Infinite Ammo"
          desc="Reserve ammo never runs out." />
@@ -187,17 +637,80 @@ R"MML(  <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles."
     <Mod id="bottomless" type="hcm-toggle" hcm="bottomlessClip" games="Halo1,Halo2" name="Bottomless Clip"
          desc="Never reload. Your magazine never empties." />
 
-    <Mod id="bandanna" type="skull" skull="Bandanna" games="all" name="Infinite Everything (Bandanna)"
-         desc="The Bandanna skull: infinite ammo, grenades and abilities. Shows only if this game has it." />
-
     <Mod id="medusa" type="hcm-toggle" hcm="medusa" games="Halo1,Halo2" name="Medusa"
          desc="Any enemy you look at dies." />
+
+    <Mod id="bandanna" type="skull" skull="Bandanna" games="all" name="Infinite Everything (Bandanna)"
+         desc="The Bandanna skull: infinite ammo, grenades and abilities." />
 
     <Mod id="scarab" type="skull" skull="Scarab" games="all" name="Scarab Gun"
          desc="Every weapon you hold fires a Scarab beam." />
 
     <Mod id="boom" type="skull" skull="Boom" games="all" name="Double Explosions"
          desc="The Boom skull: explosion radius doubled." />
+
+    <Mod id="cowbell" type="skull" skull="Cowbell" games="all" name="Explosive Physics (Cowbell)"
+         desc="Explosions throw bodies and vehicles much further." />
+
+    <Mod id="sputnik" type="skull" skull="Sputnik" games="all" name="Feather-Light Objects (Sputnik)"
+         desc="Everything weighs less and flies further when hit." />
+
+    <Mod id="pinata" type="skull" skull="Pinata" games="all" name="Grenade Pinata"
+         desc="Punch enemies and they drop grenades." />
+
+    <Mod id="holster" type="toggle" name="Holster Weapon"
+         desc="Lower your weapon and walk like you own the place.">
+      <Game games="gen2up">
+        <On>(unit_lower_weapon {player} 20)</On>
+        <Off>(unit_raise_weapon {player} 20)</Off>
+      </Game>
+    </Mod>
+
+    <Mod id="dropheavy" type="button" name="Drop Heavy Weapon"
+         desc="Drops a carried turret or other support weapon instantly.">
+      <Game games="gen3">
+        <Run>(unit_drop_support_weapon {player})</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="nitro" type="button" name="Vehicle Nitro"
+         desc="Fires the vehicle you're in forward like a rocket. Works best on Warthogs and Ghosts.">
+      <Game games="HaloReach,Halo4">
+        <Run>(object_set_velocity (unit_get_vehicle {player}) 35)</Run>
+      </Game>
+      <Game games="Halo2,Halo3,Halo3ODST">
+        <Run>(object_set_velocity (object_get_parent {player}) 35)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="vehjump" type="button" name="Vehicle Jump"
+         desc="Launches the vehicle you're in into the air. Hold on.">
+      <Game games="HaloReach,Halo4">
+        <Run>(object_set_velocity (unit_get_vehicle {player}) 0 0 14)</Run>
+      </Game>
+      <Game games="Halo2,Halo3,Halo3ODST">
+        <Run>(object_set_velocity (object_get_parent {player}) 0 0 14)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="vehgod" type="toggle" name="Indestructible Vehicle"
+         desc="The vehicle you're in right now can't be damaged. Get in first, then switch it on.">
+      <Game games="HaloReach,Halo4">
+        <On>(object_cannot_take_damage (unit_get_vehicle {player}))</On>
+        <Off>(object_can_take_damage (unit_get_vehicle {player}))</Off>
+      </Game>
+      <Game games="Halo2,Halo3,Halo3ODST">
+        <On>(object_cannot_take_damage (object_get_parent {player}))</On>
+        <Off>(object_can_take_damage (object_get_parent {player}))</Off>
+      </Game>
+    </Mod>
+
+    <Mod id="eject" type="button" name="Eject"
+         desc="Throws you out of whatever vehicle you're in.">
+      <Game games="all">
+        <Run>(unit_exit_vehicle {player})</Run>
+      </Game>
+    </Mod>
 
     <Mod id="allweapons" type="button" name="Give All Weapons"
          desc="Drops every weapon the level has loaded at your feet.">
@@ -207,7 +720,7 @@ R"MML(  <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles."
     </Mod>
 
     <Mod id="allvehicles" type="button" name="Spawn All Vehicles"
-         desc="Spawns every vehicle the level has loaded around you.">
+         desc="Spawns every vehicle the level has loaded around you. Step back first.">
       <Game games="Halo1">
         <Run>(cheat_all_vehicles)</Run>
       </Game>
@@ -226,6 +739,13 @@ R"MML(  <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles."
         <Run>(cheat_all_powerups)</Run>
       </Game>
     </Mod>
+
+    <Mod id="somegun" type="button" name="Drop a Shotgun"
+         desc="Bungie's oddly specific cheat: a shotgun, right now.">
+      <Game games="Halo1">
+        <Run>(cheat_give_some_gun)</Run>
+      </Game>
+    </Mod>
   </Category>
 
   <!-- ================================================================== -->
@@ -238,11 +758,38 @@ R"MML(  <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles."
       </Game>
     </Mod>
 
+    <Mod id="gravpreset" type="choice" reapply="true" name="Gravity of Another World"
+         desc="Pick a place and the whole level obeys its gravity.">
+      <Option label="Deep Space (0.02)" value="0.02" games="all" />
+      <Option label="The Moon (0.17)" value="0.17" games="all" />
+      <Option label="Mars (0.38)" value="0.38" games="all" />
+      <Option label="Halo Ring (0.7)" value="0.7" games="all" />
+      <Option label="Earth (1)" value="1" games="all" />
+      <Option label="Sanghelios (1.4)" value="1.4" games="all" />
+      <Option label="Heavy World (2)" value="2" games="all" />
+      <Option label="Jupiter (2.5)" value="2.5" games="all" />
+      <Game games="all">
+        <Apply>(physics_set_gravity {value})</Apply>
+        <Off>(physics_set_gravity 1)</Off>
+      </Game>
+)MML",
+R"MML(    </Mod>
+
+    <Mod id="physreset" type="button" name="Reset Physics"
+         desc="Puts gravity and every physics constant back to Earth normal.">
+      <Game games="all">
+        <Run>(physics_constants_reset)</Run>
+      </Game>
+    </Mod>
+
     <Mod id="speed" type="hcm-toggle" hcm="speedhack" games="all" name="Time Warp"
          desc="Turns HCM's game-speed control on or off. Set the speed below." />
 
     <Mod id="speedvalue" type="hcm-slider" hcm="speedhackValue" games="all" min="0.1" max="5" step="0.05" default="1" name="Time Warp Speed"
          desc="0.25 is bullet time, 2 is double speed. Only active while Time Warp is on." />
+
+    <Mod id="pause" type="hcm-toggle" hcm="togglePause" games="all" name="Freeze Time"
+         desc="Pauses the game world while the menu stays usable." />
 
     <Mod id="noweather" type="toggle" reapply="true" name="Clear Skies"
          desc="Turns off rain, snow and other weather effects.">
@@ -250,10 +797,17 @@ R"MML(  <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles."
         <On>(render_weather false)</On>
         <Off>(render_weather true)</Off>
       </Game>
+      <Game games="Halo2">
+        <On>(weather_stop 0)</On>
+        <Off>(weather_start 0)</Off>
+      </Game>
     </Mod>
 
     <Mod id="nofog" type="hcm-toggle" hcm="disableFog" games="all" name="No Fog"
          desc="Removes atmospheric fog so you can see across the whole map." />
+
+    <Mod id="barriers" type="hcm-toggle" hcm="disableBarriers" games="gen3" name="No Invisible Walls"
+         desc="Removes the soft ceilings that stop you leaving the play area." />
 
     <Mod id="noblur" type="toggle" reapply="true" name="No Motion Blur"
          desc="Turns off camera motion blur.">
@@ -263,13 +817,18 @@ R"MML(  <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles."
       </Game>
     </Mod>
 
-    <Mod id="barriers" type="hcm-toggle" hcm="disableBarriers" games="gen3" name="No Invisible Walls"
-         desc="Removes the soft ceilings that stop you leaving the play area." />
+    <Mod id="exposure" type="toggle" name="Lock Exposure"
+         desc="Stops the camera adjusting brightness when you move between light and dark.">
+      <Game games="gen3">
+        <On>(render_autoexposure_enable false)</On>
+        <Off>(render_autoexposure_enable true)</Off>
+      </Game>
+    </Mod>
 
-    <Mod id="wireframe" type="toggle" name="Wireframe World"
-         desc="Renders the level as a wireframe. Developer debug view.">
-      <Game games="Halo1">
-        <Set>(set rasterizer_wireframe {bool})</Set>
+    <Mod id="vmfov" type="slider" min="0.4" max="2" step="0.05" default="1" name="Weapon Model FOV"
+         desc="Scales the first-person weapon view. Lower shows more of your gun.">
+      <Game games="gen3">
+        <Apply>(set render_first_person_fov_scale {value})</Apply>
       </Game>
     </Mod>
 
@@ -280,15 +839,8 @@ R"MML(  <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles."
       </Game>
     </Mod>
 
-    <Mod id="vmfov" type="slider" tag="EXPERIMENTAL" min="0.4" max="2" step="0.05" default="1" name="Weapon Model FOV"
-         desc="Scales the first-person weapon view. Lower shows more of your gun.">
-      <Game games="Halo3,Halo3ODST,HaloReach">
-        <Apply>(set render_first_person_fov_scale {value})</Apply>
-      </Game>
-    </Mod>
-
     <Mod id="quake" type="toggle" name="Earthquake"
-         desc="Shakes the camera until you turn it off.">
+         desc="Shakes the ground hard until you turn it off.">
       <Game games="all">
         <On>(player_effect_set_max_translation 0.08 0.08 0.04)
 (player_effect_set_max_rotation 4 4 2)
@@ -297,22 +849,154 @@ R"MML(  <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles."
       </Game>
     </Mod>
 
+    <Mod id="tremor" type="toggle" name="Tremor"
+         desc="A low, constant rumble, like a Scarab walking past.">
+      <Game games="all">
+        <On>(player_effect_set_max_translation 0.015 0.015 0.01)
+(player_effect_set_max_rotation 0.6 0.6 0.3)
+(player_effect_start 1 1.5)</On>
+        <Off>(player_effect_stop 2)</Off>
+      </Game>
+    </Mod>
+
     <Mod id="cleanup" type="button" name="Clean Up Bodies"
-         desc="Removes corpses and dropped junk to free up the engine.">
+         desc="Removes corpses and dropped junk you can't see, to free up the engine.">
       <Game games="all">
         <Run>(garbage_collect_now)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="deepclean" type="button" name="Deep Clean"
+         desc="Removes every corpse and dropped item immediately, even ones in view.">
+      <Game games="gen2up">
+        <Run>(garbage_collect_unsafe)</Run>
       </Game>
     </Mod>
   </Category>
 
   <!-- ================================================================== -->
-  <Category id="battle" name="Battle" desc="Control the AI armies.">
+  <Category id="battle" name="Battle" desc="Command the AI armies.">
 
     <Mod id="aifreeze" type="hcm-toggle" hcm="aiFreeze" games="all" name="Freeze All AI"
          desc="Every AI stops moving and thinking." />
 
+    <Mod id="aioff" type="toggle" name="Switch Off the AI"
+         desc="The engine's own master switch: every AI brain stops until you turn it back on.">
+      <Game games="gen2up">
+        <On>(ai_enable false)</On>
+        <Off>(ai_enable true)</Off>
+      </Game>
+      <Game games="Halo1">
+        <On>(ai false)</On>
+        <Off>(ai true)</Off>
+      </Game>
+    </Mod>
+
     <Mod id="npcgod" type="hcm-toggle" hcm="invulnerabilityNPC" games="all" name="Invincible Allies"
          desc="Your Marines and allies cannot die." />
+
+    <Mod id="nogrenades" type="toggle" reapply="true" name="Disarm Enemy Grenades"
+         desc="Takes every grenade away from the AI. No more plasma surprises.">
+      <Game games="all">
+        <On>(ai_grenades false)</On>
+        <Off>(ai_grenades true)</Off>
+      </Game>
+    </Mod>
+
+    <Mod id="quiet" type="toggle" reapply="true" name="Silence Battle Chatter"
+         desc="Stops the AI's combat dialogue. No more Grunt screaming.">
+      <Game games="gen2up">
+        <On>(ai_dialogue_enable false)</On>
+        <Off>(ai_dialogue_enable true)</Off>
+      </Game>
+      <Game games="Halo1">
+        <On>(ai_dialogue_triggers false)</On>
+        <Off>(ai_dialogue_triggers true)</Off>
+      </Game>
+    </Mod>
+
+    <Mod id="quietsquad" type="toggle" reapply="true" name="Silence Your Squad"
+         desc="Mutes your own side's callouts.">
+      <Game games="Halo3ODST,HaloReach,Halo4">
+        <On>(ai_player_dialogue_enable false)</On>
+        <Off>(ai_player_dialogue_enable true)</Off>
+      </Game>
+    </Mod>
+
+    <Mod id="ceasefire" type="button" name="Ceasefire"
+         desc="Every faction in the game becomes your ally. Total peace, until you end it.">
+      <Game games="all">
+        <Run>(ai_allegiance covenant player)
+(ai_allegiance covenant human)</Run>
+      </Game>
+      <Game games="Halo1,Halo2,Halo3">
+        <Run>(ai_allegiance flood player)
+(ai_allegiance flood human)
+(ai_allegiance sentinel player)
+(ai_allegiance sentinel human)</Run>
+      </Game>
+      <Game games="Halo2">
+        <Run>(ai_allegiance heretic player)
+(ai_allegiance heretic human)
+(ai_allegiance prophet player)
+(ai_allegiance prophet human)</Run>
+      </Game>
+      <Game games="Halo3">
+        <Run>(ai_allegiance guilty player)
+(ai_allegiance guilty human)</Run>
+      </Game>
+      <Game games="HaloReach">
+        <Run>(ai_allegiance brute player)
+(ai_allegiance brute human)
+(ai_allegiance mule player)
+(ai_allegiance mule human)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="endceasefire" type="button" name="End Ceasefire"
+         desc="Breaks every alliance the Ceasefire made. Back to war.">
+      <Game games="all">
+        <Run>(ai_allegiance_remove covenant player)
+(ai_allegiance_remove covenant human)</Run>
+      </Game>
+      <Game games="Halo1,Halo2,Halo3">
+        <Run>(ai_allegiance_remove flood player)
+(ai_allegiance_remove flood human)
+(ai_allegiance_remove sentinel player)
+(ai_allegiance_remove sentinel human)</Run>
+      </Game>
+      <Game games="Halo2">
+        <Run>(ai_allegiance_remove heretic player)
+(ai_allegiance_remove heretic human)
+(ai_allegiance_remove prophet player)
+(ai_allegiance_remove prophet human)</Run>
+      </Game>
+      <Game games="Halo3">
+        <Run>(ai_allegiance_remove guilty player)
+(ai_allegiance_remove guilty human)</Run>
+      </Game>
+      <Game games="HaloReach">
+        <Run>(ai_allegiance_remove brute player)
+(ai_allegiance_remove brute human)
+(ai_allegiance_remove mule player)
+(ai_allegiance_remove mule human)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="fireteam" type="button" name="Unlimited Fireteam"
+         desc="Every friendly soldier you pass can join your squad. Build an army.">
+      <Game games="HaloReach,Halo4">
+        <Run>(ai_player_set_fireteam_no_max {player})</Run>
+)MML",
+R"MML(      </Game>
+    </Mod>
+
+    <Mod id="fireteamsize" type="slider" min="0" max="12" step="1" default="4" name="Fireteam Size"
+         desc="How many allies can follow you at once. 0 means you fight alone.">
+      <Game games="HaloReach,Halo4">
+        <Apply>(ai_player_set_fireteam_max {player} {value})</Apply>
+      </Game>
+    </Mod>
 
     <Mod id="erase" type="button" tag="NUKE" name="Erase All AI"
          desc="Deletes every AI on the map. Allies too.">
@@ -327,13 +1011,6 @@ R"MML(  <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles."
         <Apply>(ai_place {value})</Apply>
       </Game>
     </Mod>
-
-    <Mod id="omni" type="toggle" name="One-Hit Kills"
-         desc="Every hit you land is lethal.">
-      <Game games="Halo1">
-        <Set>(set cheat_omnipotent {bool})</Set>
-      </Game>
-    </Mod>
   </Category>
 
   <!-- ================================================================== -->
@@ -345,11 +1022,37 @@ R"MML(  <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles."
     <Mod id="revert" type="hcm-action" hcm="forceRevert" games="all" name="Revert to Checkpoint"
          desc="Loads your last checkpoint." />
 
+    <Mod id="doublerevert" type="hcm-action" hcm="forceDoubleRevert" games="all" name="Revert Two Checkpoints"
+         desc="Loads the checkpoint before your last one." />
+
     <Mod id="restart" type="hcm-action" hcm="forceMissionRestart" games="all" name="Restart Mission"
          desc="Starts the level over, same as the pause menu." />
 
     <Mod id="nocp" type="hcm-toggle" hcm="naturalCheckpointDisable" games="all" name="Block Auto Checkpoints"
          desc="The game stops making its own checkpoints." />
+
+    <Mod id="savegame" type="button" name="Save When Safe"
+         desc="Asks the game to checkpoint as soon as it's safe, the same way missions do.">
+      <Game games="all">
+        <Run>(game_save)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="savenow" type="button" tag="RISKY" name="Save Right Now"
+         desc="Checkpoints this instant, even mid-fall or mid-firefight. You might save yourself into a corner.">
+      <Game games="gen2up">
+        <Run>(game_save_immediate)</Run>
+      </Game>
+      <Game games="Halo1">
+        <Run>(game_save_totally_unsafe)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="inject" type="hcm-action" hcm="injectCheckpoint" games="all" name="Inject Checkpoint File"
+         desc="Loads the checkpoint you selected in HCM's window into the game." />
+
+    <Mod id="dump" type="hcm-action" hcm="dumpCheckpoint" games="all" name="Dump Checkpoint File"
+         desc="Saves your current checkpoint to a file in HCM's window." />
 
     <Mod id="skip" type="button" tag="SKIP" name="Win Mission"
          desc="Ends the level as a win and moves to the next one.">
@@ -358,37 +1061,70 @@ R"MML(  <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles."
       </Game>
     </Mod>
 
-    <Mod id="letterbox" type="toggle" name="Cinema Bars"
-         desc="Black cinematic bars for screenshots and clips.">
-      <Game games="all">
-        <Set>(cinematic_show_letterbox {bool})</Set>
+    <Mod id="lose" type="button" name="Fail Mission"
+         desc="Ends the level as a loss, like the whole squad going down.">
+      <Game games="gen2up">
+        <Run>(game_lost true)</Run>
+      </Game>
+      <Game games="Halo1">
+        <Run>(game_lost)</Run>
       </Game>
     </Mod>
 
-    <Mod id="fadeout" type="button" name="Fade to Black"
-         desc="Fades the screen to black over one second.">
-      <Game games="all">
-        <Run>(fade_out 0 0 0 30)</Run>
+    <Mod id="savequit" type="button" name="Save and Quit"
+         desc="Saves and drops you back to the main menu.">
+      <Game games="gen2up">
+        <Run>(game_save_and_quit)</Run>
       </Game>
     </Mod>
 
-    <Mod id="fadein" type="button" name="Fade Back In"
-         desc="Fades the screen back in.">
-      <Game games="all">
-        <Run>(fade_in 0 0 0 30)</Run>
+    <Mod id="nextdiff" type="choice" name="Next Level Difficulty"
+         desc="Changes the difficulty the next level loads on.">
+      <Option label="Easy" value="easy" games="Halo1" />
+      <Option label="Normal" value="normal" games="Halo1" />
+      <Option label="Heroic" value="hard" games="Halo1" />
+      <Option label="Legendary" value="impossible" games="Halo1" />
+      <Game games="Halo1">
+        <Apply>(game_difficulty_set {value})</Apply>
       </Game>
     </Mod>
   </Category>
 
   <!-- ================================================================== -->
-)MML",
-R"MML(  <Category id="hud" name="HUD and Camera" desc="Screen, HUD and camera tools.">
+  <Category id="hud" name="HUD and Camera" desc="What's on screen and where the camera is.">
 
     <Mod id="hidehud" type="hcm-toggle" hcm="hideHUD" games="all" name="Hide HUD"
          desc="Clean screen for screenshots." />
 
     <Mod id="freecam" type="hcm-toggle" hcm="freeCamera" games="all" name="Free Camera"
          desc="Detaches the camera so you can fly around. Controls are in HCM's main menu." />
+
+    <Mod id="tocam" type="button" name="Teleport to Free Camera"
+         desc="Moves you to wherever the free camera is. Fly the camera somewhere first.">
+      <Game games="Halo1">
+        <Run>(cheat_teleport_to_camera)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="noweaponview" type="toggle" reapply="true" name="Hide First-Person Weapon"
+         desc="Removes your arms and gun from view. Perfect while you're a Hunter or a Monitor.">
+      <Game games="gen3">
+        <On>(set render_first_person false)</On>
+        <Off>(set render_first_person true)</Off>
+      </Game>
+    </Mod>
+
+    <Mod id="hudoff" type="toggle" name="HUD Off (engine)"
+         desc="The game's own HUD switch, separate from HCM's.">
+      <Game games="gen3">
+        <On>(chud_show false)</On>
+        <Off>(chud_show true)</Off>
+      </Game>
+      <Game games="Halo1,Halo2">
+        <On>(show_hud false)</On>
+        <Off>(show_hud true)</Off>
+      </Game>
+    </Mod>
 
     <Mod id="nocrosshair" type="toggle" name="Hide Crosshair"
          desc="Removes the reticle only.">
@@ -402,8 +1138,236 @@ R"MML(  <Category id="hud" name="HUD and Camera" desc="Screen, HUD and camera to
       </Game>
     </Mod>
 
+    <Mod id="nomotion" type="toggle" name="Hide Motion Tracker"
+         desc="No radar. Listen for them instead.">
+      <Game games="gen3">
+        <On>(chud_show_motion_sensor false)</On>
+        <Off>(chud_show_motion_sensor true)</Off>
+      </Game>
+      <Game games="Halo1">
+        <On>(hud_show_motion_sensor false)</On>
+        <Off>(hud_show_motion_sensor true)</Off>
+      </Game>
+    </Mod>
+
+    <Mod id="nogrenadehud" type="toggle" name="Hide Grenade Count"
+         desc="Hides the grenade display.">
+      <Game games="gen3">
+        <On>(chud_show_grenades false)</On>
+        <Off>(chud_show_grenades true)</Off>
+      </Game>
+    </Mod>
+
+    <Mod id="nohealthhud" type="toggle" name="Hide Health and Shields"
+         desc="Hides your health and shield bars.">
+      <Game games="Halo1">
+        <On>(hud_show_health false)
+(hud_show_shield false)</On>
+        <Off>(hud_show_health true)
+(hud_show_shield true)</Off>
+      </Game>
+      <Game games="Halo4">
+        <On>(hud_show_shield false)</On>
+        <Off>(hud_show_shield true)</Off>
+      </Game>
+    </Mod>
+
+    <Mod id="nohudweapon" type="toggle" name="Hide Weapon Display"
+         desc="Hides the weapon and ammo panel.">
+      <Game games="Halo4">
+        <On>(hud_show_weapon false)</On>
+        <Off>(hud_show_weapon true)</Off>
+      </Game>
+    </Mod>
+
+    <Mod id="notraining" type="toggle" name="Hide Training Prompts"
+         desc="Stops the 'press X to...' tutorial text.">
+      <Game games="gen2up">
+        <On>(hud_show_training_text false)</On>
+        <Off>(hud_show_training_text true)</Off>
+      </Game>
+    </Mod>
+
+    <Mod id="info2d" type="hcm-toggle" hcm="display2DInfo" games="all" name="Live Info Overlay"
+         desc="HCM's on-screen readout: position, speed, health and more." />
+
     <Mod id="console" type="hcm-action" hcm="commandConsole" games="all" name="Open Script Console"
          desc="Opens HCM's HaloScript console for typing any engine command." />
+  </Category>
+
+  <!-- ================================================================== -->
+  <Category id="director" name="Director" desc="Cinematic tools for screenshots and clips.">
+
+)MML",
+R"MML(    <Mod id="photomode" type="toggle" tag="PRESET" name="Photo Mode"
+         desc="One switch for a clean frame: HUD off, weapon hidden, cinema bars on.">
+      <Game games="gen3">
+        <On>(chud_show false)
+(set render_first_person false)
+(cinematic_show_letterbox true)</On>
+        <Off>(chud_show true)
+(set render_first_person true)
+(cinematic_show_letterbox false)</Off>
+      </Game>
+      <Game games="Halo1,Halo2">
+        <On>(show_hud false)
+(cinematic_show_letterbox true)</On>
+        <Off>(show_hud true)
+(cinematic_show_letterbox false)</Off>
+      </Game>
+    </Mod>
+
+    <Mod id="letterbox" type="toggle" name="Cinema Bars"
+         desc="Black cinematic bars that slide in.">
+      <Game games="all">
+        <Set>(cinematic_show_letterbox {bool})</Set>
+      </Game>
+    </Mod>
+
+    <Mod id="letterboxnow" type="toggle" name="Cinema Bars (instant)"
+         desc="The same bars, snapped in with no slide.">
+      <Game games="gen2up">
+        <Set>(cinematic_show_letterbox_immediate {bool})</Set>
+      </Game>
+    </Mod>
+
+    <Mod id="dof" type="toggle" name="Depth of Field"
+         desc="Turns on the engine's cinematic focus blur.">
+      <Game games="gen3">
+        <Set>(render_depth_of_field_enable {bool})</Set>
+      </Game>
+    </Mod>
+
+    <Mod id="focus" type="slider" min="0" max="50" step="0.5" default="0" name="Focus Distance"
+         desc="Where the Depth of Field focus sits. Switch Depth of Field on first.">
+      <Game games="gen3">
+        <Apply>(render_dof_focus_depth {value})</Apply>
+      </Game>
+    </Mod>
+
+    <Mod id="cineblur" type="toggle" name="Cinematic Motion Blur"
+         desc="The heavier blur used in cutscenes.">
+      <Game games="gen3">
+        <Set>(render_cinematic_motion_blur {bool})</Set>
+      </Game>
+    </Mod>
+
+    <Mod id="fadeout" type="button" name="Fade to Black"
+         desc="Fades the screen to black over one second.">
+      <Game games="all">
+        <Run>(fade_out 0 0 0 30)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="fadewhite" type="button" name="Fade to White"
+         desc="A slow fade to white, like the end of a level.">
+      <Game games="all">
+        <Run>(fade_out 1 1 1 60)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="fadered" type="button" name="Fade to Red"
+         desc="A slow fade to blood red.">
+      <Game games="all">
+        <Run>(fade_out 0.6 0 0 60)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="fadein" type="button" name="Fade Back In"
+         desc="Fades the screen back in from any of the fades above.">
+      <Game games="all">
+        <Run>(fade_in 0 0 0 30)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="flashbang" type="button" name="Flashbang"
+         desc="Instant white-out that slowly clears.">
+      <Game games="all">
+        <Run>(fade_out 1 1 1 0)
+(fade_in 1 1 1 75)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="blink" type="button" name="Blink"
+         desc="A quick blackout, like a hard hit to the helmet.">
+      <Game games="all">
+        <Run>(fade_out 0 0 0 0)
+(fade_in 0 0 0 40)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="rage" type="button" name="Red Mist"
+         desc="A flash of red and a jolt of the camera.">
+      <Game games="all">
+        <Run>(fade_out 0.7 0 0 0)
+(fade_in 0.7 0 0 45)
+(player_effect_set_max_rotation 3 3 1)
+(player_effect_start 0.8 0)
+(player_effect_stop 1)</Run>
+      </Game>
+    </Mod>
+  </Category>
+
+  <!-- ================================================================== -->
+  <Category id="chaos" name="Chaos" desc="Big, loud and occasionally irreversible. Checkpoint first.">
+
+    <Mod id="giant" type="button" tag="CHAOS" name="Giant Rampage"
+         desc="Titan-sized, nearly indestructible and the ground shakes with every step.">
+      <Game games="all">
+        <Run>(object_set_scale {player} 4 90)
+(unit_set_maximum_vitality {player} 20000 20000)
+(unit_set_current_vitality {player} 20000 20000)
+(unit_impervious {player} true)
+(player_effect_set_max_translation 0.04 0.04 0.03)
+(player_effect_set_max_rotation 2 2 1)
+(player_effect_start 1 1)</Run>
+      </Game>
+      <Game games="gen3">
+        <Run>(unit_falling_damage_disable {player} true)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="antman" type="button" tag="CHAOS" name="Microscopic"
+         desc="Shrink to a fifth of your size. Every Grunt is a giant now.">
+      <Game games="all">
+        <Run>(object_set_scale {player} 0.2 60)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="moonparty" type="button" tag="CHAOS" name="Moon Party"
+         desc="Moon gravity for everything, and a rumble under your feet.">
+      <Game games="all">
+        <Run>(physics_set_gravity 0.15)
+(player_effect_set_max_translation 0.015 0.015 0.01)
+(player_effect_set_max_rotation 0.6 0.6 0.3)
+(player_effect_start 1 1)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="skyfall" type="button" tag="CHAOS" name="Skyfall"
+         desc="Rockets you sky-high. Turns off fall damage first where the game allows it.">
+      <Game games="gen3">
+        <Run>(unit_falling_damage_disable {player} true)
+(object_set_velocity {player} 0 0 40)</Run>
+      </Game>
+      <Game games="Halo2">
+        <Run>(object_set_velocity {player} 0 0 40)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="mutiny" type="button" tag="CHAOS" name="Mutiny"
+         desc="Fakes a betrayal: your own Marines decide you're the enemy. Revert to undo.">
+      <Game games="gen3">
+        <Run>(ai_allegiance_break player human)</Run>
+      </Game>
+    </Mod>
+
+    <Mod id="nuke" type="button" tag="DANGER" name="Delete Every Object"
+         desc="Wipes every non-player object from the level: enemies, allies, vehicles, weapons and crates. Revert to undo.">
+      <Game games="all">
+        <Run>(object_destroy_all)</Run>
+      </Game>
+    </Mod>
   </Category>
 
   <!-- ================================================================== -->
@@ -413,7 +1377,7 @@ R"MML(  <Category id="hud" name="HUD and Camera" desc="Screen, HUD and camera to
   <Category id="classic" name="Halo CE Classic" desc="Bungie's developer cheats, still hidden inside Halo CE.">
 
     <Mod id="jetpack" type="toggle" reapply="true" name="Jetpack"
-         desc="Hold jump to fly.">
+         desc="Hold jump to fly, hold crouch to hover. No fall damage.">
       <Game games="Halo1">
         <Set>(set cheat_jetpack {bool})</Set>
       </Game>
@@ -423,6 +1387,20 @@ R"MML(  <Category id="hud" name="HUD and Camera" desc="Screen, HUD and camera to
          desc="Jump several stories high.">
       <Game games="Halo1">
         <Set>(set cheat_super_jump {bool})</Set>
+      </Game>
+    </Mod>
+
+    <Mod id="deathless" type="toggle" reapply="true" name="Deathless"
+         desc="You take damage but can't die.">
+      <Game games="Halo1">
+        <Set>(set cheat_deathless_player {bool})</Set>
+      </Game>
+    </Mod>
+
+    <Mod id="omni" type="toggle" reapply="true" name="One-Hit Kills"
+         desc="Every hit you land is lethal.">
+      <Game games="Halo1">
+        <Set>(set cheat_omnipotent {bool})</Set>
       </Game>
     </Mod>
 
@@ -452,12 +1430,27 @@ R"MML(  <Category id="hud" name="HUD and Camera" desc="Screen, HUD and camera to
       <Game games="Halo1">
         <Set>(set cheat_reflexive_damage_effects {bool})</Set>
       </Game>
+)MML",
+R"MML(    </Mod>
+
+    <Mod id="cecamo" type="button" name="Active Camo (cheat)"
+         desc="Bungie's camo cheat: a dose of active camouflage for the whole fireteam.">
+      <Game games="Halo1">
+        <Run>(cheat_active_camouflage)</Run>
+      </Game>
     </Mod>
 
-    <Mod id="tocam" type="button" name="Teleport to Free Camera"
-         desc="Moves Master Chief to wherever HCM's free camera is.">
+    <Mod id="slowmo" type="slider" min="0.1" max="3" step="0.05" default="1" name="Engine Game Speed"
+         desc="Halo CE's own speed control. 0.3 is slow motion, 2 is double time.">
       <Game games="Halo1">
-        <Run>(cheat_teleport_to_camera)</Run>
+        <Apply>(game_speed {value})</Apply>
+      </Game>
+    </Mod>
+
+    <Mod id="wireframe" type="toggle" name="Wireframe World"
+         desc="Renders the level as a wireframe. Developer debug view.">
+      <Game games="Halo1">
+        <Set>(set rasterizer_wireframe {bool})</Set>
       </Game>
     </Mod>
   </Category>
@@ -485,4 +1478,4 @@ R"MML(  <Category id="hud" name="HUD and Camera" desc="Screen, HUD and camera to
 </ModMenuLibrary>
 )MML",
 };
-inline constexpr std::size_t kModMenuDefaultLibraryChunkCount = 3;
+inline constexpr std::size_t kModMenuDefaultLibraryChunkCount = 8;

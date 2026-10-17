@@ -1025,7 +1025,7 @@ void ModMenuGUI::renderCategoryList()
 			}
 		}
 
-		if (total == 0 && mSearch.empty() == false) continue;
+		if (total == 0 && i != mSelectedCategory) continue; // collections with nothing for this game stay out of the way
 
 		bool selected = mSelectedCategory == i && mSearch.empty();
 		ImVec2 p = ImGui::GetCursorScreenPos();

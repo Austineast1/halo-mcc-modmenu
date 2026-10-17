@@ -4,11 +4,13 @@
 **Download:** [latest build](../../releases/tag/latest) (`HCM-ModMenu.zip`). Unzip it, launch MCC with *Anti-Cheat Disabled*, run `HaloCheckpointManager.exe`, press **Insert** in a mission.
 
 What this fork adds:
-* **Mod Menu window** (Insert): 60+ mods in 10 tabs for Halo CE, 2, 3, ODST, Reach and 4, with search, per-game support chips, and a live log of every engine command and reply.
-* **Body Swap** in Halo CE (the engine's hidden bump-possession cheat): walk into a Hunter and become it.
-* **Live skulls** tab showing the real on/off state of every skull in the current game.
-* **Auto re-apply**: gravity, size, camo, allegiances and other persistent mods come back after reverts and level loads.
-* **Editable library**: every mod lives in `ModMenuLibrary.xml` next to the exe. Add your own and press *Reload library*, no rebuild.
+* **Mod Menu window** (Insert): 160+ mods in 12 collections for Halo CE, 2, 3, ODST, Reach and 4, in a black-and-gold overlay. Each game only shows the mods that work in it, between 110 and 125 per game plus that game's skulls.
+* **Become**: a real body swap in Halo CE (walk into a Hunter and you *are* the Hunter), true team changes in Reach and Halo 4 (join the Covenant or the Brutes), and over 20 one-press transformations elsewhere: Hunter, Elite, Zealot, Arbiter, Grunt, Jackal, Brute, Chieftain, Drone, Engineer, Guta, Flood forms, Sentinel, Monitor, Prophet, Promethean Knight, Watcher, ODST, Titan and more.
+* **Spartan, Arsenal, World, Battle, Mission, HUD and Camera, Director and Chaos** collections: anti-gravity, boss armour, vehicle nitro, gravity of other worlds, ceasefires and mutinies, unlimited fireteams, photo mode, flashbangs and more.
+* **Live skulls** showing the real on/off state of every skull in the current game.
+* **Auto re-apply**: size, camo, gravity, allegiances and other lasting mods come back after deaths, reverts and level loads.
+* **Editable library**: every mod lives in `ModMenuLibrary.xml` next to the exe. Add your own and press *Reload*, no rebuild.
+* **Checked against the engines**: `tools/validate_modmenu_library.py` tests every command against each game's official HaloScript function list, and the Reach set was also compiled live inside the running game.
 * Builds automatically on GitHub Actions (`.github/workflows/build.yml`).
 
 Mods are HaloScript commands sent through MCC's own engine command interface, so they don't depend on per-patch memory offsets. HCM's own cheats (invulnerability, speedhack, AI freeze, free camera and more) are bridged into the same menu.

@@ -56,6 +56,13 @@ jobs:
       - name: Set up MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      - name: Check every mod command against the official HaloScript lists
+        shell: pwsh
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/Sigmmma/c20 "$env:RUNNER_TEMP\c20"
+          git -C "$env:RUNNER_TEMP\c20" sparse-checkout set src/data/hs_docs
+          python tools/validate_modmenu_library.py "$env:RUNNER_TEMP\c20\src\data\hs_docs"
+
       - name: Regenerate embedded mod library and fonts
         shell: pwsh
         run: |

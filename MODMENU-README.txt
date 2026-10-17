@@ -23,7 +23,7 @@ Insert ........ open or close the Mod Menu
 
 Inside the Mod Menu:
 - Pick a collection on the left: Spartan, Become, Arsenal, World, Battle,
-  Mission, HUD and Camera, Skulls, Halo CE Classic, Custom.
+  Mission, HUD and Camera, Director, Chaos, Skulls, Halo CE Classic, Custom.
   Only mods that work in the game you're playing are shown.
 - Flip the gold switches, press ACTIVATE for one-off effects, or drag a
   slider and press APPLY. Anything switched on gets a gold edge.
@@ -35,13 +35,19 @@ Inside the Mod Menu:
   checkpoint, or load the next level.
 
 
-BECOME A HUNTER
----------------
-Halo CE:  Become tab > turn on "Body Swap", then walk into a Hunter.
-          You take over its body. "Summon Every Character" spawns a crowd
-          to pick from.
-Other games: "Hunter Mode" makes you Hunter-sized and Hunter-tough and puts
-          the Covenant on your side. It is not a full body swap.
+BECOME
+------
+Halo CE:  Become > turn on "Possess Anything", then walk into any unit:
+          a Hunter, an Elite, a Marine, a Flood form. You take over its body.
+          "Summon Every Character" spawns a crowd to pick from.
+Reach and Halo 4: "Join the Covenant" (and "Join the Brutes" in Reach) puts
+          you on their team for real. Covenant treat you as their own and the
+          humans shoot back.
+Every game: one-press transformations (Hunter, Elite, Grunt, Brute, Drone,
+          Engineer, Guta, Flood, Sentinel, Monitor, Prophet, Knight, Titan and
+          more) that change your size, toughness, abilities and allies.
+          "Back to Spartan" undoes them.
+Tip: HUD and Camera > "Hide First-Person Weapon" makes it feel even more real.
 
 
 ADD YOUR OWN MODS
