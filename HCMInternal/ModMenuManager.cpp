@@ -17,6 +17,7 @@
 #include "DirPathContainer.h"
 #include "GameTickEventHook.h"
 #include "GetPlayerDatum.h"
+#include "ModMenuPossession.h"
 
 class ModMenuManager::ModMenuManagerImpl
 {
@@ -35,6 +36,8 @@ private:
 	std::weak_ptr<SettingsStateAndEvents> settingsWeak;
 	std::shared_ptr<RuntimeExceptionHandler> runtimeExceptions;
 	std::weak_ptr<IMessagesGUI> messagesWeak; // HCM's on-screen messages, used to say mods were restored
+	std::unique_ptr<ModMenuPossession> possession; // true body swap (only where the memory layout is known)
+	std::unique_ptr<ModMenuSpawner> spawner;		// spawn anything the level has loaded
 
 	// optional engine events
 	std::optional<std::shared_ptr<ObservedEvent<HSOutputEvent>>> haloScriptOutputEvent;
@@ -149,6 +152,8 @@ private:
 			closeAsap = true;
 			return;
 		}
+		if (possession) possession->onLevelChanged();
+		if (spawner) spawner->onLevelChanged();
 		// our game loaded (or reloaded) a level: give the player a few seconds to spawn, then re-apply
 		if (gui) gui->onLevelLoaded();
 		reapplyReason = 1;
@@ -168,6 +173,20 @@ private:
 	}
 
 	// polled a few times a second on the render thread while our game is being played
+	// take the player's current unit as the baseline (after a deliberate body swap)
+	void forgetPlayerUnit()
+	{
+		if (auto playerDatum = playerDatumWeak.lock())
+		{
+			try
+			{
+				Datum unit = playerDatum->getPlayerDatum();
+				if (!unit.isNull()) lastPlayerUnit = unit;
+			}
+			catch (HCMRuntimeException) {}
+		}
+	}
+
 	void pollForResets(bool ourGamePlaying)
 	{
 		// keep the last values while not playing (loading screens, menus) so a revert or restart that passes
@@ -200,7 +219,7 @@ private:
 			Datum unit = playerDatum->getPlayerDatum();
 			if (!unit.isNull())
 			{
-				if (lastPlayerUnit && unit != *lastPlayerUnit && wanted && reapplyAtMs.load() == 0)
+				if (lastPlayerUnit && unit != *lastPlayerUnit && wanted && reapplyAtMs.load() == 0 && !(possession && possession->busy()))
 				{
 					PLOG_DEBUG << "ModMenu: player unit changed (" << *lastPlayerUnit << " -> " << unit << "), re-applying mods";
 					scheduleReapply(2, 600);
@@ -235,7 +254,33 @@ private:
 			if (closeAsap.exchange(false) || (openRequests && !ourGamePlaying))
 				close();
 
+			if (possession)
+			{
+				bool swapping = possession->busy();
+				if (auto message = possession->update())
+				{
+					gui->notify(*message);
+					if (auto messages = messagesWeak.lock()) messages->addMessage("Mod Menu: " + *message);
+				}
+				// a body swap changes the player's unit on purpose: don't mistake it for a death and re-apply everything
+				if (swapping) forgetPlayerUnit();
+			}
+
 			pollForResets(ourGamePlaying);
+
+			if (spawner)
+			{
+				if (auto result = spawner->update())
+				{
+					gui->notify(result->message);
+					if (result->becomeIt && result->object != 0xFFFFFFFF)
+					{
+						// spawned a body to jump into: take it over on the next tick
+						auto message = possession ? possession->possessBody(result->object) : std::string("Body swapping isn't available in this game.");
+						gui->notify(message);
+					}
+				}
+			}
 
 			// pending re-apply after revert / level load
 			auto due = reapplyAtMs.load();
@@ -293,6 +338,42 @@ public:
 		auto engine = resolveDependentCheat(GameEngineFunctions); // throws HCMInitException if the engine command interface isn't available
 		auto dirPath = dicon.Resolve<DirPathContainer>().lock()->dirPath;
 		gui = std::make_unique<ModMenuGUI>(game, engine, settingsWeak, dirPath);
+
+		try
+		{
+			possession = std::make_unique<ModMenuPossession>(game, dicon, engine);
+			PLOG_INFO << "ModMenu: true possession available for " << game.toString();
+		}
+		catch (HCMInitException ex)
+		{
+			PLOG_INFO << "ModMenu: true possession not available for " << game.toString() << ": " << ex.what();
+		}
+		try
+		{
+			spawner = std::make_unique<ModMenuSpawner>(game, dicon, [this]() -> std::optional<ModMenuPose>
+				{
+					return possession ? possession->playerPose() : std::nullopt;
+				});
+			PLOG_INFO << "ModMenu: spawning available for " << game.toString();
+		}
+		catch (HCMInitException ex)
+		{
+			PLOG_INFO << "ModMenu: spawning not available for " << game.toString() << ": " << ex.what();
+		}
+		gui->setSpawnHandlers(
+			[this]() -> const std::vector<ModMenuSpawnEntry>* { return spawner ? &spawner->catalogue() : nullptr; },
+			[this](const ModMenuSpawnEntry& entry, bool becomeIt) -> std::string
+			{
+				return spawner ? spawner->spawn(entry, becomeIt) : std::string("Spawning isn't available in this game yet.");
+			});
+
+		gui->setCustomActionHandler([this](const std::string& key) -> std::string
+			{
+				if (!possession) return "True possession isn't available in this game yet.";
+				if (key == "possessAimed") return possession->possessAimed();
+				if (key == "possessReturn") return possession->returnToBody();
+				return "Unknown action.";
+			});
 
 		auto controls = dicon.Resolve<ControlServiceContainer>().lock();
 		hotkeyDisablerWeak = controls->hotkeyDisabler;

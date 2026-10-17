@@ -31,7 +31,7 @@
   group="name" makes buttons one-at-a-time: running one forgets the others in the group (Become forms use this).
   A reapply button in a group is remembered and run again after deaths, reverts and level loads.
 -->
-<ModMenuLibrary version="7" title="Mod Menu">
+<ModMenuLibrary version="9" title="Mod Menu">
 
   <!-- ================================================================== -->
   <Category id="spartan" name="Spartan" desc="Your body: armour, health, size and movement.">
@@ -216,6 +216,12 @@
         <Set>(set cheat_bump_possession {bool})</Set>
       </Game>
     </Mod>
+
+    <Mod id="possessaim" type="hcm-action" hcm="possessAimed" games="HaloReach" tag="TRUE BODY SWAP" name="Take Over What You're Aiming At"
+         desc="Aim at any creature (a Hunter, an Elite, a Brute, a Grunt, a Marine) and press Activate, or stand right next to one. You become it: its eyes, its legs, its weapons, its strength. Your old body stays standing where you left it." />
+
+    <Mod id="possessreturn" type="hcm-action" hcm="possessReturn" games="HaloReach" tag="TRUE BODY SWAP" name="Return to Your Body"
+         desc="Leave the creature (it gets its own mind back) and jump back into the body you started in. Dying or reloading a checkpoint also puts you back." />
 
     <Mod id="allchars" type="button" tag="BODY SWAP" name="Summon Every Character"
          desc="Spawns one of every character the level has loaded, right in front of you. Turn on Possess Anything, then walk into the one you want to be.">
@@ -612,6 +618,9 @@
       </Game>
     </Mod>
   </Category>
+
+  <!-- ================================================================== -->
+  <Category id="spawn" name="Spawn" special="spawn" desc="Everything this level has loaded: weapons, vehicles, characters, armor abilities and props. It appears right in front of you. Characters can be jumped into with BECOME." />
 
   <!-- ================================================================== -->
   <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles.">

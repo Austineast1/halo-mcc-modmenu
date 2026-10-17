@@ -36,7 +36,7 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
   group="name" makes buttons one-at-a-time: running one forgets the others in the group (Become forms use this).
   A reapply button in a group is remembered and run again after deaths, reverts and level loads.
 -->
-<ModMenuLibrary version="7" title="Mod Menu">
+<ModMenuLibrary version="9" title="Mod Menu">
 
   <!-- ================================================================== -->
   <Category id="spartan" name="Spartan" desc="Your body: armour, health, size and movement.">
@@ -223,6 +223,12 @@ R"MML(        <Run>(object_set_velocity {player} 20 0 1.5)</Run>
       </Game>
     </Mod>
 
+    <Mod id="possessaim" type="hcm-action" hcm="possessAimed" games="HaloReach" tag="TRUE BODY SWAP" name="Take Over What You're Aiming At"
+         desc="Aim at any creature (a Hunter, an Elite, a Brute, a Grunt, a Marine) and press Activate, or stand right next to one. You become it: its eyes, its legs, its weapons, its strength. Your old body stays standing where you left it." />
+
+    <Mod id="possessreturn" type="hcm-action" hcm="possessReturn" games="HaloReach" tag="TRUE BODY SWAP" name="Return to Your Body"
+         desc="Leave the creature (it gets its own mind back) and jump back into the body you started in. Dying or reloading a checkpoint also puts you back." />
+
     <Mod id="allchars" type="button" tag="BODY SWAP" name="Summon Every Character"
          desc="Spawns one of every character the level has loaded, right in front of you. Turn on Possess Anything, then walk into the one you want to be.">
       <Game games="Halo1">
@@ -348,7 +354,8 @@ R"MML(        <Run>(object_set_velocity {player} 20 0 1.5)</Run>
       </Game>
     </Mod>
 
-    <Mod id="p_jackal" type="button" reapply="true" group="form" tag="PRESET" name="Jackal"
+)MML",
+R"MML(    <Mod id="p_jackal" type="button" reapply="true" group="form" tag="PRESET" name="Jackal"
          desc="Kig-Yar. Wiry and quick to drop, but the Covenant lines welcome you.">
       <Game games="all">
         <Run>(object_set_scale {player} 0.85 45)
@@ -363,8 +370,7 @@ R"MML(        <Run>(object_set_velocity {player} 20 0 1.5)</Run>
       <Game games="Halo2,Halo3,Halo3ODST,HaloReach">
         <Run>(object_set_scale {player} 1.25 45)
 (unit_set_maximum_vitality {player} 450 200)
-)MML",
-R"MML((unit_set_current_vitality {player} 450 200)
+(unit_set_current_vitality {player} 450 200)
 (unit_impervious {player} true)
 (ai_allegiance covenant player)</Run>
       </Game>
@@ -538,7 +544,8 @@ R"MML((unit_set_current_vitality {player} 450 200)
       </Game>
     </Mod>
 
-    <Mod id="p_odst" type="button" reapply="true" group="form" tag="PRESET" name="ODST"
+)MML",
+R"MML(    <Mod id="p_odst" type="button" reapply="true" group="form" tag="PRESET" name="ODST"
          desc="Feet first into hell. No shields, but tougher than a Marine and no fall damage where the game allows it.">
       <Game games="all">
         <Run>(object_set_scale {player} 1 45)
@@ -554,8 +561,7 @@ R"MML((unit_set_current_vitality {player} 450 200)
          desc="Invisible and ignored by every AI. You were never here.">
       <Game games="gen2up">
         <Run>(unit_set_active_camo {player} true 99999)
-)MML",
-R"MML((ai_disregard {players} true)</Run>
+(ai_disregard {players} true)</Run>
       </Game>
     </Mod>
 
@@ -620,6 +626,9 @@ R"MML((ai_disregard {players} true)</Run>
       </Game>
     </Mod>
   </Category>
+
+  <!-- ================================================================== -->
+  <Category id="spawn" name="Spawn" special="spawn" desc="Everything this level has loaded: weapons, vehicles, characters, armor abilities and props. It appears right in front of you. Characters can be jumped into with BECOME." />
 
   <!-- ================================================================== -->
   <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles.">
@@ -727,7 +736,8 @@ R"MML((ai_disregard {players} true)</Run>
     </Mod>
 
     <Mod id="powerups" type="button" name="All Power-ups"
-         desc="Spawns camo and overshield power-ups next to you.">
+)MML",
+R"MML(         desc="Spawns camo and overshield power-ups next to you.">
       <Game games="Halo1">
         <Run>(cheat_all_powerups)</Run>
       </Game>
@@ -754,8 +764,7 @@ R"MML((ai_disregard {players} true)</Run>
     <Mod id="gravpreset" type="choice" reapply="true" name="Gravity of Another World"
          desc="Pick a place and the whole level obeys its gravity.">
       <Option label="Deep Space (0.02)" value="0.02" games="all" />
-)MML",
-R"MML(      <Option label="The Moon (0.17)" value="0.17" games="all" />
+      <Option label="The Moon (0.17)" value="0.17" games="all" />
       <Option label="Mars (0.38)" value="0.38" games="all" />
       <Option label="Halo Ring (0.7)" value="0.7" games="all" />
       <Option label="Earth (1)" value="1" games="all" />
@@ -931,7 +940,8 @@ R"MML(      <Option label="The Moon (0.17)" value="0.17" games="all" />
       <Game games="Halo2">
         <Run>(ai_allegiance heretic player)
 (ai_allegiance heretic human)
-(ai_allegiance prophet player)
+)MML",
+R"MML((ai_allegiance prophet player)
 (ai_allegiance prophet human)</Run>
       </Game>
       <Game games="Halo3">
@@ -964,8 +974,7 @@ R"MML(      <Option label="The Moon (0.17)" value="0.17" games="all" />
 (ai_allegiance_remove prophet player)
 (ai_allegiance_remove prophet human)</Run>
       </Game>
-)MML",
-R"MML(      <Game games="Halo3">
+      <Game games="Halo3">
         <Run>(ai_allegiance_remove guilty player)
 (ai_allegiance_remove guilty human)</Run>
       </Game>
@@ -1145,7 +1154,8 @@ R"MML(      <Game games="Halo3">
 
     <Mod id="nogrenadehud" type="toggle" name="Hide Grenade Count"
          desc="Hides the grenade display.">
-      <Game games="gen3">
+)MML",
+R"MML(      <Game games="gen3">
         <On>(chud_show_grenades false)</On>
         <Off>(chud_show_grenades true)</Off>
       </Game>
@@ -1181,8 +1191,7 @@ R"MML(      <Game games="Halo3">
       </Game>
     </Mod>
 
-)MML",
-R"MML(    <Mod id="info2d" type="hcm-toggle" hcm="display2DInfo" games="all" name="Live Info Overlay"
+    <Mod id="info2d" type="hcm-toggle" hcm="display2DInfo" games="all" name="Live Info Overlay"
          desc="HCM's on-screen readout: position, speed, health and more." />
 
     <Mod id="console" type="hcm-action" hcm="commandConsole" games="all" name="Open Script Console"
@@ -1373,7 +1382,8 @@ R"MML(    <Mod id="info2d" type="hcm-toggle" hcm="display2DInfo" games="all" nam
          desc="Hold jump to fly, hold crouch to hover. No fall damage.">
       <Game games="Halo1">
         <Set>(set cheat_jetpack {bool})</Set>
-      </Game>
+)MML",
+R"MML(      </Game>
     </Mod>
 
     <Mod id="superjump" type="toggle" reapply="true" name="Super Jump"
@@ -1407,8 +1417,7 @@ R"MML(    <Mod id="info2d" type="hcm-toggle" hcm="display2DInfo" games="all" nam
     <Mod id="ceclip" type="toggle" reapply="true" name="Bottomless Clip (engine)"
          desc="The engine's own bottomless clip cheat.">
       <Game games="Halo1">
-)MML",
-R"MML(        <Set>(set cheat_bottomless_clip {bool})</Set>
+        <Set>(set cheat_bottomless_clip {bool})</Set>
       </Game>
     </Mod>
 

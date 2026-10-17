@@ -7,6 +7,7 @@
 #include "ModMenuLibrary.h"
 #include "SkullEnum.h"
 #include "imgui.h"
+#include "ModMenuSpawnTypes.h"
 #include <deque>
 
 // Renders the in-game Mod Menu window and runs mods.
@@ -53,6 +54,13 @@ private:
 	float mBasePx = 20.f;		// body text size this frame, derived from screen height * mTextScale
 	float mLastFooterH = 0.f;
 	ImVec2 mSettingsAnchor{ 0.f, 0.f };
+	std::function<std::string(const std::string&)> mCustomAction;
+
+	// spawning (Spawn collection)
+	std::function<const std::vector<ModMenuSpawnEntry>*()> mSpawnCatalogue;
+	std::function<std::string(const ModMenuSpawnEntry&, bool)> mSpawnAction;
+	int mSpawnKind = 0;
+	std::string mSpawnFilter;
 	bool mCloseRequested = false;
 	bool mOpenConsoleRequested = false;
 
@@ -109,6 +117,7 @@ private:
 	void renderModList();
 	void renderMod(const ModDef& mod);
 	void renderSkullPanel();
+	void renderSpawnPanel();
 	void renderLog(float totalHeight);
 	void renderFooter();
 	void renderSettingsPopup();
@@ -129,6 +138,16 @@ public:
 
 	// a new level was loaded: alliances made on the previous one no longer exist
 	void onLevelLoaded() { mForgetAlliances = true; }
+
+	// actions the manager handles itself (true possession). Returns the message to show.
+	void setCustomActionHandler(std::function<std::string(const std::string&)> handler) { mCustomAction = std::move(handler); }
+
+	// spawning: the catalogue of what this level has loaded, and the spawn action (entry, then-become-it)
+	void setSpawnHandlers(std::function<const std::vector<ModMenuSpawnEntry>*()> catalogue, std::function<std::string(const ModMenuSpawnEntry&, bool)> action)
+	{
+		mSpawnCatalogue = std::move(catalogue);
+		mSpawnAction = std::move(action);
+	}
 
 	// shows a line in the menu's footer next time it's open
 	void notify(const std::string& text) { toast(text); }

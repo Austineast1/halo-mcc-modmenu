@@ -1098,6 +1098,12 @@ void ModMenuGUI::renderCategoryList()
 			total = (int)skulls.size();
 			for (auto& [k, v] : skulls) if (v) active++;
 		}
+		else if (cat.special == "spawn")
+		{
+			if (!mSearch.empty()) continue;
+			auto* catalogue = mSpawnCatalogue ? mSpawnCatalogue() : nullptr;
+			total = catalogue ? (int)catalogue->size() : 0;
+		}
 		else
 		{
 			for (auto* mod : visibleMods(cat))
@@ -1185,6 +1191,11 @@ void ModMenuGUI::renderModList()
 	if (cat.special == "skulls")
 	{
 		renderSkullPanel();
+		return;
+	}
+	if (cat.special == "spawn")
+	{
+		renderSpawnPanel();
 		return;
 	}
 
@@ -1283,16 +1294,22 @@ void ModMenuGUI::renderMod(const ModDef& mod)
 		}
 		else if (luxButton(actionLabel, actionStyle, B, S))
 		{
+			std::optional<std::string> message = std::format("{} activated", mod.name);
 			if (mod.type == ModType::Toggle) applyToggle(mod, true);
 			else if (mod.type == ModType::Button) runButton(mod);
 			else if (mod.hcmKey == "commandConsole") mOpenConsoleRequested = true;
+			else if (mod.hcmKey.starts_with("possess"))
+			{
+				message = mCustomAction ? mCustomAction(mod.hcmKey) : std::string("True possession isn't available here.");
+				addLog(std::format("{}: {}", mod.hcmKey, *message), LogLine::Kind::Info);
+			}
 			else if (auto ev = hcmAction(mod.hcmKey))
 			{
 				addLog(std::format("HCM action {}", mod.hcmKey), LogLine::Kind::Info);
 				ev->operator()();
 			}
 			else addLog(std::format("Unknown HCM action '{}'", mod.hcmKey), LogLine::Kind::Error);
-			toast(std::format("{} activated", mod.name));
+			toast(*message);
 		}
 		// go back under the text (or to the top-left, which is already inside the card, if nothing follows)
 		ImGui::SetCursorScreenPos(hasRowControls ? afterText : top);
@@ -1492,6 +1509,108 @@ void ModMenuGUI::renderSkullPanel()
 		endCard(card, value, S);
 		ImGui::PopID();
 	}
+}
+
+void ModMenuGUI::renderSpawnPanel()
+{
+	const float B = mBasePx, S = B / 20.f;
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+	auto* catalogue = mSpawnCatalogue ? mSpawnCatalogue() : nullptr;
+	if (!catalogue)
+	{
+		textItem(ModMenuFonts::body(), B * 0.9f, colTaupe, "Spawning works in Halo: Reach for now. More games are on the way.");
+		return;
+	}
+	if (catalogue->empty())
+	{
+		textItem(ModMenuFonts::body(), B * 0.9f, colTaupe, "Reading what this level has loaded... (load into a mission if you're in a menu)");
+		return;
+	}
+
+	static const char* kindNames[] = { "WEAPONS", "VEHICLES", "CHARACTERS", "EQUIPMENT", "PROPS" };
+	int counts[(int)SpawnKind::Count] = {};
+	for (auto& e : *catalogue) counts[(int)e.kind]++;
+	if (counts[mSpawnKind] == 0)
+		for (int k = 0; k < (int)SpawnKind::Count; k++) if (counts[k]) { mSpawnKind = k; break; }
+
+	// kind pills
+	bool first = true;
+	for (int k = 0; k < (int)SpawnKind::Count; k++)
+	{
+		if (counts[k] == 0) continue;
+		if (!first) ImGui::SameLine(0.f, 8.f * S);
+		first = false;
+		auto label = std::format("{}  {}##spawnkind{}", kindNames[k], counts[k], k);
+		if (luxButton(label.c_str(), k == mSpawnKind ? Btn::Primary : Btn::Outline, B, S)) { mSpawnKind = k; }
+	}
+	ImGui::Dummy(ImVec2(0.f, 6.f * S));
+
+	// filter
+	{
+		float px = B * 0.82f, h = px + 18.f * S;
+		ModMenuFonts::Scoped f(ModMenuFonts::body(), px);
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, h * 0.5f);
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(18.f * S, 9.f * S));
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+		ImGui::InputTextWithHint("##spawnfilter", "Filter (rifle, warthog, hunter...)", &mSpawnFilter);
+		ImGui::PopStyleVar(2);
+	}
+	if (mSpawnKind == (int)SpawnKind::Character)
+		textItem(ModMenuFonts::body(), B * 0.74f, colMuted, "Characters spawn as empty bodies. Press BECOME to jump straight into one.", ImGui::GetContentRegionAvail().x);
+	else if (mSpawnKind == (int)SpawnKind::Vehicle)
+		textItem(ModMenuFonts::body(), B * 0.74f, colMuted, "Vehicles appear a few metres ahead of you, facing the way you're looking.", ImGui::GetContentRegionAvail().x);
+	ImGui::Dummy(ImVec2(0.f, 4.f * S));
+
+	// rows
+	std::string filter = lower(mSpawnFilter);
+	std::vector<const ModMenuSpawnEntry*> rows;
+	for (auto& e : *catalogue)
+		if ((int)e.kind == mSpawnKind && (filter.empty() || lower(e.name).contains(filter) || lower(e.path).contains(filter))) rows.push_back(&e);
+	if (rows.empty())
+	{
+		textItem(ModMenuFonts::body(), B * 0.86f, colTaupe, "Nothing matches that filter.");
+		return;
+	}
+
+	const float rowH = 54.f * S;
+	ImGuiListClipper clipper;
+	clipper.Begin((int)rows.size(), rowH + ImGui::GetStyle().ItemSpacing.y);
+	while (clipper.Step())
+	{
+		for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+		{
+			const auto& e = *rows[i];
+			ImGui::PushID((int)e.tag);
+			ImVec2 p = ImGui::GetCursorScreenPos();
+			float w = ImGui::GetContentRegionAvail().x;
+			ImVec2 q(p.x + w, p.y + rowH - 6.f * S);
+			bool hovered = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(p, q);
+			dl->AddRectFilled(p, q, col32(hovered ? colCardHover : colCard), 10.f * S);
+
+			float namePx = B * 0.92f, pathPx = B * 0.62f;
+			float textTop = p.y + (rowH - 6.f * S - namePx - pathPx - 3.f * S) * 0.5f;
+			dl->AddText(fBold(), namePx, ImVec2(p.x + 18.f * S, textTop), col32(colIvory), e.name.c_str());
+			ImGui::PushClipRect(p, ImVec2(q.x - 260.f * S, q.y), true);
+			dl->AddText(fBody(), pathPx, ImVec2(p.x + 18.f * S, textTop + namePx + 3.f * S), col32(colMuted), e.path.c_str());
+			ImGui::PopClipRect();
+
+			bool canBecome = e.kind == SpawnKind::Character;
+			float bh = buttonHeight(B, S);
+			float spawnW = buttonWidth("SPAWN", Btn::Outline, B, S);
+			float becomeW = canBecome ? buttonWidth("BECOME", Btn::Primary, B, S) + 10.f * S : 0.f;
+			ImGui::SetCursorScreenPos(ImVec2(q.x - 14.f * S - spawnW - becomeW, p.y + (rowH - 6.f * S - bh) * 0.5f));
+			if (canBecome)
+			{
+				if (luxButton("BECOME", Btn::Primary, B, S) && mSpawnAction) toast(mSpawnAction(e, true));
+				ImGui::SameLine(0.f, 10.f * S);
+			}
+			if (luxButton("SPAWN", Btn::Outline, B, S) && mSpawnAction) toast(mSpawnAction(e, false));
+			ImGui::SetCursorScreenPos(p);
+			ImGui::Dummy(ImVec2(w, rowH));
+			ImGui::PopID();
+		}
+	}
+	clipper.End();
 }
 
 void ModMenuGUI::renderLog(float totalHeight)
