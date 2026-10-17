@@ -58,14 +58,26 @@ Halo: Reach true body swap: Become > "Take Over What You're Aiming At".
 Tip: HUD and Camera > "Hide First-Person Weapon" makes it feel even more real.
 
 
-SPAWN (Halo: Reach)
--------------------
+SPAWN (Halo 3, ODST and Reach)
+-------------------------------
 The Spawn collection lists every weapon, vehicle, character, piece of
-equipment and crate the current level has loaded. Pick a tab, type in the
-filter, press SPAWN and it appears in front of you. Characters have a BECOME
-button too: it spawns the body and puts you straight inside it.
-What's on the list depends on the mission (and on the Workshop mod you're
-playing), because the game can only build things the level has loaded.
+equipment and crate the current part of the level has loaded. Pick a tab,
+type in the filter, press SPAWN and it appears in front of you. In Reach,
+characters also have a BECOME button: it spawns the body and puts you
+straight inside it.
+Missions only keep some vehicles in memory at a time. Press LOAD MORE FROM
+THIS MISSION to load every extra set the mission allows right now
+(vehicles, weapons and characters it would normally bring in later); the
+list grows a few seconds later. What exists at all depends on the mission
+(and on the Workshop mod you're playing): a Scorpion can only be spawned on
+a mission that has one.
+
+
+THIRD PERSON
+------------
+HUD and Camera > "Third Person" puts the camera behind your shoulder in any
+game. You keep full control (walk, aim, shoot, drive), and it follows any
+body you take over. "Third Person Distance" pulls it in or out.
 
 
 STEAM WORKSHOP MODS
@@ -94,7 +106,7 @@ the results are written to ModMenuDev.log. Commands:
                              names the mod that did it.  "selftest stop" ends it
   alloff                     turn every mod off
   hs <command>               send one HaloScript command
-  spawn <name> / become <name> / catalogue   (Reach) spawning
+  spawn <name> / become <name> / catalogue / loadmore   spawning
   possess / return / pose    (Reach) body swap
   status                     game, tick and player unit
   wait <ms>                  pause between lines
