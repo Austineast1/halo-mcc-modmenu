@@ -56,9 +56,11 @@ jobs:
       - name: Set up MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Regenerate embedded mod library
+      - name: Regenerate embedded mod library and fonts
         shell: pwsh
-        run: python tools/embed_modmenu_library.py
+        run: |
+          python tools/embed_modmenu_library.py
+          python tools/embed_modmenu_fonts.py
 
       - name: Build HCM + Mod Menu (Release x64)
         shell: pwsh
@@ -91,6 +93,8 @@ jobs:
           Copy-Item "HCMInternal\InternalPointerData.xml" $out -Force
           Copy-Item "MODMENU-README.txt" "$out\MOD MENU - READ ME.txt" -Force
           Copy-Item "LICENSE" "$out\LICENSE.txt" -Force
+          New-Item -ItemType Directory -Force -Path "$out\Font Licenses" | Out-Null
+          Copy-Item "HCMInternal\fonts\OFL-*.txt" "$out\Font Licenses" -Force
           $zip = "HCM-ModMenu.zip"
           Compress-Archive -Path "$out\*" -DestinationPath $zip -Force
           "zip=$zip" >> $env:GITHUB_OUTPUT

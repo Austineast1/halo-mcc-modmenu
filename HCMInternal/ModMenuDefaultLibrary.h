@@ -34,7 +34,7 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
   One command per line. Lines starting with ; are ignored.
   reapply="true" re-sends the mod after a checkpoint revert or level load.
 -->
-<ModMenuLibrary version="3" title="HCM MOD MENU">
+<ModMenuLibrary version="4" title="Mod Menu">
 
   <!-- ================================================================== -->
   <Category id="spartan" name="Spartan" desc="Your body: health, size, camo and movement.">

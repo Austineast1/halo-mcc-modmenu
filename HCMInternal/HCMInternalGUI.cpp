@@ -203,9 +203,9 @@ void HCMInternalGUI::primaryRender()
 		ImGui::SetNextWindowPos(mWindowPos);
 
 		if (m_WindowOpen)
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 0.80f, 0.40f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.86f, 0.67f, 1.00f)); // champagne gold title
 		else
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 0.60f, 0.25f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.83f, 0.69f, 0.42f, 1.00f)); // gold when collapsed
 
 
 

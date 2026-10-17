@@ -6,6 +6,7 @@
 #include "SettingsStateAndEvents.h"
 #include "ModMenuLibrary.h"
 #include "SkullEnum.h"
+#include "imgui.h"
 #include <deque>
 
 // Renders the in-game Mod Menu window and runs mods.
@@ -47,16 +48,25 @@ private:
 	std::string mSearch;
 	bool mAutoReapply = true;
 	bool mPauseWhileOpen = false;
-	bool mShowLog = true;
-	float mFontSize = 15.f;
+	bool mShowLog = false;		// engine log drawer, off by default to keep the menu clean
+	float mTextScale = 1.f;		// user text size multiplier (Settings)
+	float mBasePx = 20.f;		// body text size this frame, derived from screen height * mTextScale
+	float mLastFooterH = 0.f;
+	ImVec2 mSettingsAnchor{ 0.f, 0.f };
 	bool mCloseRequested = false;
 	bool mOpenConsoleRequested = false;
 
-	std::mutex mLogMutex;
+	std::mutex mLogMutex;		// guards mLog and the toast (engine output can arrive off the render thread)
 	std::deque<LogLine> mLog;
 	const size_t mMaxLog = 60;
 	bool mScrollLogToBottom = false;
 	int mCommandsSent = 0;
+
+	// one-line confirmation shown in the footer ("Hunter Mode activated")
+	std::string mToastText;
+	bool mToastIsError = false;
+	std::chrono::steady_clock::time_point mToastAt{};
+	void toast(const std::string& text, bool isError = false);
 
 	// mod execution
 	void sendLines(const std::vector<std::string>& lines, const std::string& value);
@@ -88,15 +98,15 @@ private:
 	// rendering
 	void pushStyle();
 	void popStyle();
+	void renderBackdrop();
 	void renderHeader();
 	void renderCategoryList();
 	void renderModList();
 	void renderMod(const ModDef& mod);
 	void renderSkullPanel();
-	void renderLog();
+	void renderLog(float totalHeight);
 	void renderFooter();
-	void renderGameChips(const ModDef& mod, float rightEdge);
-	void renderTag(const std::string& tag);
+	void renderSettingsPopup();
 
 	void loadLibrary();
 	void turnEverythingOff();

@@ -22,14 +22,16 @@ Insert ........ open or close the Mod Menu
 `  (grave) .... open HCM's own main menu (rebind keys there)
 
 Inside the Mod Menu:
-- Pick a tab on the left: Spartan, Become, Arsenal, World, Battle, Mission,
-  HUD and Camera, Skulls, Halo CE Classic, Custom.
+- Pick a collection on the left: Spartan, Become, Arsenal, World, Battle,
+  Mission, HUD and Camera, Skulls, Halo CE Classic, Custom.
+  Only mods that work in the game you're playing are shown.
+- Flip the gold switches, press ACTIVATE for one-off effects, or drag a
+  slider and press APPLY. Anything switched on gets a gold edge.
 - Use the search bar to find any mod by name.
-- The game chips on each row (CE H2 H3 ODST REACH H4) show which games
-  that mod works in. The one you're playing is highlighted.
-- The ENGINE BUS panel shows every command sent to the game and what the
-  game replied. Red lines mean that command didn't work in this game.
-- Mods marked (r) turn themselves back on after you die, revert a
+- The line at the bottom left confirms what just happened.
+- SETTINGS (bottom right): re-apply mods after death, pause while the menu
+  is open, show the engine log (every command sent to MCC), and text size.
+- Mods that are on turn themselves back on after you die, revert a
   checkpoint, or load the next level.
 
 

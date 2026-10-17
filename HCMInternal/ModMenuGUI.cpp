@@ -1,33 +1,42 @@
 #include "pch.h"
 #include "ModMenuGUI.h"
 #include "SkullEnum.h"
-#include "ScopedImFontScaler.h"
+#include "ModMenuFonts.h"
 #include "imgui.h"
 #include "imgui_stdlib.h"
 #include <shellapi.h>
 #include <format>
 #include <sstream>
 #include <deque>
+#include <array>
+#include <cfloat>
 
 namespace
 {
 	constexpr ImVec4 rgba(int r, int g, int b, float a = 1.f) { return ImVec4(r / 255.f, g / 255.f, b / 255.f, a); }
 
-	// palette: dark slate with a visor-amber accent and telemetry cyan
-	constexpr ImVec4 colWindow = rgba(9, 12, 17, 0.96f);
-	constexpr ImVec4 colPanel = rgba(14, 19, 26);
-	constexpr ImVec4 colBorder = rgba(64, 80, 100, 0.55f);
-	constexpr ImVec4 colFrame = rgba(22, 29, 38);
-	constexpr ImVec4 colFrameHover = rgba(34, 44, 57);
-	constexpr ImVec4 colText = rgba(222, 230, 240);
-	constexpr ImVec4 colDim = rgba(128, 142, 160);
-	constexpr ImVec4 colFaint = rgba(78, 90, 106);
-	constexpr ImVec4 colAccent = rgba(242, 170, 60);
-	constexpr ImVec4 colAccentDim = rgba(242, 170, 60, 0.35f);
-	constexpr ImVec4 colCyan = rgba(90, 220, 255);
-	constexpr ImVec4 colGood = rgba(120, 240, 160);
-	constexpr ImVec4 colBad = rgba(255, 96, 110);
-	constexpr ImVec4 colTag = rgba(255, 120, 190);
+	// Palette: black lacquer, champagne gold and ivory.
+	constexpr ImVec4 colWindow = rgba(11, 10, 8, 0.96f);
+	constexpr ImVec4 colInk = rgba(12, 11, 9);				// solid, for text and knobs sitting on gold
+	constexpr ImVec4 colPopup = rgba(19, 17, 14, 0.985f);
+	constexpr ImVec4 colCard = rgba(255, 244, 222, 0.030f);
+	constexpr ImVec4 colCardHover = rgba(255, 244, 222, 0.052f);
+	constexpr ImVec4 colGold = rgba(212, 175, 106);
+	constexpr ImVec4 colGoldBright = rgba(243, 220, 170);
+	constexpr ImVec4 colGoldDeep = rgba(150, 120, 68);
+	constexpr ImVec4 colIvory = rgba(238, 231, 216);
+	constexpr ImVec4 colTaupe = rgba(165, 154, 136);
+	constexpr ImVec4 colMuted = rgba(114, 106, 94);
+	constexpr ImVec4 colFaint = rgba(74, 69, 61);
+	constexpr ImVec4 colTrack = rgba(255, 244, 222, 0.10f);
+	constexpr ImVec4 colField = rgba(255, 244, 222, 0.045f);
+	constexpr ImVec4 colDanger = rgba(208, 108, 92);
+	constexpr ImVec4 colClear = rgba(0, 0, 0, 0.f);
+
+	ImVec4 withAlpha(ImVec4 c, float a) { c.w *= a; return c; }
+	ImU32 col32(ImVec4 c, float alphaMul = 1.f) { c.w *= alphaMul; return ImGui::ColorConvertFloat4ToU32(c); }
+	ImVec4 mix(ImVec4 a, ImVec4 b, float t) { return ImVec4(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t, a.w + (b.w - a.w) * t); }
+	ImVec2 add(ImVec2 a, ImVec2 b) { return ImVec2(a.x + b.x, a.y + b.y); }
 
 	std::string timestamp()
 	{
@@ -40,13 +49,290 @@ namespace
 		return std::format("{:02}:{:02}:{:02}.{:03}", local.tm_hour, local.tm_min, local.tm_sec, (int)ms.count());
 	}
 
-	// right edge of the content area, measured from the start of the current line
-	float lineRightEdge() { return ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x; }
-
 	std::string lower(std::string s)
 	{
 		std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return (char)std::tolower(c); });
 		return s;
+	}
+
+	std::string upper(std::string s)
+	{
+		std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return (char)std::toupper(c); });
+		return s;
+	}
+
+	// "ThatsJustWrong" -> "Thats Just Wrong", "IWHBYD" stays as is
+	std::string spacedName(std::string_view s)
+	{
+		std::string out;
+		for (size_t i = 0; i < s.size(); i++)
+		{
+			if (i > 0 && std::isupper((unsigned char)s[i]) && std::islower((unsigned char)s[i - 1])) out += ' ';
+			out += s[i];
+		}
+		return out;
+	}
+
+	std::string_view visibleLabel(const char* label)
+	{
+		std::string_view v(label);
+		auto hash = v.find("##");
+		return hash == std::string_view::npos ? v : v.substr(0, hash);
+	}
+
+	// ---------------------------------------------------------------- type
+
+	ImFont* fontOr(ImFont* f) { return f ? f : ImGui::GetFont(); }
+	ImFont* fDisplay() { return fontOr(ModMenuFonts::display()); }
+	ImFont* fBody() { return fontOr(ModMenuFonts::body()); }
+	ImFont* fBold() { return fontOr(ModMenuFonts::bodyBold()); }
+
+	// letter-spaced text (engraved titles and small-caps labels)
+	float trackedWidth(ImFont* font, float px, std::string_view text, float tracking)
+	{
+		float w = 0.f;
+		for (size_t i = 0; i < text.size(); i++)
+		{
+			w += font->CalcTextSizeA(px, FLT_MAX, 0.f, text.data() + i, text.data() + i + 1).x;
+			if (i + 1 < text.size()) w += tracking;
+		}
+		return w;
+	}
+
+	void drawTracked(ImDrawList* dl, ImFont* font, float px, ImVec2 pos, ImU32 col, std::string_view text, float tracking)
+	{
+		for (size_t i = 0; i < text.size(); i++)
+		{
+			const char* c = text.data() + i;
+			dl->AddText(font, px, pos, col, c, c + 1);
+			pos.x += font->CalcTextSizeA(px, FLT_MAX, 0.f, c, c + 1).x + tracking;
+		}
+	}
+
+	void trackedItem(ImFont* font, float px, ImVec4 col, std::string_view text, float tracking)
+	{
+		ImVec2 p = ImGui::GetCursorScreenPos();
+		float w = trackedWidth(font, px, text, tracking);
+		drawTracked(ImGui::GetWindowDrawList(), font, px, p, col32(col), text, tracking);
+		ImGui::Dummy(ImVec2(w, px));
+	}
+
+	void textItem(ImFont* font, float px, ImVec4 col, const std::string& s, float wrapWidth = 0.f)
+	{
+		ModMenuFonts::Scoped f(font, px);
+		ImGui::PushStyleColor(ImGuiCol_Text, col);
+		if (wrapWidth > 0.f) ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + wrapWidth);
+		ImGui::TextUnformatted(s.c_str());
+		if (wrapWidth > 0.f) ImGui::PopTextWrapPos();
+		ImGui::PopStyleColor();
+	}
+
+	// thin gold rule that fades out at both ends
+	void goldRule(float width, float alpha = 0.55f)
+	{
+		ImVec2 p = ImGui::GetCursorScreenPos();
+		ImDrawList* dl = ImGui::GetWindowDrawList();
+		float mid = p.x + width * 0.5f;
+		ImU32 clear = col32(colGold, 0.f), gold = col32(colGold, alpha);
+		dl->AddRectFilledMultiColor(p, ImVec2(mid, p.y + 1.f), clear, gold, gold, clear);
+		dl->AddRectFilledMultiColor(ImVec2(mid, p.y), ImVec2(p.x + width, p.y + 1.f), gold, clear, clear, gold);
+		ImGui::Dummy(ImVec2(width, 1.f));
+	}
+
+	void diamond(ImDrawList* dl, ImVec2 c, float r, ImU32 col)
+	{
+		dl->AddQuadFilled(ImVec2(c.x, c.y - r), ImVec2(c.x + r, c.y), ImVec2(c.x, c.y + r), ImVec2(c.x - r, c.y), col);
+	}
+
+	// ---------------------------------------------------------------- motion
+
+	// eased per-widget value kept in ImGui's state storage, so switches slide and hovers fade
+	float animate(ImGuiID id, float target, float speed = 14.f)
+	{
+		ImGuiStorage* st = ImGui::GetStateStorage();
+		float v = st->GetFloat(id, target);
+		v += (target - v) * std::min(1.f, ImGui::GetIO().DeltaTime * speed);
+		if (std::fabs(target - v) < 0.002f) v = target;
+		st->SetFloat(id, v);
+		return v;
+	}
+
+	// ---------------------------------------------------------------- widgets
+	// Every size comes from S, the scale of the body text (1.0 = 20px body text).
+
+	ImVec2 switchSize(float S) { return ImVec2(50.f * S, 28.f * S); }
+
+	bool luxSwitch(const char* id, bool on, float S)
+	{
+		ImVec2 size = switchSize(S);
+		ImVec2 p = ImGui::GetCursorScreenPos();
+		bool pressed = ImGui::InvisibleButton(id, size);
+		bool hovered = ImGui::IsItemHovered();
+		float t = animate(ImGui::GetItemID(), on ? 1.f : 0.f);
+		float h = animate(ImGui::GetItemID() + 1, hovered ? 1.f : 0.f, 18.f);
+
+		ImDrawList* dl = ImGui::GetWindowDrawList();
+		float r = size.y * 0.5f;
+		ImVec2 q = add(p, size);
+		dl->AddRectFilled(p, q, col32(mix(colTrack, colGold, t)), r);
+		dl->AddRect(p, q, col32(colGoldBright, 0.10f + 0.25f * t + 0.4f * h), r, 0, 1.f);
+
+		float knobR = r - 3.5f * S;
+		ImVec2 c(p.x + r + t * (size.x - 2.f * r), p.y + r);
+		dl->AddCircleFilled(add(c, ImVec2(0.f, 1.5f * S)), knobR, col32(rgba(0, 0, 0, 0.35f)), 32);
+		dl->AddCircleFilled(c, knobR, col32(mix(colIvory, colInk, t)), 32);
+		return pressed;
+	}
+
+	enum class Btn { Primary, Outline, Ghost };
+
+	float buttonTextPx(float B) { return B * 0.68f; }
+	ImVec2 buttonPad(Btn style, float S) { return ImVec2(style == Btn::Ghost ? 9.f * S : 20.f * S, 10.f * S); }
+	float buttonHeight(float B, float S) { return buttonTextPx(B) + buttonPad(Btn::Outline, S).y * 2.f; }
+	float buttonWidth(const char* label, Btn style, float B, float S)
+	{
+		return trackedWidth(fBold(), buttonTextPx(B), visibleLabel(label), 1.6f * S) + buttonPad(style, S).x * 2.f;
+	}
+
+	bool luxButton(const char* label, Btn style, float B, float S, bool enabled = true)
+	{
+		ImFont* font = fBold();
+		float px = buttonTextPx(B), tracking = 1.6f * S;
+		auto text = visibleLabel(label);
+		ImVec2 pad = buttonPad(style, S);
+		ImVec2 size(trackedWidth(font, px, text, tracking) + pad.x * 2.f, px + pad.y * 2.f);
+		ImVec2 p = ImGui::GetCursorScreenPos();
+
+		if (!enabled) ImGui::BeginDisabled();
+		bool pressed = ImGui::InvisibleButton(label, size);
+		if (!enabled) ImGui::EndDisabled();
+		bool held = ImGui::IsItemActive();
+		float h = animate(ImGui::GetItemID(), ImGui::IsItemHovered() ? 1.f : 0.f, 18.f);
+
+		ImDrawList* dl = ImGui::GetWindowDrawList();
+		ImVec2 q = add(p, size);
+		float r = size.y * 0.5f;
+		ImVec4 textCol;
+		switch (style)
+		{
+		case Btn::Primary:
+			dl->AddRectFilled(p, q, col32(held ? colGoldDeep : mix(colGold, colGoldBright, h)), r);
+			textCol = colInk;
+			break;
+		case Btn::Outline:
+			dl->AddRectFilled(p, q, col32(colGold, 0.13f * h + (held ? 0.12f : 0.f)), r);
+			dl->AddRect(p, q, col32(colGold, 0.5f + 0.5f * h), r, 0, 1.f);
+			textCol = mix(colGold, colGoldBright, h);
+			break;
+		case Btn::Ghost:
+			textCol = mix(colTaupe, colGoldBright, h);
+			break;
+		}
+		if (!enabled) textCol = colFaint;
+		drawTracked(dl, font, px, add(p, pad), col32(textCol), text, tracking);
+		return pressed && enabled;
+	}
+
+	// Slim gold slider. Returns true while the value changes; `released` is set the frame the drag ends.
+	bool luxSlider(const char* id, float* v, float mn, float mx, float step, float width, float S, bool* released)
+	{
+		float h = 28.f * S;
+		ImVec2 p = ImGui::GetCursorScreenPos();
+		ImGui::InvisibleButton(id, ImVec2(std::max(width, 40.f * S), h));
+		bool hovered = ImGui::IsItemHovered(), active = ImGui::IsItemActive();
+		float knobR = 9.f * S;
+		float x0 = p.x + knobR, x1 = p.x + std::max(width, 40.f * S) - knobR;
+
+		bool changed = false;
+		if (active && x1 > x0 && mx > mn)
+		{
+			float t = std::clamp((ImGui::GetIO().MousePos.x - x0) / (x1 - x0), 0.f, 1.f);
+			float nv = mn + t * (mx - mn);
+			if (step > 0.f) nv = mn + std::round((nv - mn) / step) * step;
+			nv = std::clamp(nv, mn, mx);
+			if (nv != *v) { *v = nv; changed = true; }
+		}
+		*released = ImGui::IsItemDeactivated();
+
+		float t = mx > mn ? std::clamp((*v - mn) / (mx - mn), 0.f, 1.f) : 0.f;
+		float cy = p.y + h * 0.5f, kx = x0 + t * (x1 - x0);
+		float g = animate(ImGui::GetItemID(), (hovered || active) ? 1.f : 0.f, 16.f);
+		ImDrawList* dl = ImGui::GetWindowDrawList();
+		dl->AddRectFilled(ImVec2(x0, cy - 1.5f * S), ImVec2(x1, cy + 1.5f * S), col32(colTrack), 2.f * S);
+		dl->AddRectFilled(ImVec2(x0, cy - 1.5f * S), ImVec2(kx, cy + 1.5f * S), col32(colGold), 2.f * S);
+		if (g > 0.01f) dl->AddCircleFilled(ImVec2(kx, cy), knobR * (1.f + 0.9f * g), col32(colGold, 0.14f * g), 40);
+		dl->AddCircleFilled(ImVec2(kx, cy + 1.5f * S), knobR, col32(rgba(0, 0, 0, 0.4f)), 32);
+		dl->AddCircleFilled(ImVec2(kx, cy), knobR, col32(colIvory), 32);
+		dl->AddCircle(ImVec2(kx, cy), knobR, col32(colGold), 32, 2.f * S);
+		return changed;
+	}
+
+	float tagHeight(float B, float S) { return B * 0.52f + 7.f * S; }
+
+	void tagPill(const std::string& tag, float B, float S)
+	{
+		std::string t = upper(tag);
+		ImFont* font = fBold();
+		float px = B * 0.52f, tracking = 1.4f * S;
+		ImVec2 pad(9.f * S, 3.5f * S);
+		ImVec2 size(trackedWidth(font, px, t, tracking) + pad.x * 2.f, px + pad.y * 2.f);
+		ImVec2 p = ImGui::GetCursorScreenPos();
+		ImGui::Dummy(size);
+		ImDrawList* dl = ImGui::GetWindowDrawList();
+		dl->AddRect(p, add(p, size), col32(colGold, 0.55f), size.y * 0.5f, 0, 1.f);
+		drawTracked(dl, font, px, add(p, pad), col32(colGold), t, tracking);
+	}
+
+	// Puts the next item on the same row, vertically centred in a row of height rowH that starts at rowTop.
+	void rowNext(float rowTop, float rowH, float itemH, float spacing)
+	{
+		ImGui::SameLine(0.f, spacing);
+		ImVec2 p = ImGui::GetCursorScreenPos();
+		ImGui::SetCursorScreenPos(ImVec2(p.x, rowTop + (rowH - itemH) * 0.5f));
+	}
+
+	// ---------------------------------------------------------------- cards
+	// Card background is drawn after the content (on a lower draw channel) so it can wrap whatever is inside.
+
+	struct Card
+	{
+		ImVec2 start;
+		float width, padX, padY;
+		float innerWidth() const { return width - padX * 2.f; }
+	};
+
+	Card beginCard(float S)
+	{
+		Card c;
+		ImDrawList* dl = ImGui::GetWindowDrawList();
+		dl->ChannelsSplit(2);
+		dl->ChannelsSetCurrent(1);
+		c.start = ImGui::GetCursorScreenPos();
+		c.width = ImGui::GetContentRegionAvail().x;
+		c.padX = 24.f * S;
+		c.padY = 18.f * S;
+		ImGui::SetCursorScreenPos(add(c.start, ImVec2(c.padX, c.padY)));
+		ImGui::BeginGroup();
+		return c;
+	}
+
+	void endCard(const Card& c, bool active, float S)
+	{
+		ImGui::EndGroup();
+		ImVec2 end(c.start.x + c.width, ImGui::GetItemRectMax().y + c.padY);
+		ImDrawList* dl = ImGui::GetWindowDrawList();
+		dl->ChannelsSetCurrent(0);
+		bool hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && ImGui::IsMouseHoveringRect(c.start, end);
+		float r = 14.f * S;
+		float a = animate(ImGui::GetID("##cardactive"), active ? 1.f : 0.f, 10.f);
+		ImVec4 bg = mix(hovered ? colCardHover : colCard, withAlpha(colGold, 0.07f), a);
+		dl->AddRectFilled(c.start, end, col32(bg), r);
+		dl->AddRect(c.start, end, col32(colGold, 0.07f + (hovered ? 0.13f : 0.f) + 0.33f * a), r, 0, 1.f);
+		if (a > 0.01f) // gold inlay down the left edge of anything that's switched on
+			dl->AddRectFilled(ImVec2(c.start.x + 1.f, c.start.y + r), ImVec2(c.start.x + 1.f + 2.5f * S, end.y - r), col32(colGold, a), 2.f * S);
+		dl->ChannelsMerge();
+		ImGui::SetCursorScreenPos(ImVec2(c.start.x, end.y));
+		ImGui::Dummy(ImVec2(c.width, 4.f * S));
 	}
 
 	const std::map<SkullEnum, const char*>& skullDescriptions()
@@ -201,6 +487,8 @@ void ModMenuGUI::addLog(const std::string& text, LogLine::Kind kind)
 void ModMenuGUI::onHaloScriptOutput(const std::string& outputString, const HSOutputType& outputType)
 {
 	addLog(outputString, outputType == HSOutputType::Error ? LogLine::Kind::Error : LogLine::Kind::Output);
+	if (outputType == HSOutputType::Error)
+		toast("The game didn't accept that one here: " + outputString, true);
 }
 
 // ------------------------------------------------------------------ execution
@@ -219,6 +507,7 @@ void ModMenuGUI::sendLines(const std::vector<std::string>& lines, const std::str
 		catch (HCMRuntimeException ex)
 		{
 			addLog(std::format("HCM error: {}", ex.what()), LogLine::Kind::Error);
+			toast("Couldn't reach the game engine for that one.", true);
 		}
 	}
 }
@@ -530,97 +819,191 @@ std::vector<const ModDef*> ModMenuGUI::visibleMods(const ModCategory& cat)
 
 // ------------------------------------------------------------------ rendering
 
+void ModMenuGUI::toast(const std::string& text, bool isError)
+{
+	std::lock_guard<std::mutex> lock(mLogMutex);
+	mToastText = text;
+	mToastIsError = isError;
+	mToastAt = std::chrono::steady_clock::now();
+}
+
+namespace
+{
+	constexpr int kStyleColorCount = 26;
+	constexpr int kStyleVarCount = 15;
+}
+
 void ModMenuGUI::pushStyle()
 {
+	const float S = mBasePx / 20.f;
 	ImGui::PushStyleColor(ImGuiCol_WindowBg, colWindow);
-	ImGui::PushStyleColor(ImGuiCol_ChildBg, colPanel);
-	ImGui::PushStyleColor(ImGuiCol_Border, colBorder);
-	ImGui::PushStyleColor(ImGuiCol_Text, colText);
-	ImGui::PushStyleColor(ImGuiCol_TextDisabled, colDim);
-	ImGui::PushStyleColor(ImGuiCol_FrameBg, colFrame);
-	ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, colFrameHover);
-	ImGui::PushStyleColor(ImGuiCol_FrameBgActive, colFrameHover);
-	ImGui::PushStyleColor(ImGuiCol_Button, colFrame);
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colFrameHover);
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, colAccentDim);
-	ImGui::PushStyleColor(ImGuiCol_CheckMark, colAccent);
-	ImGui::PushStyleColor(ImGuiCol_SliderGrab, colAccent);
-	ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, colCyan);
-	ImGui::PushStyleColor(ImGuiCol_Header, colAccentDim);
-	ImGui::PushStyleColor(ImGuiCol_HeaderHovered, colFrameHover);
-	ImGui::PushStyleColor(ImGuiCol_HeaderActive, colAccentDim);
-	ImGui::PushStyleColor(ImGuiCol_Separator, colBorder);
-	ImGui::PushStyleColor(ImGuiCol_PopupBg, colPanel);
-	ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, colWindow);
-	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, colFrameHover);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 2.f);
-	ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 2.f);
-	ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.f);
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, colClear);
+	ImGui::PushStyleColor(ImGuiCol_PopupBg, colPopup);
+	ImGui::PushStyleColor(ImGuiCol_Border, withAlpha(colGold, 0.22f));
+	ImGui::PushStyleColor(ImGuiCol_BorderShadow, colClear);
+	ImGui::PushStyleColor(ImGuiCol_Text, colIvory);
+	ImGui::PushStyleColor(ImGuiCol_TextDisabled, colMuted);
+	ImGui::PushStyleColor(ImGuiCol_FrameBg, colField);
+	ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, withAlpha(colIvory, 0.07f));
+	ImGui::PushStyleColor(ImGuiCol_FrameBgActive, withAlpha(colGold, 0.10f));
+	ImGui::PushStyleColor(ImGuiCol_Button, colClear);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, withAlpha(colGold, 0.12f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, withAlpha(colGold, 0.20f));
+	ImGui::PushStyleColor(ImGuiCol_Header, withAlpha(colGold, 0.12f));
+	ImGui::PushStyleColor(ImGuiCol_HeaderHovered, withAlpha(colGold, 0.16f));
+	ImGui::PushStyleColor(ImGuiCol_HeaderActive, withAlpha(colGold, 0.22f));
+	ImGui::PushStyleColor(ImGuiCol_CheckMark, colGold);
+	ImGui::PushStyleColor(ImGuiCol_SliderGrab, colGold);
+	ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, colGoldBright);
+	ImGui::PushStyleColor(ImGuiCol_Separator, withAlpha(colGold, 0.18f));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, colClear);
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, withAlpha(colGold, 0.20f));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, withAlpha(colGold, 0.38f));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, withAlpha(colGold, 0.55f));
+	ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, withAlpha(colGold, 0.30f));
+	ImGui::PushStyleColor(ImGuiCol_ResizeGrip, colClear);
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 20.f * S);
+	ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 12.f * S);
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * S);
+	ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 14.f * S);
+	ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 6.f * S);
+	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 6.f * S);
+	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 6.f * S);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.f);
-	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.f, 5.f));
+	ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 1.f);
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.f);
+	ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(36.f * S, 28.f * S));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(14.f * S, 9.f * S));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.f * S, 8.f * S));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(10.f * S, 6.f * S));
 }
 
 void ModMenuGUI::popStyle()
 {
-	ImGui::PopStyleVar(5);
-	ImGui::PopStyleColor(21);
+	ImGui::PopStyleVar(kStyleVarCount);
+	ImGui::PopStyleColor(kStyleColorCount);
 }
 
-void ModMenuGUI::renderTag(const std::string& tag)
+void ModMenuGUI::renderBackdrop()
 {
-	if (tag.empty()) return;
-	ImGui::SameLine();
-	ImGui::TextColored(colTag, "[%s]", tag.c_str());
-}
+	const float S = mBasePx / 20.f;
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+	ImVec2 wp = ImGui::GetWindowPos(), ws = ImGui::GetWindowSize();
 
-void ModMenuGUI::renderGameChips(const ModDef& mod, float right)
-{
-	using V = GameState::Value;
-	static const V order[] = { V::Halo1, V::Halo2, V::Halo3, V::Halo3ODST, V::HaloReach, V::Halo4 };
-
-	std::string all;
-	for (auto g : order) all += ModMenuText::shortGameName(g) + " ";
-	float width = ImGui::CalcTextSize(all.c_str()).x;
-
-	ImGui::SameLine();
-	float x = std::max(ImGui::GetCursorPosX(), right - width);
-	ImGui::SetCursorPosX(x);
-
-	bool first = true;
-	for (auto g : order)
+	// a soft warm light falling from the top edge
+	ImGui::PushClipRect(wp, add(wp, ws), false);
+	ImVec2 c(wp.x + ws.x * 0.5f, wp.y);
+	float maxR = std::min(ws.x * 0.46f, ws.y * 0.9f);
+	constexpr int layers = 26;
+	for (int i = 0; i < layers; i++)
 	{
-		if (!first) ImGui::SameLine(0.f, ImGui::CalcTextSize(" ").x);
-		first = false;
-		auto name = ModMenuText::shortGameName(g);
-		ImVec4 c = !mod.supports(g) ? colFaint : (g == mGame.operator GameState::Value() ? colAccent : colDim);
-		ImGui::TextColored(c, "%s", name.c_str());
+		float r = maxR * (1.f - (float)i / layers);
+		dl->AddCircleFilled(c, r, col32(colGold, 0.0048f), 96);
 	}
+	ImGui::PopClipRect();
+
+	// fine gold corner brackets
+	float inset = 12.f * S, len = 26.f * S;
+	ImU32 gold = col32(colGold, 0.55f);
+	ImVec2 tl(wp.x + inset, wp.y + inset), br(wp.x + ws.x - inset, wp.y + ws.y - inset);
+	dl->AddLine(ImVec2(tl.x, tl.y + len), tl, gold); dl->AddLine(tl, ImVec2(tl.x + len, tl.y), gold);
+	dl->AddLine(ImVec2(br.x - len, tl.y), ImVec2(br.x, tl.y), gold); dl->AddLine(ImVec2(br.x, tl.y), ImVec2(br.x, tl.y + len), gold);
+	dl->AddLine(ImVec2(tl.x, br.y - len), ImVec2(tl.x, br.y), gold); dl->AddLine(ImVec2(tl.x, br.y), ImVec2(tl.x + len, br.y), gold);
+	dl->AddLine(ImVec2(br.x - len, br.y), br, gold); dl->AddLine(br, ImVec2(br.x, br.y - len), gold);
 }
 
 void ModMenuGUI::renderHeader()
 {
-	float right = lineRightEdge();
+	const float B = mBasePx, S = B / 20.f;
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+	ImVec2 top = ImGui::GetCursorScreenPos();
+	float W = ImGui::GetContentRegionAvail().x;
+
+	// eyebrow, then the engraved title
+	trackedItem(fBold(), B * 0.62f, colGold, upper(ModMenuText::longGameName(mGame)), 3.2f * S);
+	ImGui::Dummy(ImVec2(0.f, 1.f * S));
+	trackedItem(fDisplay(), B * 2.0f, colIvory, upper(mLibrary.title.empty() ? std::string("Mod Menu") : mLibrary.title), 5.f * S);
+	ImVec2 belowTitle = ImGui::GetCursorScreenPos();
+
+	// close button, top right
+	float d = 40.f * S;
+	ImVec2 cp(top.x + W - d, top.y + 2.f * S);
+	ImGui::SetCursorScreenPos(cp);
+	if (ImGui::InvisibleButton("##modmenuclose", ImVec2(d, d))) mCloseRequested = true;
+	float h = animate(ImGui::GetItemID(), ImGui::IsItemHovered() ? 1.f : 0.f, 18.f);
+	ImVec2 cc(cp.x + d * 0.5f, cp.y + d * 0.5f);
+	dl->AddCircleFilled(cc, d * 0.5f, col32(colGold, 0.12f * h), 48);
+	dl->AddCircle(cc, d * 0.5f, col32(colGold, 0.35f + 0.5f * h), 48, 1.f);
+	float x = 6.f * S;
+	ImU32 xcol = col32(mix(colGold, colGoldBright, h));
+	dl->AddLine(ImVec2(cc.x - x, cc.y - x), ImVec2(cc.x + x, cc.y + x), xcol, 1.6f * S);
+	dl->AddLine(ImVec2(cc.x - x, cc.y + x), ImVec2(cc.x + x, cc.y - x), xcol, 1.6f * S);
+	if (ImGui::IsItemHovered()) ImGui::SetTooltip("Close (Insert)");
+
+	// key hint beside it
+	std::string_view hint = "INSERT";
+	float hpx = B * 0.52f, htr = 2.4f * S;
+	float hw = trackedWidth(fBold(), hpx, hint, htr);
+	drawTracked(dl, fBold(), hpx, ImVec2(cp.x - 16.f * S - hw, cc.y - hpx * 0.5f), col32(colTaupe, 0.8f), hint, htr);
+
+	ImGui::SetCursorScreenPos(belowTitle);
+	ImGui::Dummy(ImVec2(0.f, 6.f * S));
+	goldRule(W, 0.6f);
+	ImGui::Dummy(ImVec2(0.f, 12.f * S));
+
+	// search pill with an active-count chip beside it
+	int active = activeCount();
+	std::string chip = active > 0 ? std::format("{} ACTIVE", active) : std::string("NONE ACTIVE");
+	float chipPx = B * 0.56f, chipTr = 2.f * S;
+	float chipW = trackedWidth(fBold(), chipPx, chip, chipTr) + 44.f * S;
+
+	float searchPx = B * 0.9f;
+	float fieldH = searchPx + 22.f * S;
+	ImVec2 sp = ImGui::GetCursorScreenPos();
 	{
-		ScopedImFontScaler big(mFontSize * 1.45f);
-		ImGui::TextColored(colAccent, "%s", mLibrary.title.c_str());
+		ModMenuFonts::Scoped f(ModMenuFonts::body(), searchPx);
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, fieldH * 0.5f);
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(46.f * S, 11.f * S));
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
+		ImGui::PushStyleColor(ImGuiCol_Border, withAlpha(colGold, 0.22f));
+		ImGui::SetNextItemWidth(W - chipW - 14.f * S);
+		ImGui::InputTextWithHint("##modsearch", "Search mods", &mSearch);
+		ImGui::PopStyleColor();
+		ImGui::PopStyleVar(3);
 	}
-	ImGui::SameLine();
-	ImGui::AlignTextToFramePadding();
-	ImGui::TextColored(colDim, " //  %s  //  %d active  //  %d sent",
-		ModMenuText::longGameName(mGame).c_str(), activeCount(), mCommandsSent);
+	// magnifier
+	float mr = 6.5f * S;
+	ImVec2 mc(sp.x + 24.f * S, sp.y + fieldH * 0.5f - 1.f * S);
+	dl->AddCircle(mc, mr, col32(colGold, 0.8f), 24, 1.6f * S);
+	dl->AddLine(ImVec2(mc.x + mr * 0.7f, mc.y + mr * 0.7f), ImVec2(mc.x + mr * 1.5f, mc.y + mr * 1.5f), col32(colGold, 0.8f), 1.8f * S);
 
-	float closeW = ImGui::CalcTextSize("CLOSE [Insert]").x + ImGui::GetStyle().FramePadding.x * 2.f;
-	ImGui::SameLine(right - closeW);
-	if (ImGui::Button("CLOSE [Insert]")) mCloseRequested = true;
+	// chip
+	ImVec2 chipP(sp.x + W - chipW, sp.y);
+	ImVec2 chipQ(chipP.x + chipW, sp.y + fieldH);
+	dl->AddRect(chipP, chipQ, col32(colGold, active > 0 ? 0.6f : 0.18f), fieldH * 0.5f, 0, 1.f);
+	if (active > 0) dl->AddRectFilled(chipP, chipQ, col32(colGold, 0.08f), fieldH * 0.5f);
+	float dotX = chipP.x + 18.f * S;
+	diamond(dl, ImVec2(dotX, sp.y + fieldH * 0.5f), 3.5f * S, col32(active > 0 ? colGold : colFaint));
+	drawTracked(dl, fBold(), chipPx, ImVec2(dotX + 12.f * S, sp.y + (fieldH - chipPx) * 0.5f), col32(active > 0 ? colGold : colMuted), chip, chipTr);
 
-	ImGui::SetNextItemWidth(-1.f);
-	ImGui::InputTextWithHint("##modsearch", "Search every mod (camo, gravity, hunter, skull...)", &mSearch);
 	if (mGame.operator GameState::Value() == GameState::Value::Halo4)
-		ImGui::TextColored(colTag, "Halo 4 has no published script list, so some scripted mods may print an error and do nothing.");
+	{
+		ImGui::Dummy(ImVec2(0.f, 2.f * S));
+		textItem(ModMenuFonts::body(), B * 0.72f, colMuted, "Halo 4 has no published script list, so a few scripted mods may do nothing here.");
+	}
+	ImGui::Dummy(ImVec2(0.f, 10.f * S));
 }
 
 void ModMenuGUI::renderCategoryList()
 {
+	const float B = mBasePx, S = B / 20.f;
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+
+	trackedItem(fBold(), B * 0.54f, colMuted, "COLLECTIONS", 3.f * S);
+	ImGui::Dummy(ImVec2(0.f, 6.f * S));
+
 	for (int i = 0; i < (int)mLibrary.categories.size(); i++)
 	{
 		auto& cat = mLibrary.categories[i];
@@ -628,6 +1011,7 @@ void ModMenuGUI::renderCategoryList()
 
 		if (cat.special == "skulls")
 		{
+			if (!mSearch.empty()) continue;
 			auto skulls = readSkulls();
 			total = (int)skulls.size();
 			for (auto& [k, v] : skulls) if (v) active++;
@@ -644,29 +1028,54 @@ void ModMenuGUI::renderCategoryList()
 		if (total == 0 && mSearch.empty() == false) continue;
 
 		bool selected = mSelectedCategory == i && mSearch.empty();
-		float right = lineRightEdge();
-		auto label = std::format("{}##cat{}", cat.name, i);
-		ImGui::PushStyleColor(ImGuiCol_Text, total == 0 ? colFaint : (selected ? colAccent : colText));
-		if (ImGui::Selectable(label.c_str(), selected))
+		ImVec2 p = ImGui::GetCursorScreenPos();
+		float w = ImGui::GetContentRegionAvail().x, h = 46.f * S;
+		ImGui::PushID(i);
+		if (ImGui::InvisibleButton("##cat", ImVec2(w, h)))
 		{
 			mSelectedCategory = i;
 			mSearch.clear();
 		}
-		ImGui::PopStyleColor();
+		float hv = animate(ImGui::GetItemID(), ImGui::IsItemHovered() ? 1.f : 0.f, 18.f);
+		float sel = animate(ImGui::GetItemID() + 1, selected ? 1.f : 0.f, 14.f);
+		ImGui::PopID();
 
-		auto count = active > 0 ? std::format("{}/{}", active, total) : std::format("{}", total);
-		ImGui::SameLine(right - ImGui::CalcTextSize(count.c_str()).x);
-		ImGui::TextColored(active > 0 ? colGood : colFaint, "%s", count.c_str());
+		ImVec2 q(p.x + w, p.y + h);
+		if (sel > 0.01f) dl->AddRectFilled(p, q, col32(colGold, 0.085f * sel), 11.f * S);
+		else if (hv > 0.01f) dl->AddRectFilled(p, q, col32(colIvory, 0.03f * hv), 11.f * S);
+		if (sel > 0.01f) dl->AddRectFilled(ImVec2(p.x, p.y + 13.f * S), ImVec2(p.x + 3.f * S, q.y - 13.f * S), col32(colGold, sel), 2.f * S);
+
+		float px = B * 0.95f;
+		ImVec4 textCol = total == 0 ? colFaint : mix(mix(colTaupe, colIvory, hv), colGoldBright, sel);
+		dl->AddText(fBold(), px, ImVec2(p.x + 20.f * S, p.y + (h - px) * 0.5f), col32(textCol), cat.name.c_str());
+
+		if (active > 0)
+		{
+			auto n = std::format("{}", active);
+			float npx = B * 0.62f;
+			float nw = fBold()->CalcTextSizeA(npx, FLT_MAX, 0.f, n.c_str()).x;
+			float cx = q.x - 16.f * S - nw;
+			dl->AddText(fBold(), npx, ImVec2(cx, p.y + (h - npx) * 0.5f), col32(colGold), n.c_str());
+			diamond(dl, ImVec2(cx - 9.f * S, p.y + h * 0.5f), 3.f * S, col32(colGold));
+		}
+		ImGui::Dummy(ImVec2(0.f, 2.f * S));
 	}
 }
 
 void ModMenuGUI::renderModList()
 {
+	const float B = mBasePx, S = B / 20.f;
+
 	if (mLibrary.categories.empty())
 	{
-		ImGui::TextColored(colBad, "No mods loaded. Check the status line below.");
+		textItem(ModMenuFonts::body(), B * 0.9f, colDanger, "No mods loaded. " + mLibraryStatus, ImGui::GetContentRegionAvail().x);
 		return;
 	}
+
+	auto sectionTitle = [&](const std::string& name, float px)
+		{
+			trackedItem(fDisplay(), px, colGold, upper(name), 2.2f * S);
+		};
 
 	if (!mSearch.empty())
 	{
@@ -675,19 +1084,21 @@ void ModMenuGUI::renderModList()
 		{
 			auto mods = visibleMods(cat);
 			if (mods.empty()) continue;
-			ImGui::TextColored(colAccent, "%s", cat.name.c_str());
-			ImGui::Separator();
+			ImGui::Dummy(ImVec2(0.f, 4.f * S));
+			sectionTitle(cat.name, B * 1.05f);
+			ImGui::Dummy(ImVec2(0.f, 4.f * S));
 			for (auto* mod : mods) { renderMod(*mod); found++; }
-			ImGui::Dummy(ImVec2(0.f, 6.f));
 		}
-		if (found == 0) ImGui::TextColored(colDim, "Nothing matches \"%s\" in this game.", mSearch.c_str());
+		if (found == 0)
+			textItem(ModMenuFonts::body(), B * 0.9f, colTaupe, std::format("Nothing called \"{}\" works in {}.", mSearch, ModMenuText::longGameName(mGame)));
 		return;
 	}
 
 	auto& cat = mLibrary.categories[mSelectedCategory];
-	ImGui::TextColored(colAccent, "%s", cat.name.c_str());
-	ImGui::TextColored(colDim, "%s", cat.desc.c_str());
-	ImGui::Separator();
+	sectionTitle(cat.name, B * 1.45f);
+	ImGui::Dummy(ImVec2(0.f, 2.f * S));
+	if (!cat.desc.empty()) textItem(ModMenuFonts::body(), B * 0.86f, colTaupe, cat.desc, ImGui::GetContentRegionAvail().x);
+	ImGui::Dummy(ImVec2(0.f, 12.f * S));
 
 	if (cat.special == "skulls")
 	{
@@ -698,8 +1109,8 @@ void ModMenuGUI::renderModList()
 	auto mods = visibleMods(cat);
 	if (mods.empty())
 	{
-		ImGui::TextColored(colDim, "Nothing in this tab works in %s.", ModMenuText::longGameName(mGame).c_str());
-		ImGui::TextColored(colFaint, "Switch games in MCC to see these mods.");
+		textItem(ModMenuFonts::body(), B * 0.9f, colTaupe, std::format("Nothing in this collection works in {}.", ModMenuText::longGameName(mGame)));
+		textItem(ModMenuFonts::body(), B * 0.8f, colMuted, "Load a different game in MCC to use these.");
 		return;
 	}
 
@@ -708,109 +1119,139 @@ void ModMenuGUI::renderModList()
 
 void ModMenuGUI::renderMod(const ModDef& mod)
 {
+	const float B = mBasePx, S = B / 20.f;
 	ImGui::PushID(mod.id.c_str());
 	auto& rt = runtime(mod);
 	auto cmds = mod.commandsFor(mGame);
 	bool active = isActive(mod);
-	float rowWidth = ImGui::GetContentRegionAvail().x;
-	float rowRight = lineRightEdge();
+	bool canTurnOff = cmds && (!cmds->off.empty() || !cmds->set.empty());
 
-	auto nameLine = [&]()
-		{
-			ImGui::SameLine();
-			ImGui::AlignTextToFramePadding();
-			ImGui::TextColored(active ? colGood : colText, "%s", mod.name.c_str());
-			renderTag(mod.tag);
-			if (mod.reapply)
-			{
-				ImGui::SameLine();
-				ImGui::TextColored(colFaint, "(r)");
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Re-applied automatically after a checkpoint revert or level load.");
-			}
-			renderGameChips(mod, rowRight);
-		};
-
+	// what sits on the right of the card
+	enum class Ctl { None, Switch, Action } ctl = Ctl::None;
+	bool switchOn = false;
+	std::optional<SkullEnum> skull;
 	switch (mod.type)
 	{
 	case ModType::Toggle:
+		if (canTurnOff) { ctl = Ctl::Switch; switchOn = rt.on; }
+		else ctl = Ctl::Action;
+		break;
+	case ModType::HCMToggle:
+		ctl = Ctl::Switch;
+		switchOn = hcmBoolValue(mod);
+		break;
+	case ModType::Skull:
 	{
-		bool canTurnOff = cmds && (!cmds->off.empty() || !cmds->set.empty());
-		if (canTurnOff)
-		{
-			bool v = rt.on;
-			if (ImGui::Checkbox("##toggle", &v)) applyToggle(mod, v);
-		}
-		else
-		{
-			if (ImGui::Button("FIRE")) applyToggle(mod, true);
-		}
-		nameLine();
+		ctl = Ctl::Switch;
+		auto s = magic_enum::enum_cast<SkullEnum>(mod.skullKey);
+		if (s) skull = s.value();
+		auto skulls = readSkulls();
+		switchOn = skull && skulls.contains(*skull) && skulls.at(*skull);
+		active = switchOn;
 		break;
 	}
 	case ModType::Button:
-	{
-		if (ImGui::Button("RUN ")) runButton(mod);
-		nameLine();
-		break;
-	}
-	case ModType::HCMToggle:
-	{
-		bool v = hcmBoolValue(mod);
-		if (ImGui::Checkbox("##hcmtoggle", &v)) setHcmBool(mod, v);
-		nameLine();
-		break;
-	}
 	case ModType::HCMAction:
+		ctl = Ctl::Action;
+		break;
+	default:
+		break;
+	}
+	const char* actionLabel = "ACTIVATE";
+
+	Card card = beginCard(S);
+	float innerW = card.innerWidth();
+	ImVec2 controlSize(0.f, 0.f);
+	if (ctl == Ctl::Switch) controlSize = switchSize(S);
+	else if (ctl == Ctl::Action) controlSize = ImVec2(buttonWidth(actionLabel, Btn::Outline, B, S), buttonHeight(B, S));
+	float textW = std::max(140.f * S, innerW - controlSize.x - (ctl == Ctl::None ? 0.f : 32.f * S));
+
+	// left: name, tag, description
+	ImVec2 top = ImGui::GetCursorScreenPos();
+	float namePx = B * 1.04f;
+	textItem(ModMenuFonts::bodyBold(), namePx, active ? colGoldBright : colIvory, mod.name);
+	if (!mod.tag.empty())
 	{
-		if (ImGui::Button("RUN "))
+		rowNext(top.y, namePx, tagHeight(B, S), 12.f * S);
+		tagPill(mod.tag, B, S);
+	}
+	if (!mod.desc.empty())
+		textItem(ModMenuFonts::body(), B * 0.8f, colTaupe, mod.desc, textW);
+	ImVec2 afterText = ImGui::GetCursorScreenPos();
+	float textBottom = afterText.y - ImGui::GetStyle().ItemSpacing.y;
+	bool hasRowControls = mod.type == ModType::Slider || mod.type == ModType::HCMSlider || mod.type == ModType::Choice || mod.type == ModType::Text;
+
+	// right: switch or button, centred against the text
+	if (ctl != Ctl::None)
+	{
+		float blockH = textBottom - top.y;
+		ImGui::SetCursorScreenPos(ImVec2(top.x + innerW - controlSize.x, top.y + std::max(0.f, (blockH - controlSize.y) * 0.5f)));
+		if (ctl == Ctl::Switch)
 		{
-			if (mod.hcmKey == "commandConsole")
+			if (luxSwitch("##switch", switchOn, S))
 			{
-				mOpenConsoleRequested = true;
+				bool want = !switchOn;
+				if (mod.type == ModType::Toggle) applyToggle(mod, want);
+				else if (mod.type == ModType::HCMToggle) setHcmBool(mod, want);
+				else if (skull) flipSkull(*skull);
+				toast(std::format("{} {}", mod.name, want ? "on" : "off"));
 			}
+		}
+		else if (luxButton(actionLabel, Btn::Outline, B, S))
+		{
+			if (mod.type == ModType::Toggle) applyToggle(mod, true);
+			else if (mod.type == ModType::Button) runButton(mod);
+			else if (mod.hcmKey == "commandConsole") mOpenConsoleRequested = true;
 			else if (auto ev = hcmAction(mod.hcmKey))
 			{
 				addLog(std::format("HCM action {}", mod.hcmKey), LogLine::Kind::Info);
 				ev->operator()();
 			}
-			else
-			{
-				addLog(std::format("Unknown HCM action '{}'", mod.hcmKey), LogLine::Kind::Error);
-			}
+			else addLog(std::format("Unknown HCM action '{}'", mod.hcmKey), LogLine::Kind::Error);
+			toast(std::format("{} activated", mod.name));
 		}
-		nameLine();
-		break;
+		// go back under the text (or to the top-left, which is already inside the card, if nothing follows)
+		ImGui::SetCursorScreenPos(hasRowControls ? afterText : top);
 	}
-	case ModType::Skull:
+
+	// controls that need a full row
+	const float rowH = std::max(28.f * S, buttonHeight(B, S));
+	const float gap = 14.f * S;
+	switch (mod.type)
 	{
-		auto skull = magic_enum::enum_cast<SkullEnum>(mod.skullKey);
-		auto skulls = readSkulls();
-		bool v = skull && skulls.contains(skull.value()) ? skulls.at(skull.value()) : false;
-		bool before = v;
-		if (ImGui::Checkbox("##skull", &v) && skull && v != before) flipSkull(skull.value());
-		active = v;
-		nameLine();
-		break;
-	}
 	case ModType::Slider:
 	case ModType::HCMSlider:
 	{
-		ImGui::Dummy(ImVec2(0.f, 0.f));
-		nameLine();
-
+		ImGui::Dummy(ImVec2(0.f, 2.f * S));
 		bool hasDefault = mod.defaultValue >= mod.minValue && mod.defaultValue <= mod.maxValue;
-		float buttonsW = ImGui::CalcTextSize("SET RESET").x + ImGui::GetStyle().FramePadding.x * 4.f + ImGui::GetStyle().ItemSpacing.x * 2.f;
-		ImGui::SetNextItemWidth(std::max(80.f, rowWidth - buttonsW));
+		float valuePx = B * 0.9f;
+		std::string widest = ModMenuText::formatNumber(mod.maxValue);
+		if (ModMenuText::formatNumber(mod.minValue).size() > widest.size()) widest = ModMenuText::formatNumber(mod.minValue);
+		float valueW = fBold()->CalcTextSizeA(valuePx, FLT_MAX, 0.f, (widest + ".00").c_str()).x;
+		float applyW = buttonWidth("APPLY", Btn::Outline, B, S);
+		float resetW = buttonWidth("RESET", Btn::Ghost, B, S) + gap; // reserved even when hidden so every slider lines up
+		float sliderW = std::max(80.f * S, innerW - valueW - applyW - resetW - gap * 2.f);
+
+		float rowTop = ImGui::GetCursorScreenPos().y;
+		ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, rowTop + (rowH - 28.f * S) * 0.5f));
+		bool released = false;
 		float v = rt.value;
-		if (ImGui::SliderFloat("##slider", &v, mod.minValue, mod.maxValue, "%.2f")) rt.value = v;
-		bool commit = ImGui::IsItemDeactivatedAfterEdit();
-		ImGui::SameLine();
-		if (ImGui::Button("SET")) commit = true;
-		bool reset = false;
+		if (luxSlider("##slider", &v, mod.minValue, mod.maxValue, mod.step, sliderW, S, &released)) rt.value = v;
+		bool commit = released;
+
+		rowNext(rowTop, rowH, valuePx, gap);
+		{
+			ImVec2 vp = ImGui::GetCursorScreenPos();
+			auto vs = ModMenuText::formatNumber(rt.value);
+			ImGui::GetWindowDrawList()->AddText(fBold(), valuePx, vp, col32(rt.applied ? colGoldBright : colIvory), vs.c_str());
+			ImGui::Dummy(ImVec2(valueW, valuePx));
+		}
+		rowNext(rowTop, rowH, buttonHeight(B, S), gap);
+		if (luxButton("APPLY", Btn::Outline, B, S)) commit = true;
 		if (hasDefault)
 		{
-			ImGui::SameLine();
-			if (ImGui::Button("RESET")) { rt.value = mod.defaultValue; commit = true; reset = true; }
+			rowNext(rowTop, rowH, buttonHeight(B, S), gap);
+			if (luxButton("RESET", Btn::Ghost, B, S)) { rt.value = mod.defaultValue; commit = true; }
 		}
 
 		if (commit)
@@ -825,100 +1266,153 @@ void ModMenuGUI::renderMod(const ModDef& mod)
 				setting->UpdateValueWithInput();
 				addLog(std::format("HCM {} = {}", mod.hcmKey, ModMenuText::formatNumber(rt.value)), LogLine::Kind::Info);
 			}
+			toast(std::format("{} set to {}", mod.name, ModMenuText::formatNumber(rt.value)));
 		}
-		(void)reset;
 		break;
 	}
 	case ModType::Choice:
 	{
-		ImGui::Dummy(ImVec2(0.f, 0.f));
-		nameLine();
-
-		// only show options this game supports
 		std::vector<int> indices;
 		for (int i = 0; i < (int)mod.options.size(); i++)
 			if (mod.options[i].supports(mGame)) indices.push_back(i);
 		if (indices.empty()) break;
 		if (std::find(indices.begin(), indices.end(), rt.option) == indices.end()) rt.option = indices.front();
 
-		float buttonsW = ImGui::CalcTextSize("APPLY UNDO").x + ImGui::GetStyle().FramePadding.x * 4.f + ImGui::GetStyle().ItemSpacing.x * 2.f;
-		ImGui::SetNextItemWidth(std::max(80.f, rowWidth - buttonsW));
-		if (ImGui::BeginCombo("##choice", mod.options[rt.option].label.c_str()))
+		ImGui::Dummy(ImVec2(0.f, 2.f * S));
+		float applyW = buttonWidth("APPLY", Btn::Outline, B, S);
+		float undoW = buttonWidth("UNDO", Btn::Ghost, B, S);
+		float comboW = std::max(120.f * S, innerW - applyW - undoW - gap * 2.f);
+		float comboPx = B * 0.86f;
+
+		float rowTop = ImGui::GetCursorScreenPos().y;
+		float comboH = comboPx + 16.f * S;
+		ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, rowTop + (rowH - comboH) * 0.5f));
 		{
-			for (int i : indices)
+			ModMenuFonts::Scoped f(ModMenuFonts::body(), comboPx);
+			ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, comboH * 0.5f);
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(18.f * S, 8.f * S));
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.f * S, 10.f * S));
+			ImGui::PushStyleColor(ImGuiCol_Text, colIvory);
+			ImGui::SetNextItemWidth(comboW);
+			bool open = ImGui::BeginCombo("##choice", mod.options[rt.option].label.c_str(), ImGuiComboFlags_NoArrowButton);
 			{
-				bool sel = i == rt.option;
-				if (ImGui::Selectable(mod.options[i].label.c_str(), sel)) rt.option = i;
-				if (sel) ImGui::SetItemDefaultFocus();
+				ImVec2 a = ImGui::GetItemRectMin(), b = ImGui::GetItemRectMax();
+				float cx = b.x - 22.f * S, cy = (a.y + b.y) * 0.5f, k = 4.5f * S;
+				ImGui::GetWindowDrawList()->AddPolyline(std::array<ImVec2, 3>{ ImVec2(cx - k, cy - k * 0.5f), ImVec2(cx, cy + k * 0.5f), ImVec2(cx + k, cy - k * 0.5f) }.data(), 3, col32(colGold), ImDrawFlags_None, 1.6f * S);
 			}
-			ImGui::EndCombo();
+			if (open)
+			{
+				for (int i : indices)
+				{
+					bool sel = i == rt.option;
+					ImGui::PushStyleColor(ImGuiCol_Text, sel ? colGoldBright : colIvory);
+					if (ImGui::Selectable(mod.options[i].label.c_str(), sel)) rt.option = i;
+					ImGui::PopStyleColor();
+					if (sel) ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+			ImGui::PopStyleColor();
+			ImGui::PopStyleVar(3);
 		}
-		ImGui::SameLine();
-		if (ImGui::Button("APPLY")) applyChoice(mod, rt.option);
-		ImGui::SameLine();
-		if (ImGui::Button("UNDO")) undoChoice(mod);
+		rowNext(rowTop, rowH, buttonHeight(B, S), gap);
+		if (luxButton("APPLY", Btn::Outline, B, S))
+		{
+			applyChoice(mod, rt.option);
+			toast(std::format("{}: {}", mod.name, mod.options[rt.option].label));
+		}
+		rowNext(rowTop, rowH, buttonHeight(B, S), gap);
+		if (luxButton("UNDO", Btn::Ghost, B, S, rt.applied))
+		{
+			undoChoice(mod);
+			toast(std::format("{} undone", mod.name));
+		}
 		if (rt.applied)
-			ImGui::TextColored(colGood, "Active: %s", mod.options[rt.option].label.c_str());
+		{
+			ImGui::Dummy(ImVec2(0.f, 2.f * S));
+			trackedItem(fBold(), B * 0.56f, colGold, upper("Active: " + mod.options[rt.option].label), 2.f * S);
+		}
 		break;
 	}
 	case ModType::Text:
 	{
-		ImGui::Dummy(ImVec2(0.f, 0.f));
-		nameLine();
-		float buttonW = ImGui::CalcTextSize("RUN").x + ImGui::GetStyle().FramePadding.x * 2.f + ImGui::GetStyle().ItemSpacing.x;
-		ImGui::SetNextItemWidth(std::max(80.f, rowWidth - buttonW));
-		bool enter = ImGui::InputText("##text", &rt.text, ImGuiInputTextFlags_EnterReturnsTrue);
-		ImGui::SameLine();
-		if (ImGui::Button("RUN") || enter) runText(mod, rt.text);
+		ImGui::Dummy(ImVec2(0.f, 2.f * S));
+		float runW = buttonWidth("RUN", Btn::Outline, B, S);
+		float inputPx = B * 0.86f;
+		float inputH = inputPx + 18.f * S;
+		float rowTop = ImGui::GetCursorScreenPos().y;
+		ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, rowTop + (rowH - inputH) * 0.5f));
+		bool enter = false;
+		{
+			ModMenuFonts::Scoped f(ModMenuFonts::body(), inputPx);
+			ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, inputH * 0.5f);
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(18.f * S, 9.f * S));
+			ImGui::SetNextItemWidth(std::max(120.f * S, innerW - runW - gap));
+			enter = ImGui::InputTextWithHint("##text", "Type a command", &rt.text, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::PopStyleVar(2);
+		}
+		rowNext(rowTop, rowH, buttonHeight(B, S), gap);
+		if (luxButton("RUN", Btn::Outline, B, S) || enter)
+		{
+			runText(mod, rt.text);
+			if (!rt.text.empty()) toast("Sent: " + rt.text);
+		}
 		break;
 	}
+	default:
+		break;
 	}
 
-	if (!mod.desc.empty())
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, colDim);
-		ImGui::TextWrapped("%s", mod.desc.c_str());
-		ImGui::PopStyleColor();
-	}
-	ImGui::Separator();
+	endCard(card, active, S);
 	ImGui::PopID();
 }
 
 void ModMenuGUI::renderSkullPanel()
 {
+	const float B = mBasePx, S = B / 20.f;
 	auto skulls = readSkulls();
 	if (skulls.empty())
 	{
-		ImGui::TextColored(colDim, "No skull data for this game yet. Load into a mission first.");
+		textItem(ModMenuFonts::body(), B * 0.9f, colTaupe, "Skulls appear once you're in a mission.");
 		return;
 	}
 
 	int on = 0;
 	for (auto& [k, v] : skulls) if (v) on++;
-	ImGui::TextColored(colDim, "%d of %d skulls on. Changes apply instantly.", on, (int)skulls.size());
-	ImGui::Separator();
+	trackedItem(fBold(), B * 0.56f, on > 0 ? colGold : colMuted, std::format("{} OF {} ACTIVE  -  CHANGES APPLY INSTANTLY", on, (int)skulls.size()), 2.2f * S);
+	ImGui::Dummy(ImVec2(0.f, 8.f * S));
 
 	for (auto& [skull, value] : skulls)
 	{
 		ImGui::PushID((int)skull);
-		bool v = value;
-		if (ImGui::Checkbox("##sk", &v) && v != value) flipSkull(skull);
-		ImGui::SameLine();
-		ImGui::AlignTextToFramePadding();
-		auto name = std::string(magic_enum::enum_name(skull));
-		ImGui::TextColored(value ? colGood : colText, "%s", name.c_str());
+		Card card = beginCard(S);
+		float innerW = card.innerWidth();
+		ImVec2 sw = switchSize(S);
+		float textW = std::max(140.f * S, innerW - sw.x - 32.f * S);
+
+		ImVec2 top = ImGui::GetCursorScreenPos();
+		textItem(ModMenuFonts::bodyBold(), B * 1.0f, value ? colGoldBright : colIvory, spacedName(magic_enum::enum_name(skull)));
 		auto it = skullDescriptions().find(skull);
 		if (it != skullDescriptions().end())
+			textItem(ModMenuFonts::body(), B * 0.8f, colTaupe, it->second, textW);
+		float blockH = ImGui::GetItemRectMax().y - top.y;
+		ImVec2 after = ImGui::GetCursorScreenPos();
+
+		ImGui::SetCursorScreenPos(ImVec2(top.x + innerW - sw.x, top.y + std::max(0.f, (blockH - sw.y) * 0.5f)));
+		if (luxSwitch("##sk", value, S))
 		{
-			ImGui::SameLine();
-			ImGui::TextColored(colDim, " %s", it->second);
+			flipSkull(skull);
+			toast(std::format("{} skull {}", spacedName(magic_enum::enum_name(skull)), value ? "off" : "on"));
 		}
+		ImGui::SetCursorScreenPos(after);
+		endCard(card, value, S);
 		ImGui::PopID();
 	}
 }
 
-void ModMenuGUI::renderLog()
+void ModMenuGUI::renderLog(float totalHeight)
 {
+	const float B = mBasePx, S = B / 20.f;
 	std::deque<LogLine> copy;
 	bool scroll = false;
 	{
@@ -928,94 +1422,208 @@ void ModMenuGUI::renderLog()
 		mScrollLogToBottom = false;
 	}
 
-	ImGui::TextColored(colCyan, "ENGINE BUS");
-	ImGui::SameLine();
-	ImGui::TextColored(colFaint, "commands sent to MCC and what the engine said back");
-
-	float lineH = ImGui::GetTextLineHeightWithSpacing();
-	ImGui::BeginChild("##modmenulog", ImVec2(0.f, lineH * 7.f + 8.f), true);
-	for (auto& line : copy)
+	ImGui::Dummy(ImVec2(0.f, 4.f * S));
+	trackedItem(fBold(), B * 0.54f, colMuted, "ENGINE LOG  -  EVERY COMMAND SENT TO MCC", 2.6f * S);
+	float px = B * 0.72f;
+	float lineH = px + ImGui::GetStyle().ItemSpacing.y;
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, withAlpha(colInk, 0.65f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(16.f * S, 10.f * S));
+	ImGui::BeginChild("##modmenulog", ImVec2(0.f, std::max(lineH * 2.f + 20.f * S, totalHeight - B)), ImGuiChildFlags_AlwaysUseWindowPadding);
 	{
-		ImGui::TextColored(colFaint, "%s", line.time.c_str());
-		ImGui::SameLine();
-		switch (line.kind)
+		ModMenuFonts::Scoped f(ModMenuFonts::body(), px);
+		for (auto& line : copy)
 		{
-		case LogLine::Kind::Command: ImGui::TextColored(colAccent, "> %s", line.text.c_str()); break;
-		case LogLine::Kind::Output: ImGui::TextColored(colCyan, "< %s", line.text.c_str()); break;
-		case LogLine::Kind::Error: ImGui::TextColored(colBad, "! %s", line.text.c_str()); break;
-		case LogLine::Kind::Info: ImGui::TextColored(colDim, "- %s", line.text.c_str()); break;
+			ImGui::TextColored(colFaint, "%s", line.time.c_str());
+			ImGui::SameLine(0.f, 12.f * S);
+			switch (line.kind)
+			{
+			case LogLine::Kind::Command: ImGui::TextColored(colGold, "%s", line.text.c_str()); break;
+			case LogLine::Kind::Output: ImGui::TextColored(colIvory, "%s", line.text.c_str()); break;
+			case LogLine::Kind::Error: ImGui::TextColored(colDanger, "%s", line.text.c_str()); break;
+			case LogLine::Kind::Info: ImGui::TextColored(colTaupe, "%s", line.text.c_str()); break;
+			}
 		}
 	}
 	if (scroll) ImGui::SetScrollHereY(1.f);
 	ImGui::EndChild();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
+}
+
+void ModMenuGUI::renderSettingsPopup()
+{
+	const float B = mBasePx, S = B / 20.f;
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(26.f * S, 22.f * S));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12.f * S, 12.f * S));
+	ImGui::SetNextWindowPos(mSettingsAnchor, ImGuiCond_Appearing, ImVec2(1.f, 1.f));
+	if (ImGui::BeginPopup("##modmenusettings"))
+	{
+		trackedItem(fDisplay(), B * 1.05f, colGold, "SETTINGS", 2.2f * S);
+		ImGui::Dummy(ImVec2(0.f, 2.f * S));
+		goldRule(420.f * S, 0.4f);
+		ImGui::Dummy(ImVec2(0.f, 2.f * S));
+
+		auto row = [&](const char* id, bool& value, const char* text)
+			{
+				ImVec2 sw = switchSize(S);
+				float px = B * 0.86f;
+				float rowTop = ImGui::GetCursorScreenPos().y;
+				if (luxSwitch(id, value, S)) value = !value;
+				rowNext(rowTop, sw.y, px, 16.f * S);
+				textItem(ModMenuFonts::body(), px, colIvory, text);
+			};
+		row("##set_reapply", mAutoReapply, "Re-apply mods after death and level loads");
+		row("##set_pause", mPauseWhileOpen, "Pause the game while this menu is open");
+		row("##set_log", mShowLog, "Show the engine log");
+
+		ImGui::Dummy(ImVec2(0.f, 4.f * S));
+		trackedItem(fBold(), B * 0.56f, colMuted, std::format("TEXT SIZE  {}%", (int)std::round(mTextScale * 100.f)), 2.4f * S);
+		bool released = false;
+		float v = mTextScale;
+		if (luxSlider("##set_text", &v, 0.75f, 1.5f, 0.05f, 420.f * S, S, &released)) mTextScale = v;
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleVar(2);
 }
 
 void ModMenuGUI::renderFooter()
 {
-	int reapplyCount = 0;
-	for (auto& cat : mLibrary.categories)
-		for (auto& mod : cat.mods)
-			if (mod.reapply && mod.supports(mGame) && isActive(mod)) reapplyCount++;
+	const float B = mBasePx, S = B / 20.f;
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+	float W = ImGui::GetContentRegionAvail().x;
 
-	auto reapplyLabel = std::format("RE-APPLY ({})", reapplyCount);
-	if (ImGui::Button(reapplyLabel.c_str())) reapplyActive("manual re-apply");
-	if (ImGui::IsItemHovered()) ImGui::SetTooltip("Sends every active mod again. Use it if a mod wore off.");
-	ImGui::SameLine();
-	if (ImGui::Button("ALL OFF")) turnEverythingOff();
-	ImGui::SameLine();
-	if (ImGui::Button("RELOAD LIBRARY")) loadLibrary();
-	if (ImGui::IsItemHovered()) ImGui::SetTooltip("Re-reads ModMenuLibrary.xml so your edits show up without restarting.");
-	ImGui::SameLine();
-	if (ImGui::Button("OPEN FOLDER"))
+	ImGui::Dummy(ImVec2(0.f, 6.f * S));
+	goldRule(W, 0.35f);
+	ImGui::Dummy(ImVec2(0.f, 8.f * S));
+
+	float rowH = buttonHeight(B, S);
+	ImVec2 rowStart = ImGui::GetCursorScreenPos();
+
+	// left: the latest confirmation, fading out, otherwise a quiet summary
+	std::string toastText;
+	bool toastError = false;
+	float toastAge = 99.f;
 	{
-		auto folder = std::filesystem::path(mLibraryPath).parent_path().string();
-		ShellExecuteA(nullptr, "open", folder.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+		std::lock_guard<std::mutex> lock(mLogMutex);
+		toastText = mToastText;
+		toastError = mToastIsError;
+		toastAge = std::chrono::duration<float>(std::chrono::steady_clock::now() - mToastAt).count();
 	}
-	ImGui::SameLine();
-	ImGui::Checkbox("Auto re-apply", &mAutoReapply);
-	ImGui::SameLine();
-	ImGui::Checkbox("Pause while open", &mPauseWhileOpen);
-	if (ImGui::IsItemHovered()) ImGui::SetTooltip("Takes effect the next time you open the menu.");
-	ImGui::SameLine();
-	ImGui::Checkbox("Log", &mShowLog);
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(90.f);
-	ImGui::SliderFloat("##modmenufont", &mFontSize, 10.f, 28.f, "text %.0f");
+	float px = B * 0.82f;
+	float textY = rowStart.y + (rowH - px) * 0.5f;
+	float linksW = 0.f;
+	for (const char* l : { "RE-APPLY", "ALL OFF", "RELOAD", "FOLDER", "SETTINGS" }) linksW += buttonWidth(l, Btn::Ghost, B, S) + 6.f * S;
+	dl->PushClipRect(ImVec2(rowStart.x - 8.f * S, rowStart.y), ImVec2(rowStart.x + std::max(60.f * S, W - linksW - 16.f * S), rowStart.y + rowH), true);
+	if (!toastText.empty() && toastAge < 4.f)
+	{
+		float alpha = std::clamp((4.f - toastAge) / 0.8f, 0.f, 1.f);
+		ImVec4 c = toastError ? colDanger : colGoldBright;
+		diamond(dl, ImVec2(rowStart.x + 4.f * S, textY + px * 0.55f), 3.5f * S, col32(c, alpha));
+		dl->AddText(fBody(), px, ImVec2(rowStart.x + 18.f * S, textY), col32(c, alpha), toastText.c_str());
+	}
+	else if (mLibraryStatusIsError)
+	{
+		dl->AddText(fBody(), px, ImVec2(rowStart.x, textY), col32(colDanger), mLibraryStatus.c_str());
+	}
+	else
+	{
+		int n = activeCount();
+		auto s = n == 0 ? std::string("Nothing switched on") : std::format("{} mod{} switched on", n, n == 1 ? "" : "s");
+		dl->AddText(fBody(), px, ImVec2(rowStart.x, textY), col32(colMuted), s.c_str());
+	}
+	dl->PopClipRect();
 
-	ImGui::TextColored(mLibraryStatusIsError ? colBad : colFaint, "%s", mLibraryStatus.c_str());
+	// right: quiet text actions
+	struct Link { const char* label; const char* tip; };
+	static const Link links[] = {
+		{ "RE-APPLY", "Send every active mod again, if one wore off." },
+		{ "ALL OFF", "Switch every mod off." },
+		{ "RELOAD", "Re-read ModMenuLibrary.xml after editing it." },
+		{ "FOLDER", "Open the folder with ModMenuLibrary.xml." },
+		{ "SETTINGS", nullptr },
+	};
+	float total = 0.f;
+	for (auto& l : links) total += buttonWidth(l.label, Btn::Ghost, B, S) + 6.f * S;
+	ImGui::SetCursorScreenPos(ImVec2(std::max(rowStart.x + W * 0.45f, rowStart.x + W - total), rowStart.y));
+
+	bool first = true;
+	for (auto& l : links)
+	{
+		if (!first) ImGui::SameLine(0.f, 6.f * S);
+		first = false;
+		if (luxButton(l.label, Btn::Ghost, B, S))
+		{
+			std::string_view label = l.label;
+			if (label == "RE-APPLY") { int n = reapplyActive("manual re-apply"); toast(n > 0 ? std::format("Re-applied {} mod{}", n, n == 1 ? "" : "s") : std::string("Nothing to re-apply")); }
+			else if (label == "ALL OFF") { turnEverythingOff(); toast("Everything switched off"); }
+			else if (label == "RELOAD") { loadLibrary(); toast(mLibraryStatus, mLibraryStatusIsError); }
+			else if (label == "FOLDER")
+			{
+				auto folder = std::filesystem::path(mLibraryPath).parent_path().string();
+				ShellExecuteA(nullptr, "open", folder.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+			}
+			else if (label == "SETTINGS")
+			{
+				ImGui::OpenPopup("##modmenusettings");
+				mSettingsAnchor = ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y - 10.f * S);
+			}
+		}
+		if (l.tip && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", l.tip);
+	}
+	renderSettingsPopup();
 }
 
 void ModMenuGUI::render(SimpleMath::Vector2 screenSize)
 {
+	// Body text is 20px on a 1440p screen and scales with resolution, times the Text Size setting.
+	mBasePx = std::clamp(screenSize.y / 1440.f * 20.f, 13.f, 40.f) * mTextScale;
+	const float B = mBasePx, S = B / 20.f;
+
+	ModMenuFonts::Scoped baseFont(ModMenuFonts::body(), B * 0.86f);
 	pushStyle();
-	ScopedImFontScaler fontScale(mFontSize);
 
 	ImGui::SetNextWindowPos(ImVec2(screenSize.x * 0.5f, screenSize.y * 0.5f), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
-	ImGui::SetNextWindowSize(ImVec2(std::min(980.f, screenSize.x * 0.8f), std::min(760.f, screenSize.y * 0.85f)), ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSizeConstraints(ImVec2(520.f, 360.f), ImVec2(screenSize.x, screenSize.y));
+	ImGui::SetNextWindowSize(ImVec2(std::min(screenSize.x * 0.66f, 1500.f * S), screenSize.y * 0.84f), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSizeConstraints(ImVec2(std::min(620.f * S, screenSize.x), std::min(440.f * S, screenSize.y)), ImVec2(screenSize.x, screenSize.y));
 
-	constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+	constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 	if (ImGui::Begin("Mod Menu##ModMenuGUI", nullptr, flags))
 	{
+		renderBackdrop();
 		renderHeader();
-		ImGui::Separator();
 
-		float lineH = ImGui::GetTextLineHeightWithSpacing();
-		float footerH = ImGui::GetFrameHeightWithSpacing() + lineH + 6.f;
-		float logH = mShowLog ? lineH * 8.f + 14.f : 0.f;
-		float bodyH = std::max(120.f, ImGui::GetContentRegionAvail().y - footerH - logH);
-		float catW = std::max(150.f, ImGui::CalcTextSize("Halo CE Classic  99/99").x + 24.f);
+		float footerH = std::max(mLastFooterH, buttonHeight(B, S) + 16.f * S) + ImGui::GetStyle().ItemSpacing.y;
+		float logH = mShowLog ? std::min(B * 9.f, ImGui::GetContentRegionAvail().y * 0.3f) : 0.f;
+		float bodyH = std::max(140.f * S, ImGui::GetContentRegionAvail().y - footerH - logH);
+		float catW = std::clamp(ImGui::GetContentRegionAvail().x * 0.22f, 190.f * S, 270.f * S);
 
-		ImGui::BeginChild("##modmenucats", ImVec2(catW, bodyH), true);
+		ImGui::BeginChild("##modmenucats", ImVec2(catW, bodyH));
 		renderCategoryList();
 		ImGui::EndChild();
-		ImGui::SameLine();
-		ImGui::BeginChild("##modmenumods", ImVec2(0.f, bodyH), true);
+
+		// hairline between the sidebar and the list
+		ImGui::SameLine(0.f, 18.f * S);
+		{
+			ImVec2 p = ImGui::GetCursorScreenPos();
+			ImU32 clear = col32(colGold, 0.f), gold = col32(colGold, 0.22f);
+			ImGui::GetWindowDrawList()->AddRectFilledMultiColor(ImVec2(p.x, p.y), ImVec2(p.x + 1.f, p.y + bodyH * 0.5f), clear, clear, gold, gold);
+			ImGui::GetWindowDrawList()->AddRectFilledMultiColor(ImVec2(p.x, p.y + bodyH * 0.5f), ImVec2(p.x + 1.f, p.y + bodyH), gold, gold, clear, clear);
+			ImGui::Dummy(ImVec2(1.f, bodyH));
+		}
+		ImGui::SameLine(0.f, 18.f * S);
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(2.f * S, 2.f * S));
+		ImGui::BeginChild("##modmenumods", ImVec2(0.f, bodyH), ImGuiChildFlags_AlwaysUseWindowPadding);
+		ImGui::PopStyleVar();
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.f * S, 6.f * S));
 		renderModList();
+		ImGui::PopStyleVar();
 		ImGui::EndChild();
 
-		if (mShowLog) renderLog();
+		if (mShowLog) renderLog(logH);
+		float footerStartY = ImGui::GetCursorPosY();
 		renderFooter();
+		mLastFooterH = ImGui::GetCursorPosY() - footerStartY;
 	}
 	ImGui::End();
 	popStyle();

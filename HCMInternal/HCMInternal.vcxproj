@@ -241,6 +241,8 @@ IF EXIST "C:\Program Files\LockHunter\LockHunter.exe"  (
     <ClInclude Include="CommandConsoleGUI.h" />
     <ClInclude Include="CommandConsoleManager.h" />
     <ClInclude Include="ModMenuDefaultLibrary.h" />
+    <ClInclude Include="ModMenuFonts.h" />
+    <ClInclude Include="ModMenuFontsData.h" />
     <ClInclude Include="ModMenuGUI.h" />
     <ClInclude Include="ModMenuLibrary.h" />
     <ClInclude Include="ModMenuManager.h" />
@@ -573,6 +575,7 @@ IF EXIST "C:\Program Files\LockHunter\LockHunter.exe"  (
     <ClCompile Include="ChangeOOBBackground.cpp" />
     <ClCompile Include="CommandConsoleGUI.cpp" />
     <ClCompile Include="CommandConsoleManager.cpp" />
+    <ClCompile Include="ModMenuFonts.cpp" />
     <ClCompile Include="ModMenuGUI.cpp" />
     <ClCompile Include="ModMenuLibrary.cpp" />
     <ClCompile Include="ModMenuManager.cpp" />
