@@ -2175,3 +2175,55 @@ std::string ModMenuGUI::devCommand(const std::string& rawLine)
 	}
 	return std::format("unknown command '{}' (try: mods, mod <id> [on|off|value], selftest [category|all|stop] [after <id>], alloff, hs <command>, spawn <name>, become <name>, catalogue, possess, return, pose, wait <ms>)", verb);
 }
+
+// ------------------------------------------------------------------ third person overlay
+
+bool ModMenuGUI::thirdPersonActive()
+{
+	auto s = mSettingsWeak.lock();
+	return s && s->thirdPersonCameraToggle->GetValue() && s->freeCameraToggle->GetValue();
+}
+
+void ModMenuGUI::renderThirdPersonOverlay(SimpleMath::Vector2 screenSize, std::optional<float> shields, std::optional<float> health)
+{
+	ImDrawList* dl = ImGui::GetBackgroundDrawList();
+	const float S = std::clamp(screenSize.y / 1440.f, 0.5f, 3.f);
+	const ImVec2 c(screenSize.x * 0.5f, screenSize.y * 0.5f);
+	const ImU32 shadow = IM_COL32(0, 0, 0, 120);
+
+	// crosshair: a thin champagne ring with a dot, outlined so it reads on snow and on sky
+	float r = 13.f * S;
+	dl->AddCircle(c, r, shadow, 40, 3.5f * S);
+	dl->AddCircle(c, r, col32(colGoldBright, 0.9f), 40, 1.6f * S);
+	dl->AddCircleFilled(c, 2.6f * S, shadow, 16);
+	dl->AddCircleFilled(c, 1.8f * S, col32(colIvory), 16);
+	for (int i = 0; i < 4; i++)
+	{
+		ImVec2 d(i == 0 ? 1.f : i == 1 ? -1.f : 0.f, i == 2 ? 1.f : i == 3 ? -1.f : 0.f);
+		ImVec2 a(c.x + d.x * (r + 4.f * S), c.y + d.y * (r + 4.f * S)), b(c.x + d.x * (r + 11.f * S), c.y + d.y * (r + 11.f * S));
+		dl->AddLine(a, b, shadow, 3.5f * S);
+		dl->AddLine(a, b, col32(colGoldBright, 0.9f), 1.6f * S);
+	}
+
+	// vitals: two slim bars, bottom centre
+	if (!shields && !health) return;
+	float w = 360.f * S, h = 7.f * S, gap = 6.f * S;
+	float x0 = c.x - w * 0.5f, y = screenSize.y - 70.f * S;
+	auto bar = [&](float y, float value, ImVec4 colour, ImVec4 overColour)
+		{
+			ImVec2 p(x0, y), q(x0 + w, y + h);
+			dl->AddRectFilled(ImVec2(p.x - 1.f * S, p.y - 1.f * S), ImVec2(q.x + 1.f * S, q.y + 1.f * S), IM_COL32(0, 0, 0, 110), h);
+			dl->AddRectFilled(p, q, col32(colIvory, 0.12f), h);
+			float v = std::clamp(value, 0.f, 1.f);
+			if (v > 0.f) dl->AddRectFilled(p, ImVec2(x0 + w * v, q.y), col32(colour), h);
+			float over = std::clamp(value - 1.f, 0.f, 2.f) / 2.f; // overshield
+			if (over > 0.f) dl->AddRectFilled(p, ImVec2(x0 + w * over, q.y), col32(overColour), h);
+		};
+	if (shields) bar(y, *shields, colGold, colGoldBright);
+	if (health)
+	{
+		float v = *health;
+		ImVec4 hc = v < 0.3f ? rgba(214, 88, 74) : colIvory;
+		bar(y + h + gap, v, hc, hc);
+	}
+}

@@ -171,6 +171,11 @@ public:
 	}
 
 	void setCanBecome(bool canBecome) { mCanBecome = canBecome; }
+
+	// Third person hides the game's own HUD, so the menu draws a crosshair and shield/health bars instead.
+	// Shields and health are 0..1 (shields can go past 1 with overshields); nullopt when unknown.
+	void renderThirdPersonOverlay(SimpleMath::Vector2 screenSize, std::optional<float> shields, std::optional<float> health);
+	bool thirdPersonActive();
 	// "load more from this mission" on the Spawn page (Reach designer zones); empty = not offered
 	void setLoadMoreHandler(std::function<std::string()> handler) { mLoadMoreAction = std::move(handler); }
 

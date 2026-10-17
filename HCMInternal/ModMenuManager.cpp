@@ -20,6 +20,7 @@
 #include "ModMenuPossession.h"
 #include "GetObjectPhysics.h"
 #include "GetPlayerViewAngle.h"
+#include "GetObjectHealth.h"
 
 class ModMenuManager::ModMenuManagerImpl
 {
@@ -55,6 +56,7 @@ private:
 	std::optional<Datum> lastPlayerUnit;
 	std::weak_ptr<GetObjectPhysics> objectPhysicsWeak;	// where the player is (any game HCM supports)
 	std::weak_ptr<GetPlayerViewAngle> viewAngleWeak;		// which way they face
+	std::weak_ptr<GetObjectHealth> objectHealthWeak;		// shields and health for the third-person overlay
 	int64_t nextResetPollMs = 0;
 
 	// Developer automation: lines in ModMenuDev.txt (next to HCM) are run while this game is being played, then the
@@ -472,6 +474,28 @@ private:
 
 			if (!ourGamePlaying) return;
 
+			// third person hides the game's HUD: draw a crosshair and shield/health bars (not while the menu is open)
+			if (!openRequests && gui->thirdPersonActive())
+			{
+				std::optional<float> shields, health;
+				auto playerDatum = playerDatumWeak.lock();
+				auto vitals = objectHealthWeak.lock();
+				if (playerDatum && vitals)
+				{
+					try
+					{
+						Datum unit = playerDatum->getPlayerDatum();
+						if (!unit.isNull())
+						{
+							try { shields = vitals->getObjectShields(unit).value; } catch (HCMRuntimeException) {}
+							try { health = vitals->getObjectHealth(unit).value; } catch (HCMRuntimeException) {}
+						}
+					}
+					catch (HCMRuntimeException) {}
+				}
+				gui->renderThirdPersonOverlay(screenSize, shields, health);
+			}
+
 			if (openRequests)
 			{
 				gui->render(screenSize);
@@ -528,6 +552,8 @@ public:
 		{
 			try { objectPhysicsWeak = resolveDependentCheat(GetObjectPhysics); }
 			catch (HCMInitException ex) { PLOG_INFO << "ModMenu: no object physics for " << game.toString() << ": " << ex.what(); }
+			try { objectHealthWeak = resolveDependentCheat(GetObjectHealth); }
+			catch (HCMInitException ex) { PLOG_INFO << "ModMenu: no object health for " << game.toString() << ": " << ex.what(); }
 			try { viewAngleWeak = resolveDependentCheat(GetPlayerViewAngle); }
 			catch (HCMInitException ex) { PLOG_INFO << "ModMenu: no view angle for " << game.toString() << ": " << ex.what(); }
 			spawner = std::make_unique<ModMenuSpawner>(game, dicon, [this]() -> std::optional<ModMenuPose> { return playerPose(); });
