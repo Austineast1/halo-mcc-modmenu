@@ -36,7 +36,7 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
   group="name" makes buttons one-at-a-time: running one forgets the others in the group (Become forms use this).
   A reapply button in a group is remembered and run again after deaths, reverts and level loads.
 -->
-<ModMenuLibrary version="10" title="Mod Menu">
+<ModMenuLibrary version="11" title="Mod Menu">
 
   <!-- ================================================================== -->
   <Category id="spartan" name="Spartan" desc="Your body: armour, health, size and movement.">
@@ -1003,7 +1003,8 @@ R"MML(        <Run>(ai_allegiance heretic player)
 
     <Mod id="erase" type="button" tag="NUKE" name="Erase All AI"
          desc="Deletes every AI on the map. Allies too.">
-      <Game games="all">
+      <!-- not in Reach: ai_erase_all crashed it a moment later in Winter Contingency (Oct 2026) -->
+      <Game games="Halo1,Halo2,Halo3,Halo3ODST,Halo4">
         <Run>(ai_erase_all)</Run>
       </Game>
     </Mod>
@@ -1148,13 +1149,13 @@ R"MML(        <Run>(ai_allegiance heretic player)
         <Off>(chud_show_motion_sensor true)</Off>
       </Game>
       <Game games="Halo1">
-        <On>(hud_show_motion_sensor false)</On>
+)MML",
+R"MML(        <On>(hud_show_motion_sensor false)</On>
         <Off>(hud_show_motion_sensor true)</Off>
       </Game>
     </Mod>
 
-)MML",
-R"MML(    <Mod id="nogrenadehud" type="toggle" name="Hide Grenade Count"
+    <Mod id="nogrenadehud" type="toggle" name="Hide Grenade Count"
          desc="Hides the grenade display.">
       <Game games="gen3">
         <On>(chud_show_grenades false)</On>
@@ -1377,11 +1378,11 @@ R"MML(    <Mod id="nogrenadehud" type="toggle" name="Hide Grenade Count"
   <Category id="skulls" name="Skulls" special="skulls" desc="Every skull this game has, flipped live mid-mission." />
 
   <!-- ================================================================== -->
-  <Category id="classic" name="Halo CE Classic" desc="Bungie's developer cheats, still hidden inside Halo CE.">
+)MML",
+R"MML(  <Category id="classic" name="Halo CE Classic" desc="Bungie's developer cheats, still hidden inside Halo CE.">
 
     <Mod id="jetpack" type="toggle" reapply="true" name="Jetpack"
-)MML",
-R"MML(         desc="Hold jump to fly, hold crouch to hover. No fall damage.">
+         desc="Hold jump to fly, hold crouch to hover. No fall damage.">
       <Game games="Halo1">
         <Set>(set cheat_jetpack {bool})</Set>
       </Game>

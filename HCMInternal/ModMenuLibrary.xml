@@ -31,7 +31,7 @@
   group="name" makes buttons one-at-a-time: running one forgets the others in the group (Become forms use this).
   A reapply button in a group is remembered and run again after deaths, reverts and level loads.
 -->
-<ModMenuLibrary version="10" title="Mod Menu">
+<ModMenuLibrary version="11" title="Mod Menu">
 
   <!-- ================================================================== -->
   <Category id="spartan" name="Spartan" desc="Your body: armour, health, size and movement.">
@@ -993,7 +993,8 @@
 
     <Mod id="erase" type="button" tag="NUKE" name="Erase All AI"
          desc="Deletes every AI on the map. Allies too.">
-      <Game games="all">
+      <!-- not in Reach: ai_erase_all crashed it a moment later in Winter Contingency (Oct 2026) -->
+      <Game games="Halo1,Halo2,Halo3,Halo3ODST,Halo4">
         <Run>(ai_erase_all)</Run>
       </Game>
     </Mod>

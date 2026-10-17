@@ -39,6 +39,7 @@ KNOWN_CRASHERS = {
 KNOWN_CRASHERS_PER_GAME = {
     "unit_lower_weapon": ({"HaloReach"}, "crashed Halo: Reach (null pointer in its animation code, haloreach.dll+0x213f45) on the player, Oct 2026"),
     "unit_raise_weapon": ({"HaloReach"}, "pair of unit_lower_weapon, which crashes Halo: Reach; not trusted there either"),
+    "ai_erase_all": ({"HaloReach"}, "crashed Halo: Reach in its AI update 13 ms later (Winter Contingency, Noble team on the map), Oct 2026"),
 }
 SPECIAL_FORMS = {"begin", "begin_random", "if", "cond", "set", "and", "or", "+", "-", "*", "/", "=", "!=", ">", "<", ">=", "<=",
                  "min", "max", "sleep", "sleep_until", "wake", "inspect", "unit", "not", "print", "list_get", "players", "player_get"}
