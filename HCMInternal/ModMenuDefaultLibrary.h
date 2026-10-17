@@ -36,7 +36,7 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
   group="name" makes buttons one-at-a-time: running one forgets the others in the group (Become forms use this).
   A reapply button in a group is remembered and run again after deaths, reverts and level loads.
 -->
-<ModMenuLibrary version="13" title="Mod Menu">
+<ModMenuLibrary version="14" title="Mod Menu">
 
   <!-- ================================================================== -->
   <Category id="spartan" name="Spartan" desc="Your body: armour, health, size and movement.">
@@ -662,8 +662,8 @@ R"MML(    <Mod id="p_odst" type="button" reapply="true" group="form" tag="PRESET
 
     <Mod id="holster" type="toggle" name="Holster Weapon"
          desc="Lower your weapon and walk like you own the place.">
-      <!-- not in Reach: unit_lower_weapon crashes it (self-test, Oct 2026) -->
-      <Game games="Halo2,Halo3,Halo3ODST,Halo4">
+      <!-- Halo 2 only: unit_lower_weapon / unit_raise_weapon crash Reach and Halo 3 (self-test, Oct 2026); ODST and Halo 4 share that engine code -->
+      <Game games="Halo2">
         <On>(unit_lower_weapon {player} 20)</On>
         <Off>(unit_raise_weapon {player} 20)</Off>
       </Game>
@@ -732,9 +732,9 @@ R"MML(    <Mod id="p_odst" type="button" reapply="true" group="form" tag="PRESET
     <Mod id="warthog" type="button" name="Spawn Warthog"
          desc="A Warthog appears next to you.">
       <Game games="Halo1">
-        <Run>(cheat_spawn_warthog)</Run>
 )MML",
-R"MML(      </Game>
+R"MML(        <Run>(cheat_spawn_warthog)</Run>
+      </Game>
     </Mod>
 
     <Mod id="powerups" type="button" name="All Power-ups"
@@ -937,10 +937,10 @@ R"MML(      </Game>
 (ai_allegiance flood human)
 (ai_allegiance sentinel player)
 (ai_allegiance sentinel human)</Run>
-      </Game>
-      <Game games="Halo2">
 )MML",
-R"MML(        <Run>(ai_allegiance heretic player)
+R"MML(      </Game>
+      <Game games="Halo2">
+        <Run>(ai_allegiance heretic player)
 (ai_allegiance heretic human)
 (ai_allegiance prophet player)
 (ai_allegiance prophet human)</Run>

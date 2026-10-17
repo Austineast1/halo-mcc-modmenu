@@ -22,6 +22,10 @@ namespace
 			{ "(object_set_scale ", GameState::Value::Halo3ODST },	// same freeze in ODST
 			{ "(unit_lower_weapon ", GameState::Value::HaloReach },	// crashes haloreach.dll+0x213f45
 			{ "(unit_raise_weapon ", GameState::Value::HaloReach },
+			{ "(unit_lower_weapon ", GameState::Value::Halo3 },		// crashes halo3.dll+0x23300e (same null read as Reach)
+			{ "(unit_raise_weapon ", GameState::Value::Halo3 },
+			{ "(unit_lower_weapon ", GameState::Value::Halo3ODST },	// Halo 3's engine code: not risked
+			{ "(unit_raise_weapon ", GameState::Value::Halo3ODST },
 			{ "(ai_erase_all", GameState::Value::HaloReach },		// crashes Reach's AI update a moment later
 		};
 		for (auto& [text, g] : unsafe)

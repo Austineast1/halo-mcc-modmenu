@@ -37,8 +37,8 @@ KNOWN_CRASHERS = {
 }
 # Same, but only in some games (found by the in-game self-test: the last TEST line before the crash dump).
 KNOWN_CRASHERS_PER_GAME = {
-    "unit_lower_weapon": ({"HaloReach"}, "crashed Halo: Reach (null pointer in its animation code, haloreach.dll+0x213f45) on the player, Oct 2026"),
-    "unit_raise_weapon": ({"HaloReach"}, "pair of unit_lower_weapon, which crashes Halo: Reach; not trusted there either"),
+    "unit_lower_weapon": ({"HaloReach", "Halo3", "Halo3ODST"}, "crashed Halo: Reach (haloreach.dll+0x213f45) and Halo 3 (halo3.dll+0x23300e) on the player, Oct 2026; ODST shares Halo 3's code"),
+    "unit_raise_weapon": ({"HaloReach", "Halo3", "Halo3ODST"}, "pair of unit_lower_weapon; crashed Halo 3 from its own HaloScript evaluate, Oct 2026"),
     "ai_erase_all": ({"HaloReach"}, "crashed Halo: Reach in its AI update 13 ms later (Winter Contingency, Noble team on the map), Oct 2026"),
 }
 SPECIAL_FORMS = {"begin", "begin_random", "if", "cond", "set", "and", "or", "+", "-", "*", "/", "=", "!=", ">", "<", ">=", "<=",
