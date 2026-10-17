@@ -19,6 +19,7 @@ namespace
 	{
 		static const std::vector<std::pair<const char*, GameState::Value>> unsafe = {
 			{ "(object_set_scale ", GameState::Value::Halo3 },		// on the player: freezes ~45 s, then crashes halo3.dll (any size, smooth or instant)
+			{ "(object_set_scale ", GameState::Value::Halo3ODST },	// same freeze in ODST
 			{ "(unit_lower_weapon ", GameState::Value::HaloReach },	// crashes haloreach.dll+0x213f45
 			{ "(unit_raise_weapon ", GameState::Value::HaloReach },
 			{ "(ai_erase_all", GameState::Value::HaloReach },		// crashes Reach's AI update a moment later
