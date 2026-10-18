@@ -208,6 +208,19 @@ namespace
 	// how far in front of the player each kind appears (world units; 1 wu is about 3 m), and how high
 	float spawnDistance(SpawnKind k) { switch (k) { case SpawnKind::Vehicle: return 1.8f; case SpawnKind::Character: return 0.8f; case SpawnKind::Prop: return 0.7f; default: return 0.45f; } }
 	float spawnHeight(SpawnKind k) { switch (k) { case SpawnKind::Vehicle: return 0.35f; case SpawnKind::Character: return 0.15f; default: return 0.25f; } }
+
+	// Big things need room: a Phantom dropped 1.8 wu ahead lands on your head (seen in Halo 3).
+	// Returns {extra distance, extra height} in world units for large vehicles and creatures, by tag path.
+	std::pair<float, float> roomFor(const std::string& path)
+	{
+		std::string p = path;
+		std::transform(p.begin(), p.end(), p.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+		for (auto* huge : { "scarab", "phantom", "pelican", "spirit", "elephant", "longsword", "sabre", "lich", "corvette", "frigate", "cruiser", "condor", "mammoth" })
+			if (p.contains(huge)) return { 6.0f, 1.5f };
+		for (auto* big : { "scorpion", "wraith", "banshee", "hornet", "falcon", "revenant", "spectre", "chopper", "prowler", "shade", "hunter", "military_truck", "truck_cab", "forklift", "mantis" })
+			if (p.contains(big)) return { 1.2f, 0.3f };
+		return { 0.f, 0.f };
+	}
 }
 
 class ModMenuSpawner::Impl
@@ -467,7 +480,8 @@ public:
 		}
 		if (queued >= kMaxQueued) return "Hold on, still spawning the last few...";
 
-		float distance = spawnDistance(entry.kind), height = spawnHeight(entry.kind);
+		auto [extraDistance, extraHeight] = roomFor(entry.path);
+		float distance = spawnDistance(entry.kind) + extraDistance, height = spawnHeight(entry.kind) + extraHeight;
 		Request request{ entry, becomeIt, {}, {} };
 		float fx = std::cos(pose->yaw), fy = std::sin(pose->yaw);
 		// several spawns queued at once: fan them out sideways so they don't land inside each other
