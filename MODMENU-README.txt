@@ -138,6 +138,15 @@ game. You keep full control (walk, aim, shoot, drive), and it follows any
 body you take over. "Third Person Distance" pulls it in or out.
 
 
+FIREFIGHT (Halo: Reach)
+-----------------------
+The menu works in Reach Firefight too (built-in and Workshop maps): mods, God
+Mode and HCM's other switches, Spawn, Third Person, Loot, Generate a Weapon,
+the item cards and weapon mastery. Taking over bodies (Become / BECOME) is
+campaign-only for now: in Firefight the camera and controls stay with your
+Spartan, so the menu says so instead of swapping.
+
+
 STEAM WORKSHOP MODS
 -------------------
 The menu also works in Workshop campaign mods (they need "Anti-Cheat

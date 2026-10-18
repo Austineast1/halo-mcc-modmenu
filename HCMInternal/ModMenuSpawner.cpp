@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ModMenuSpawner.h"
 #include "GameTickEventHook.h"
+#include "ReachGameThread.h"
 #include "TagTableRange.h"
 #include "GetTagName.h"
 #include "IMakeOrGetCheat.h"
@@ -471,6 +472,7 @@ public:
 
 	std::string spawn(const ModMenuSpawnEntry& entry, bool becomeIt)
 	{
+		if (becomeIt && ReachGameThread::firefight()) return ReachGameThread::kNoBecomeInFirefight;
 		auto pose = mPose ? mPose() : std::nullopt;
 		if (!pose) return "Load into a mission first.";
 

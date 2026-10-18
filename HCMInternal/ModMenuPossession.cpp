@@ -9,6 +9,7 @@
 #include "IGetMCCVersion.h"
 #include "Datum.h"
 #include "DirPathContainer.h"
+#include "ReachGameThread.h"
 #include "GetObjectHealth.h"
 #include <atomic>
 #include <chrono>
@@ -310,6 +311,7 @@ public:
 
 	std::string possessAimed()
 	{
+		if (ReachGameThread::firefight()) return ReachGameThread::kNoBecomeInFirefight;
 		if (mPending) return "Still taking over... close the menu if the game is paused.";
 
 		uintptr_t unitField = 0, record = 0;
@@ -421,6 +423,7 @@ public:
 
 	std::string possessBody(uint32_t target)
 	{
+		if (ReachGameThread::firefight()) return ReachGameThread::kNoBecomeInFirefight;
 		if (mPending) return "Still working on the last swap...";
 		uintptr_t unitField = 0, record = 0;
 		uint32_t playerDatum = 0;

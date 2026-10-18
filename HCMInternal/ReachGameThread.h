@@ -133,6 +133,16 @@ namespace ReachGameThread
 		return 0;
 	}
 
+	// Reach is running Firefight (or another networked mode): the game state is live but campaign's pointers are null
+	inline bool firefight()
+	{
+		uintptr_t module = gModule, slot = 1;
+		if (!module || !gBlock.load() || !read(module + 0x15B6700, slot)) return false;
+		return slot == 0;
+	}
+
+	constexpr const char* kNoBecomeInFirefight = "Taking over bodies doesn't work in Firefight yet: the camera and controls stay with your Spartan. It works in campaign.";
+
 	inline uint32_t playerUnit(int index = 0)
 	{
 		uintptr_t players = 0;
