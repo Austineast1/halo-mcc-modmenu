@@ -5,7 +5,7 @@
 
 // static, only needs to be set once
 void* MultilevelPointerSpecialisation::ExeOffset::mEXEAddress = nullptr;
-std::stringstream MultilevelPointer::mLastError = static_cast<std::stringstream&&>(std::stringstream{} << "No error set"); //https://stackoverflow.com/questions/21924156/how-to-initialize-a-stdstringstream
+thread_local std::stringstream MultilevelPointer::mLastError = static_cast<std::stringstream&&>(std::stringstream{} << "No error set"); //https://stackoverflow.com/questions/21924156/how-to-initialize-a-stdstringstream
 
 
 

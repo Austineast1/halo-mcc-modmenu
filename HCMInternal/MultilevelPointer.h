@@ -12,7 +12,9 @@ class MultilevelPointer {
 private:
 
 	// Common to all multilevel_pointers
-	static std::stringstream mLastError;
+	// one per thread: pointers fail on the game thread and the render thread at the same time (Reach Firefight), and a
+	// shared stream written from both corrupted the heap
+	static thread_local std::stringstream mLastError;
 	bool readString(std::string& resolvedOut) const; 
 	bool readWString(std::wstring& resolvedOut) const;
 
