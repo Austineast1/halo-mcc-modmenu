@@ -45,6 +45,9 @@ private:
 	std::unique_ptr<ModMenuSpawner> spawner;
 	uint32_t lootCardTag = 0xFFFFFFFF, lootCardVersion = 0;	// which gun's card is showing, for which set of cards
 	int64_t lootCardShownMs = 0;
+	uint32_t lootForcedTag = 0xFFFFFFFF;	// a just-generated gun: its card shows once the menu closes, held or not
+	bool lootForcedPending = false;
+	int64_t lootForcedMs = 0;
 	std::unique_ptr<ModMenuLoot> loot;			// Borderlands-style weapon rolls (Reach)		// spawn anything the level has loaded
 
 	// optional engine events
@@ -337,6 +340,53 @@ private:
 		return rolled + std::format("Loot chest: {}...", list);
 	}
 
+	static std::string lootName(const LootWeapon& w) { return w.title.empty() ? w.baseName : w.title + " " + w.baseName; }
+
+	// Generate a weapon: a brand-new roll for one gun type (random, or the one asked for), at least `minRarity`,
+	// dropped in front of you. Guns of one type share their stats, so every one on the level becomes this one.
+	std::string generateWeapon(int minRarity, uint32_t tag)
+	{
+		if (!loot) return "Loot works in Halo: Reach for now.";
+		auto types = loot->gunTypes();
+		if (types.empty() && !loot->active()) { loot->roll(); types = loot->gunTypes(); }
+		if (types.empty()) return "No guns found yet. Load into a mission first.";
+		const std::vector<ModMenuSpawnEntry>* catalogue = spawner ? &spawner->catalogue(true) : nullptr;
+		auto spawnable = [&](uint32_t t) { return catalogue && std::any_of(catalogue->begin(), catalogue->end(), [&](const ModMenuSpawnEntry& e) { return e.tag == t; }); };
+		if (tag == 0xFFFFFFFF)
+		{
+			std::vector<uint32_t> pool;
+			for (auto& [t, name] : types) if (spawnable(t)) pool.push_back(t);
+			if (pool.empty()) for (auto& [t, name] : types) pool.push_back(t);
+			static std::mt19937 rng{ std::random_device{}() };
+			tag = pool[std::uniform_int_distribution<size_t>(0, pool.size() - 1)(rng)];
+		}
+		auto made = loot->regenerate(tag, minRarity);
+		if (!made) return "Couldn't generate that gun.";
+		lootForcedTag = tag;
+		lootForcedPending = true;
+		std::string where = "It's on the level now: every one you pick up is this one.";
+		if (spawnable(tag))
+			for (auto& e : *catalogue)
+				if (e.tag == tag) { spawner->spawn(e, false); where = "Dropped in front of you."; break; }
+		static const char* rarities[] = { "Common", "Uncommon", "Rare", "Epic", "Legendary" };
+		devLog(std::format("loot: generated {} {}", rarities[std::clamp((int)made->rarity, 0, 4)], lootName(*made)));
+		return std::format("Generated {} {}. {} Every {} on this level shares this roll.", rarities[std::clamp((int)made->rarity, 0, 4)], lootName(*made), where, made->baseName);
+	}
+
+	// a brand-new roll for the gun in your hands
+	std::string rerollHeldWeapon(int minRarity)
+	{
+		if (!loot) return "Loot works in Halo: Reach for now.";
+		uint32_t tag = loot->heldGunTag();
+		if (tag == 0xFFFFFFFF) return "Hold a gun first.";
+		auto made = loot->regenerate(tag, minRarity);
+		if (!made) return "Couldn't re-roll that gun.";
+		lootForcedTag = tag;
+		lootForcedPending = true;
+		static const char* rarities[] = { "Common", "Uncommon", "Rare", "Epic", "Legendary" };
+		return std::format("Your gun is now a {} {}.", rarities[std::clamp((int)made->rarity, 0, 4)], lootName(*made));
+	}
+
 	static std::string lowerCopy(std::string s)
 	{
 		std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return (char)std::tolower(c); });
@@ -416,6 +466,26 @@ private:
 			}
 			if (sub == "restore") return loot->restore();
 			if (sub == "chest") return lootChest();
+			if (sub == "gen" || sub == "generate" || sub == "reroll")
+			{
+				// loot gen [any|uncommon|rare|epic|legendary] [gun name]   /   loot reroll [rarity]
+				int rarity = 0;
+				std::string name = arg;
+				static const char* words[] = { "any", "uncommon", "rare", "epic", "legendary" };
+				for (int i = 0; i < 5; i++)
+				{
+					std::string w = words[i];
+					if (lowerCopy(name).starts_with(w)) { rarity = i; name = name.size() > w.size() ? name.substr(w.size() + 1) : ""; break; }
+				}
+				if (sub == "reroll") return rerollHeldWeapon(rarity);
+				uint32_t tag = 0xFFFFFFFF;
+				if (!name.empty())
+				{
+					for (auto& [t, n] : loot->gunTypes()) if (lowerCopy(n) == lowerCopy(name)) { tag = t; break; }
+					if (tag == 0xFFFFFFFF) return "no gun called " + name;
+				}
+				return generateWeapon(rarity, tag);
+			}
 			if (sub == "auto") { loot->setAutoReroll(arg != "off"); return arg != "off" ? "new loot every mission: on" : "new loot every mission: off"; }
 			if (sub == "list")
 			{
@@ -436,7 +506,7 @@ private:
 				for (auto& l : lines) devLog("  " + l);
 				return std::format("{} lines", lines.size());
 			}
-			return "usage: loot roll [seed] | restore | chest | auto on|off | list | dump";
+			return "usage: loot roll [seed] | restore | chest | gen [rarity] [gun] | reroll [rarity] | auto on|off | list | dump";
 		}
 		if (verb == "mastery")
 		{
@@ -605,7 +675,19 @@ private:
 					lootCardShownMs = nowMs();
 				}
 				float age = (nowMs() - lootCardShownMs) / 1000.f;
-				if (held && age < ModMenuGUI::kLootCardSeconds) gui->renderLootCard(screenSize, *held, age, loot->levelUpCard(heldTag));
+				// a gun you just generated shows its card first (once the menu is closed), held or not
+				if (lootForcedPending) { lootForcedPending = false; lootForcedMs = nowMs(); }
+				float forcedAge = (nowMs() - lootForcedMs) / 1000.f;
+				const LootWeapon* forced = nullptr;
+				if (lootForcedTag != 0xFFFFFFFF && forcedAge < ModMenuGUI::kLootCardSeconds)
+					for (auto& w : loot->weapons()) if (w.tag == lootForcedTag) { forced = &w; break; }
+				if (forced)
+				{
+					gui->renderLootCard(screenSize, *forced, forcedAge, false);
+					lootCardTag = heldTag;	// don't pop the held card straight after
+					lootCardShownMs = nowMs() - (int64_t)(ModMenuGUI::kLootCardSeconds * 1000.f);
+				}
+				else if (held && age < ModMenuGUI::kLootCardSeconds) gui->renderLootCard(screenSize, *held, age, loot->levelUpCard(heldTag));
 			}
 
 			// weapon mastery: a small "+1" under the crosshair for every kill that counts
@@ -730,6 +812,10 @@ public:
 				[this]() { return loot->autoReroll(); },
 				[this](bool on) { loot->setAutoReroll(on); });
 			if (spawner) gui->setLootChestHandler([this]() { return lootChest(); });
+			gui->setLootGenerateHandlers(
+				[this](int rarity, uint32_t tag) { return generateWeapon(rarity, tag); },
+				[this](int rarity) { return rerollHeldWeapon(rarity); },
+				[this]() { return loot ? loot->gunTypes() : std::vector<std::pair<uint32_t, std::string>>{}; });
 			gui->setMasteryHandler([this]() { return loot ? loot->masteryList() : std::vector<MasteryEntry>{}; });
 		}
 		catch (HCMInitException ex)

@@ -48,6 +48,12 @@ public:
 	// Render thread: the rolled gun the player is holding right now (for the item card), or null.
 	const LootWeapon* heldWeapon();
 
+	// Render thread. Generates a brand-new roll for one gun type (at least minRarity: 0 common .. 4 legendary) and
+	// returns its card; every other gun keeps its roll. Rolls loot for the level first if it's off.
+	std::optional<LootWeapon> regenerate(uint32_t tag, int minRarity);
+	uint32_t heldGunTag();	// the gun type in the player's hands, or 0xFFFFFFFF
+	std::vector<std::pair<uint32_t, std::string>> gunTypes() const;	// every gun type on the level (tag, name)
+
 	// developer: one line per gun with its current stats (read-only)
 	std::vector<std::string> describeGuns();
 

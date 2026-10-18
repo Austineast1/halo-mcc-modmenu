@@ -99,6 +99,11 @@ and red flavour text on legendaries.
   Firehose (double fire rate, triple magazine) or Wrecking Ball (every hit
   sends them flying).
 - RE-ROLL for new loot any time; STANDARD ISSUE puts every gun back.
+- GENERATE A WEAPON: pick a rarity (Any, Rare+, Epic+, Legendary) and a gun
+  (or Random), press GENERATE WEAPON, and a brand-new roll of that gun drops
+  in front of you with its card. RE-ROLL MY GUN does the same to the gun in
+  your hands. Guns of one type share their stats, so every one of that gun
+  on the level changes with it; every other gun keeps its roll.
 - LOOT CHEST drops four rolled guns in front of you (better rarities are
   more likely). Pick one up and its item card slides in.
 - "New loot every mission" rolls fresh guns whenever a mission loads.
@@ -162,6 +167,7 @@ the results are written to ModMenuDev.log. Commands:
   spawn <name> / become <name> / catalogue / loadmore   spawning
   possess / return / pose    (Reach) body swap
   loot roll [seed] / loot restore / loot list / loot dump   (Reach) loot
+  loot gen [any|uncommon|rare|epic|legendary] [gun] / loot reroll [rarity]
   mastery list / add [n] / reset [all] / deaths             (Reach) weapon mastery
   status                     game, tick and player unit
   wait <ms>                  pause between lines

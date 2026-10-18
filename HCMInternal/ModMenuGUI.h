@@ -69,6 +69,12 @@ private:
 	std::function<void(bool)> mLootAutoSet;
 	std::function<std::string()> mLootChest;	// drop a few rolled guns in front of you (needs spawning)
 	std::function<std::vector<MasteryEntry>()> mMasteryList;	// weapon mastery: every gun type with kills
+	// generate a weapon: (min rarity, gun tag or 0xFFFFFFFF for random), re-roll the held gun, the gun types on the level
+	std::function<std::string(int, uint32_t)> mLootGenerate;
+	std::function<std::string(int)> mLootRerollHeld;
+	std::function<std::vector<std::pair<uint32_t, std::string>>()> mLootGunTypes;
+	int mGenRarity = 0;					// 0 any, 2 rare+, 3 epic+, 4 legendary
+	uint32_t mGenTag = 0xFFFFFFFF;		// 0xFFFFFFFF = random gun
 	bool mCanBecome = false;
 	std::function<std::string()> mLoadMoreAction;	// true body swap is available in this game (BECOME buttons on characters)
 	int mSpawnKind = 0;
@@ -195,6 +201,13 @@ public:
 
 	void setLootChestHandler(std::function<std::string()> chest) { mLootChest = std::move(chest); }
 	void setMasteryHandler(std::function<std::vector<MasteryEntry>()> list) { mMasteryList = std::move(list); }
+	void setLootGenerateHandlers(std::function<std::string(int, uint32_t)> generate, std::function<std::string(int)> rerollHeld,
+		std::function<std::vector<std::pair<uint32_t, std::string>>()> gunTypes)
+	{
+		mLootGenerate = std::move(generate);
+		mLootRerollHeld = std::move(rerollHeld);
+		mLootGunTypes = std::move(gunTypes);
+	}
 
 	// Third person hides the game's own HUD, so the menu draws a crosshair and shield/health bars instead.
 	// Shields and health are 0..1 (shields can go past 1 with overshields); nullopt when unknown.

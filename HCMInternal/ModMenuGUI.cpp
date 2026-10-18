@@ -1814,6 +1814,75 @@ void ModMenuGUI::renderLootPanel()
 		ImGui::GetContentRegionAvail().x);
 	ImGui::Dummy(ImVec2(0.f, 8.f * S));
 
+	// generate a weapon: pick a rarity and a gun (or random) and a brand-new roll of it drops in front of you
+	if (mLootGenerate)
+	{
+		trackedItem(fBold(), B * 0.54f, colMuted, "GENERATE A WEAPON", 2.6f * S);
+		ImGui::Dummy(ImVec2(0.f, 4.f * S));
+		float avail = ImGui::GetContentRegionAvail().x;
+		const float chipB = B * 0.86f;
+		// chips that flow onto new lines when they run out of room
+		auto chipRow = [&](const char* label, const std::vector<std::pair<std::string, bool>>& chips, auto onPick)
+			{
+				ImVec2 start = ImGui::GetCursorScreenPos();
+				float labelW = 86.f * S;
+				float rowH = buttonHeight(chipB, S);
+				ImGui::SetCursorScreenPos(ImVec2(start.x, start.y + (rowH - B * 0.6f) * 0.5f));
+				textItem(fBold(), B * 0.6f, colTaupe, label);
+				ImGui::SetCursorScreenPos(ImVec2(start.x + labelW, start.y));
+				float used = 0.f, gap = 8.f * S, width = avail - labelW;
+				for (size_t i = 0; i < chips.size(); i++)
+				{
+					auto id = std::format("{}##chip{}{}", chips[i].first, label, i);
+					float w = buttonWidth(id.c_str(), Btn::Outline, chipB, S);
+					if (i > 0)
+					{
+						if (used + gap + w <= width) { ImGui::SameLine(0.f, gap); used += gap; }
+						else { ImGui::SetCursorScreenPos(ImVec2(start.x + labelW, ImGui::GetCursorScreenPos().y + 4.f * S)); used = 0.f; }
+					}
+					used += w;
+					if (luxButton(id.c_str(), chips[i].second ? Btn::Primary : Btn::Outline, chipB, S)) onPick(i);
+				}
+				ImGui::Dummy(ImVec2(0.f, 4.f * S));
+			};
+
+		static const int rarityValues[] = { 0, 2, 3, 4 };
+		std::vector<std::pair<std::string, bool>> rarityChips = {
+			{ "ANY", mGenRarity == 0 }, { "RARE+", mGenRarity == 2 }, { "EPIC+", mGenRarity == 3 }, { "LEGENDARY", mGenRarity == 4 } };
+		chipRow("RARITY", rarityChips, [&](size_t i) { mGenRarity = rarityValues[i]; });
+
+		auto types = mLootGunTypes ? mLootGunTypes() : std::vector<std::pair<uint32_t, std::string>>{};
+		if (mGenTag != 0xFFFFFFFF && std::none_of(types.begin(), types.end(), [&](auto& t) { return t.first == mGenTag; })) mGenTag = 0xFFFFFFFF;
+		std::vector<std::pair<std::string, bool>> gunChips = { { "RANDOM", mGenTag == 0xFFFFFFFF } };
+		for (auto& [tag, name] : types)
+		{
+			std::string upper = name;
+			std::transform(upper.begin(), upper.end(), upper.begin(), [](unsigned char c) { return (char)std::toupper(c); });
+			gunChips.push_back({ upper, mGenTag == tag });
+		}
+		chipRow("GUN", gunChips, [&](size_t i) { mGenTag = i == 0 ? 0xFFFFFFFF : types[i - 1].first; });
+		if (types.empty()) textItem(fBody(), B * 0.7f, colMuted, "The guns on this level show up here once you're in a mission.", avail);
+
+		ImGui::Dummy(ImVec2(0.f, 4.f * S));
+		if (luxButton("GENERATE WEAPON", Btn::Primary, B, S))
+		{
+			auto result = mLootGenerate(mGenRarity, mGenTag);
+			if (mPauseWhileOpen && result.contains("in front of you")) result += " Close the menu to see it.";
+			toast(result);
+		}
+		if (mLootRerollHeld)
+		{
+			ImGui::SameLine(0.f, 10.f * S);
+			if (luxButton("RE-ROLL MY GUN", Btn::Outline, B, S)) toast(mLootRerollHeld(mGenRarity));
+		}
+		ImGui::Dummy(ImVec2(0.f, 2.f * S));
+		textItem(fBody(), B * 0.74f, colMuted,
+			"Rolls a brand-new version of a gun and drops it in front of you. RE-ROLL MY GUN does the same to the gun in your hands. "
+			"Guns of one type share their stats, so every one of that gun on the level changes with it.",
+			avail);
+		ImGui::Dummy(ImVec2(0.f, 12.f * S));
+	}
+
 	// weapon mastery: every gun type you've scored kills with, its level and how far to the next one
 	{
 		auto mastery = mMasteryList ? mMasteryList() : std::vector<MasteryEntry>{};

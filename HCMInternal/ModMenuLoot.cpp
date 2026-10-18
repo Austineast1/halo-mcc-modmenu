@@ -180,6 +180,9 @@ private:
 	std::atomic_bool mLevelChanged = false;
 	int64_t mAutoRollAtMs = 0;
 
+	// guns generated one at a time: how many times each was regenerated, and the lowest rarity it may roll
+	std::map<uint32_t, int> mGeneration, mFloor;
+
 	// ---- weapon mastery
 	std::string mMasteryPath;					// ModMenuMastery.txt, next to the menu's other files
 	std::map<std::string, int> mKills;			// lower-case gun tag path -> kills
@@ -848,7 +851,7 @@ private:
 
 	void reapply()
 	{
-		if (!mWeapons.empty()) roll(mSeed);
+		if (!mWeapons.empty()) rollKeep(mSeed);
 		else applyMastery();
 	}
 
@@ -904,7 +907,26 @@ public:
 	void setAutoReroll(bool on) { mAuto = on; }
 	bool autoReroll() const { return mAuto; }
 
+	// a fresh roll of everything: forgets guns generated one at a time
 	std::string roll(std::optional<uint32_t> seed)
+	{
+		mGeneration.clear();
+		mFloor.clear();
+		return rollKeep(seed);
+	}
+
+	// every gun gets its own random stream (seed, gun, how many times it was regenerated), so one gun can be
+	// regenerated without changing the others
+	uint32_t gunSeed(uint32_t tag) const
+	{
+		uint64_t x = ((uint64_t)mSeed << 32) ^ tag;
+		auto it = mGeneration.find(tag);
+		x ^= (uint64_t)(it == mGeneration.end() ? 0 : it->second) * 0x9E3779B97F4A7C15ull;
+		x ^= x >> 33; x *= 0xff51afd7ed558ccdull; x ^= x >> 33; x *= 0xc4ceb9fe1a85ec53ull; x ^= x >> 33;
+		return (uint32_t)x;
+	}
+
+	std::string rollKeep(std::optional<uint32_t> seed)
 	{
 		// start from the level's own values so re-rolls don't stack
 		undoPatches();
@@ -955,7 +977,15 @@ public:
 		int counts[(int)LootRarity::Count] = {};
 		for (auto& gun : guns)
 		{
-			int r = (int)std::discrete_distribution<int>(std::begin(rarityWeights), std::end(rarityWeights))(rng);
+			rng.seed(gunSeed(gun.tag));
+			int r = 0;
+			{
+				// a generated gun can be told to be at least some rarity
+				float weights[(int)LootRarity::Count];
+				int floor = mFloor.contains(gun.tag) ? std::clamp(mFloor[gun.tag], 0, (int)LootRarity::Count - 1) : 0;
+				for (int i = 0; i < (int)LootRarity::Count; i++) weights[i] = i < floor ? 0.f : rarityWeights[i];
+				r = (int)std::discrete_distribution<int>(std::begin(weights), std::end(weights))(rng);
+			}
 			auto rarity = (LootRarity)r;
 			counts[r]++;
 			const Maker& maker = rarity == LootRarity::Legendary && chance(0.4f) ? makers[4] : makers[pick(4)];
@@ -1263,6 +1293,8 @@ public:
 			mWeapons.clear();
 			mStandard.clear();
 			mGunDamageCache.clear();
+			mGeneration.clear();
+			mFloor.clear();
 			mDead.clear();
 			mScanPrimed = false;
 			mCardVersion++;
@@ -1295,6 +1327,35 @@ public:
 		}
 		if (mPendingMessage) return std::exchange(mPendingMessage, std::nullopt);
 		return std::nullopt;
+	}
+
+	// ---- generate one weapon
+	// re-rolls one gun type (rolling loot for the level first if it's off) and returns its new card
+	std::optional<LootWeapon> regenerate(uint32_t tag, int minRarity)
+	{
+		if (mWeapons.empty())
+		{
+			roll(std::nullopt);
+			if (mWeapons.empty()) return std::nullopt;
+		}
+		if (std::none_of(mWeapons.begin(), mWeapons.end(), [&](const LootWeapon& w) { return w.tag == tag; })) return std::nullopt;
+		mGeneration[tag]++;
+		mFloor[tag] = std::clamp(minRarity, 0, (int)LootRarity::Count - 1);
+		rollKeep(mSeed);
+		for (auto& w : mWeapons) if (w.tag == tag) return w;
+		return std::nullopt;
+	}
+
+	uint32_t heldGunTag() { return heldTag(); }
+
+	std::vector<std::pair<uint32_t, std::string>> gunTypes() const
+	{
+		std::vector<std::pair<uint32_t, std::string>> out;
+		for (auto* list : { &mWeapons, &mStandard })
+			for (auto& w : *list)
+				if (std::none_of(out.begin(), out.end(), [&](auto& p) { return p.first == w.tag; })) out.push_back({ w.tag, w.baseName });
+		std::sort(out.begin(), out.end(), [](auto& a, auto& b) { return a.second < b.second; });
+		return out;
 	}
 
 	// ---- mastery, public
@@ -1375,6 +1436,9 @@ std::optional<std::string> ModMenuLoot::update(bool gamePlaying) { return pimpl-
 void ModMenuLoot::onLevelChanged() { pimpl->onLevelChanged(); }
 std::vector<std::string> ModMenuLoot::describeGuns() { return pimpl->describeGuns(); }
 const LootWeapon* ModMenuLoot::heldWeapon() { return pimpl->heldWeapon(); }
+std::optional<LootWeapon> ModMenuLoot::regenerate(uint32_t tag, int minRarity) { return pimpl->regenerate(tag, minRarity); }
+uint32_t ModMenuLoot::heldGunTag() { return pimpl->heldGunTag(); }
+std::vector<std::pair<uint32_t, std::string>> ModMenuLoot::gunTypes() const { return pimpl->gunTypes(); }
 const ModMenuLoot::MasteryKill* ModMenuLoot::lastKill() const { return pimpl->lastKill(); }
 std::vector<MasteryEntry> ModMenuLoot::masteryList() { return pimpl->masteryList(); }
 std::string ModMenuLoot::addMastery(int kills) { return pimpl->addMastery(kills); }
