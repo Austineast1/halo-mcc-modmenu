@@ -68,6 +68,7 @@ private:
 	std::function<bool()> mLootAutoGet;
 	std::function<void(bool)> mLootAutoSet;
 	std::function<std::string()> mLootChest;	// drop a few rolled guns in front of you (needs spawning)
+	std::function<std::vector<MasteryEntry>()> mMasteryList;	// weapon mastery: every gun type with kills
 	bool mCanBecome = false;
 	std::function<std::string()> mLoadMoreAction;	// true body swap is available in this game (BECOME buttons on characters)
 	int mSpawnKind = 0;
@@ -193,6 +194,7 @@ public:
 	}
 
 	void setLootChestHandler(std::function<std::string()> chest) { mLootChest = std::move(chest); }
+	void setMasteryHandler(std::function<std::vector<MasteryEntry>()> list) { mMasteryList = std::move(list); }
 
 	// Third person hides the game's own HUD, so the menu draws a crosshair and shield/health bars instead.
 	// Shields and health are 0..1 (shields can go past 1 with overshields); nullopt when unknown.
@@ -201,8 +203,12 @@ public:
 
 	// Borderlands-style item card for the gun you just pulled out (drawn over the game, menu closed).
 	// ageSeconds = time since it appeared; it slides in, holds, then fades.
-	void renderLootCard(SimpleMath::Vector2 screenSize, const LootWeapon& weapon, float ageSeconds);
+	// levelUp: the card is showing because this gun's mastery just went up a level
+	void renderLootCard(SimpleMath::Vector2 screenSize, const LootWeapon& weapon, float ageSeconds, bool levelUp = false);
 	static constexpr float kLootCardSeconds = 5.5f;
+	// weapon mastery: a small "+1 kill" line under the crosshair after each kill that counts
+	void renderMasteryToast(SimpleMath::Vector2 screenSize, const std::string& gunName, const LootMastery& mastery, bool levelUp, float ageSeconds);
+	static constexpr float kMasteryToastSeconds = 2.2f;
 	// "load more from this mission" on the Spawn page (Reach designer zones); empty = not offered
 	void setLoadMoreHandler(std::function<std::string()> handler) { mLoadMoreAction = std::move(handler); }
 

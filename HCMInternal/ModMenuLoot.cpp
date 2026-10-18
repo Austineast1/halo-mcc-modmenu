@@ -9,7 +9,13 @@
 #include "MagicString.h"
 #include "PointerDataStore.h"
 #include "MultilevelPointer.h"
+#include "DirPathContainer.h"
 #include <atomic>
+#include <deque>
+#include <filesystem>
+#include <fstream>
+#include <unordered_map>
+#include <utility>
 #include <chrono>
 #include <map>
 #include <random>
@@ -49,6 +55,15 @@ namespace
 	// datums at +0x350. A weapon object's parent (+0x14) is the unit carrying it.
 	constexpr size_t kUnitWeaponSlot = 0x34A, kUnitWeapons = 0x350, kObjectParent = 0x14;
 	constexpr uint8_t kWeaponObjectType = 2;
+
+	// who killed what (haloreach.dll 1.3528, static analysis of object_set_damage_owner / the body-depleted handler):
+	// every hit copies the 12-byte damage owner {player, unit, team} to object +0xF0 and the damage effect's datum to
+	// +0x154; object +0x138 bit 2 is set when the object dies. Bipeds keep all three until their body is cleaned up.
+	constexpr size_t kObjectDamageOwner = 0xF0, kObjectLastDamageEffect = 0x154, kObjectDamageFlags = 0x138;
+	constexpr uint32_t kObjectDeadFlag = 0x4;
+	constexpr uint8_t kBipedObjectType = 0;
+	constexpr size_t kObjectSlots = 2048;
+	constexpr size_t kPlayerUnitField = 0x28;	// player record +0x28 = unit datum; the record starts with its salt
 
 	// "is this tag loaded in the current zone set" (same check the spawner uses): never fire a projectile that isn't
 	constexpr uintptr_t kTagAvailable = 0x8F620;
@@ -99,6 +114,18 @@ namespace
 			if (start && std::isalpha((unsigned char)c)) c = (char)std::toupper((unsigned char)c);
 			start = c == ' ';
 		}
+		// acronyms
+		for (const char* word : { "Dmr", "Smg", "Odst", "Unsc" })
+		{
+			std::string w = word, up = w;
+			std::transform(up.begin(), up.end(), up.begin(), [](unsigned char c) { return (char)std::toupper(c); });
+			for (size_t pos = s.find(w); pos != std::string::npos; pos = s.find(w, pos + w.size()))
+			{
+				bool startOk = pos == 0 || s[pos - 1] == ' ';
+				bool endOk = pos + w.size() == s.size() || s[pos + w.size()] == ' ';
+				if (startOk && endOk) s.replace(pos, w.size(), up);
+			}
+		}
 		return s;
 	}
 
@@ -147,6 +174,21 @@ private:
 	bool mAuto = false;
 	std::atomic_bool mLevelChanged = false;
 	int64_t mAutoRollAtMs = 0;
+
+	// ---- weapon mastery
+	std::string mMasteryPath;					// ModMenuMastery.txt, next to the menu's other files
+	std::map<std::string, int> mKills;			// lower-case gun tag path -> kills
+	std::vector<LootWeapon> mStandard;			// cards for guns that only have mastery (loot is off)
+	uint32_t mCardVersion = 1;
+	uint32_t mLevelUpTag = kNone, mLevelUpVersion = 0;
+	int64_t mMasteryApplyAtMs = 0;
+	int64_t mNextKillScanMs = 0;
+	std::unordered_map<uint32_t, bool> mDead;	// biped datum -> was it dead last time we looked
+	bool mScanPrimed = false;
+	std::vector<uint8_t> mHeaderCopy;
+	std::map<uint32_t, std::set<uint32_t>> mGunDamageCache;	// gun tag -> damage effects its rounds deal right now
+	ModMenuLoot::MasteryKill mLastKill;
+	bool mHaveKill = false;
 
 	// object lookups for heldWeapon() (optional: the card just doesn't show without them)
 	std::shared_ptr<MultilevelPointer> playerUnitPointer, objectMetaDataTable;
@@ -305,6 +347,7 @@ private:
 			if (writeBytes(it->address, &it->original, it->size)) restored++;
 		}
 		mPatches.clear();
+		mGunDamageCache.clear();
 		return restored;
 	}
 
@@ -441,6 +484,316 @@ private:
 		return "";
 	}
 
+	// ---- weapon mastery -------------------------------------------------------------------------------------------
+	std::deque<std::string> mRecentDeaths;
+	static uint32_t readTagOf(uintptr_t object) { uint32_t tag = kNone; readSafe(object, tag); return tag; }
+	std::set<std::string> mNoMagazine;		// gun paths with no magazine (batteries, swords): no magazine bonus
+	std::optional<std::string> mPendingMessage;
+	int64_t mLevelUpAtMs = 0;
+
+	static std::string masteryKey(const std::string& path) { return lowerCopy(path); }
+
+	int killsFor(const std::string& path) const
+	{
+		auto it = mKills.find(masteryKey(path));
+		return it == mKills.end() ? 0 : it->second;
+	}
+
+	static LootMastery masteryFrom(int kills, bool hasMagazine)
+	{
+		LootMastery m;
+		m.kills = kills;
+		m.level = masteryLevelFor(kills);
+		m.levelKills = kMasteryKills[m.level];
+		m.nextKills = m.level >= kMasteryMaxLevel ? 0 : kMasteryKills[m.level + 1];
+		m.rank = kMasteryRanks[m.level];
+		if (m.level > 0)
+		{
+			auto b = masteryBonus(m.level);
+			m.bonuses.push_back(std::format("+{:.0f}% fire rate", (b.rate - 1.f) * 100.f));
+			if (hasMagazine) m.bonuses.push_back(std::format("+{:.0f}% magazine", (b.mag - 1.f) * 100.f));
+			m.bonuses.push_back(std::format("{:.0f}% tighter spread", (1.f - b.accuracy) * 100.f));
+		}
+		return m;
+	}
+
+	LootMastery masteryOf(const std::string& path) const
+	{
+		return masteryFrom(killsFor(path), !mNoMagazine.contains(masteryKey(path)));
+	}
+
+	void loadMastery()
+	{
+		mKills.clear();
+		if (mMasteryPath.empty()) return;
+		std::ifstream in(mMasteryPath);
+		std::string line;
+		while (std::getline(in, line))
+		{
+			if (line.starts_with("#")) continue;
+			auto tab = line.find('\t');
+			if (tab == std::string::npos) continue;
+			std::string path = line.substr(tab + 1);
+			while (!path.empty() && (path.back() == '\r' || path.back() == ' ')) path.pop_back();
+			int kills = 0;
+			try { kills = std::stoi(line.substr(0, tab)); }
+			catch (...) { continue; }
+			if (kills > 0 && !path.empty()) mKills[masteryKey(path)] = std::min(kills, 1000000);
+		}
+		PLOG_INFO << "loot: weapon mastery loaded for " << mKills.size() << " guns";
+	}
+
+	void saveMastery()
+	{
+		if (mMasteryPath.empty()) return;
+		std::string temp = mMasteryPath + ".tmp";
+		{
+			std::ofstream out(temp, std::ios::trunc);
+			if (!out) return;
+			out << "# Mod Menu weapon mastery: kills, a tab, then the gun. Delete this file to start over.\n";
+			for (auto& [path, kills] : mKills)
+				if (kills > 0) out << kills << '\t' << path << '\n';
+		}
+		std::error_code ec;
+		std::filesystem::rename(temp, mMasteryPath, ec);
+		if (ec)
+		{
+			std::filesystem::remove(mMasteryPath, ec);
+			std::filesystem::rename(temp, mMasteryPath, ec);
+		}
+	}
+
+	uint32_t playerUnit()
+	{
+		if (!playerUnitPointer) return kNone;
+		uintptr_t unitField = 0;
+		uint32_t unit = kNone;
+		if (!playerUnitPointer->resolve(&unitField) || !readSafe(unitField, unit)) return kNone;
+		return unit;
+	}
+
+	// player 0's own datum (its record's salt, index 0): some damage is owned by the player rather than its body
+	uint32_t playerDatum()
+	{
+		if (!playerUnitPointer) return kNone;
+		uintptr_t unitField = 0;
+		uint16_t salt = 0;
+		if (!playerUnitPointer->resolve(&unitField) || unitField < kPlayerUnitField || !readSafe(unitField - kPlayerUnitField, salt) || salt == 0 || salt == 0xFFFF)
+			return kNone;
+		return (uint32_t)salt << 16;
+	}
+
+	std::string tagPathOf(uint32_t tag)
+	{
+		auto tagName = tagNameWeak.lock();
+		if (!tagName || tag == kNone) return "";
+		try
+		{
+			const char* name = tagName->getTagName(Datum((uint16_t)(tag & 0xFFFF), (uint16_t)(tag >> 16)));
+			return name ? std::string(name) : std::string();
+		}
+		catch (HCMRuntimeException) { return ""; }
+	}
+
+	// every damage effect the rounds of this gun deal right now (after any element swap): impact and detonation
+	const std::set<uint32_t>& damageOfGun(uint32_t tag)
+	{
+		if (auto it = mGunDamageCache.find(tag); it != mGunDamageCache.end()) return it->second;
+		std::set<uint32_t>& out = mGunDamageCache[tag];
+		auto tagTable = tagTableWeak.lock();
+		auto tagBlocks = tagBlockWeak.lock();
+		if (!tagTable || !tagBlocks) return out;
+		static const int32_t weapGroup = MagicString(std::string("weap")).getNum();
+		static const int32_t projGroup = MagicString(std::string("proj")).getNum();
+		static const int32_t jptGroup = MagicString(std::string("jpt!")).getNum();
+		auto weapon = tagTable->getTagByDatum(Datum((uint16_t)(tag & 0xFFFF), (uint16_t)(tag >> 16)));
+		if (!weapon || weapon.value().tagType.getNum() != weapGroup) return out;
+		auto barrels = block(*tagBlocks, weapon.value().tagAddress + kBarrels);
+		if (!barrels) return out;
+		for (size_t i = 0; i < barrels->elementCount && i < 8; i++)
+		{
+			uintptr_t b = barrels->firstElement + i * kBarrelSize;
+			int32_t group = 0;
+			uint32_t projectile = kNone;
+			if (!readSafe(b + kProjectileRef, group) || group != projGroup || !readSafe(b + kProjectileDatum, projectile) || projectile == kNone) continue;
+			auto proj = projectileTag(projectile);
+			if (!proj) continue;
+			for (size_t ref : { kProjImpactDamage, kProjDetonationDamage })
+			{
+				int32_t refGroup = 0;
+				uint32_t datum = kNone;
+				if (readSafe(*proj + ref, refGroup) && refGroup == jptGroup && readSafe(*proj + ref + kTagRefDatum, datum) && datum != kNone) out.insert(datum);
+			}
+		}
+		return out;
+	}
+
+	uint32_t heldTag()
+	{
+		uint32_t unit = playerUnit();
+		uintptr_t body = objectAddress(unit);
+		int8_t slot = -1;
+		if (!body || !readSafe(body + kUnitWeaponSlot, slot) || slot < 0 || slot > 3) return kNone;
+		uint32_t weapon = kNone, parent = kNone, tag = kNone;
+		if (!readSafe(body + kUnitWeapons + 4 * slot, weapon)) return kNone;
+		uintptr_t gun = objectAddress(weapon, kWeaponObjectType);
+		if (!gun || !readSafe(gun + kObjectParent, parent) || parent != unit || !readSafe(gun, tag)) return kNone;
+		return tag;
+	}
+
+	// a biped just died: if we dealt the last hit with one of the guns we carry, that gun gets the kill
+	void onDeath(uintptr_t body, uint32_t unit)
+	{
+		uint32_t owner[3] = { kNone, kNone, kNone }, effect = kNone;
+		if (!readSafe(body + kObjectDamageOwner, owner) || !readSafe(body + kObjectLastDamageEffect, effect)) return;
+		uint32_t player = playerDatum();
+		bool ours = (unit != kNone && (owner[0] == unit || owner[1] == unit)) || (player != kNone && (owner[0] == player || owner[1] == player));
+		// remembered for "mastery deaths" (developer): what the last few deaths looked like
+		mRecentDeaths.push_back(std::format("{} died: owner {:08X} {:08X} {:08X}, effect {:08X} ({}); us: unit {:08X} player {:08X}{}",
+			titleCase(lastSegment(tagPathOf(readTagOf(body)))), owner[0], owner[1], owner[2], effect, lastSegment(tagPathOf(effect)), unit, player, ours ? ", OURS" : ""));
+		while (mRecentDeaths.size() > 8) mRecentDeaths.pop_front();
+		if (!ours || effect == kNone) return;
+		uintptr_t me = objectAddress(unit);
+		int8_t slot = -1;
+		uint32_t carried[4] = { kNone, kNone, kNone, kNone };
+		if (!me || !readSafe(me + kUnitWeaponSlot, slot) || !readSafe(me + kUnitWeapons, carried)) return;
+		std::vector<uint32_t> order;
+		if (slot >= 0 && slot < 4) order.push_back(carried[slot]);	// the gun in our hands first
+		for (int i = 0; i < 4; i++) if (i != slot) order.push_back(carried[i]);
+		for (uint32_t weapon : order)
+		{
+			uintptr_t gun = objectAddress(weapon, kWeaponObjectType);
+			uint32_t tag = kNone;
+			if (!gun || !readSafe(gun, tag) || tag == kNone) continue;
+			if (!damageOfGun(tag).contains(effect)) continue;
+			credit(tag, 1);
+			return;
+		}
+	}
+
+	// look over every biped (a tenth of a second apart) for ones that have just died
+	void scanKills()
+	{
+		if (!objectMetaDataTable || headerStride <= 0 || headerType + 1 > headerStride || headerPointer + 8 > headerStride) return;
+		uintptr_t meta = 0;
+		if (!objectMetaDataTable->resolve(&meta) || meta < 0x10000) return;
+		size_t bytes = (size_t)headerStride * kObjectSlots;
+		if (IsBadReadPtr((void*)meta, bytes)) return;
+		mHeaderCopy.resize(bytes);
+		memcpy(mHeaderCopy.data(), (void*)meta, bytes);
+		uint32_t unit = playerUnit();
+		std::unordered_map<uint32_t, bool> now;
+		now.reserve(mDead.size() + 32);
+		for (size_t i = 0; i < kObjectSlots; i++)
+		{
+			const uint8_t* h = mHeaderCopy.data() + headerStride * i;
+			uint16_t salt = 0;
+			uintptr_t address = 0;
+			memcpy(&salt, h, sizeof(salt));
+			memcpy(&address, h + headerPointer, sizeof(address));
+			if (salt == 0 || address < 0x10000 || h[headerType] != kBipedObjectType) continue;
+			uint32_t datum = ((uint32_t)salt << 16) | (uint32_t)i;
+			uint32_t flags = 0;
+			if (!readSafe(address + kObjectDamageFlags, flags)) continue;
+			bool dead = (flags & kObjectDeadFlag) != 0;
+			now[datum] = dead;
+			if (!dead || !mScanPrimed || datum == unit) continue;
+			auto it = mDead.find(datum);
+			if (it == mDead.end() || it->second) continue;	// one we hadn't seen alive, or already dead
+			onDeath(address, unit);
+		}
+		mDead.swap(now);
+		mScanPrimed = true;
+	}
+
+	void credit(uint32_t tag, int kills)
+	{
+		std::string path = tagPathOf(tag);
+		if (path.empty() || kills <= 0) return;
+		auto key = masteryKey(path);
+		int before = mKills[key];
+		int after = std::min(before + kills, 1000000);
+		mKills[key] = after;
+		saveMastery();
+		int levelBefore = masteryLevelFor(before), levelAfter = masteryLevelFor(after);
+		mLastKill.tag = tag;
+		mLastKill.name = titleCase(lastSegment(path));
+		mLastKill.mastery = masteryOf(path);
+		mLastKill.levelUp = levelAfter > levelBefore;
+		mLastKill.atMs = nowMs();
+		mHaveKill = true;
+		for (auto* list : { &mWeapons, &mStandard })
+			for (auto& w : *list)
+				if (masteryKey(w.path) == key) w.mastery = mLastKill.mastery;
+		if (levelAfter > levelBefore)
+		{
+			reapply();		// write the new level's bonuses
+			mLevelUpTag = tag;
+			mLevelUpAtMs = nowMs();
+			std::string bonuses;
+			for (auto& b : mLastKill.mastery.bonuses) bonuses += (bonuses.empty() ? "" : ", ") + b;
+			mPendingMessage = std::format("{} mastery up! Level {} {}: {}.", mLastKill.name, levelAfter, kMasteryRanks[levelAfter], bonuses);
+			PLOG_INFO << "loot: " << *mPendingMessage;
+		}
+	}
+
+	void writeMastery(const Gun& gun, MasteryBonus b)
+	{
+		for (auto& br : gun.barrels)
+		{
+			patch<float>(br.address + kRoundsPerSecond, br.rps[0] * b.rate);
+			patch<float>(br.address + kRoundsPerSecond + 4, br.rps[1] * b.rate);
+			if (br.recovery > 0.f) patch<float>(br.address + kFireRecovery, br.recovery / b.rate);
+			patch<float>(br.address + kMinimumError, br.minError * b.accuracy);
+			patch<float>(br.address + kErrorAngle, br.error[0] * b.accuracy);
+			patch<float>(br.address + kErrorAngle + 4, br.error[1] * b.accuracy);
+		}
+		if (gun.magazine && gun.loaded > 0)
+		{
+			int loaded = std::clamp((int)std::lround(gun.loaded * b.mag), (int)gun.loaded, 999);
+			int total = std::clamp((int)std::lround(gun.total * b.mag), (int)gun.total, 9999);
+			int initial = std::clamp((int)std::lround(gun.initial * b.mag), (int)gun.initial, total);
+			patch<int16_t>(gun.magazine + kMagLoadedMax, (int16_t)loaded);
+			patch<int16_t>(gun.magazine + kMagTotalMax, (int16_t)total);
+			patch<int16_t>(gun.magazine + kMagTotalInitial, (int16_t)initial);
+		}
+	}
+
+	// loot is off: every gun is standard issue plus whatever mastery it has earned
+	int applyMastery()
+	{
+		undoPatches();
+		mStandard.clear();
+		std::map<uint32_t, std::string> projectilePaths;
+		std::vector<Gun> guns;
+		try { guns = findGuns(projectilePaths); }
+		catch (HCMRuntimeException) { return 0; }
+		int boosted = 0;
+		for (auto& gun : guns)
+		{
+			if (!(gun.magazine && gun.loaded > 0)) mNoMagazine.insert(masteryKey(gun.path));
+			LootWeapon card;
+			card.tag = gun.tag;
+			card.baseName = gun.name;
+			card.path = gun.path;
+			card.rarity = LootRarity::Common;
+			card.maker = "Standard issue";
+			card.rolled = false;
+			card.mastery = masteryOf(gun.path);
+			if (card.mastery.level > 0) { writeMastery(gun, masteryBonus(card.mastery.level)); boosted++; }
+			mStandard.push_back(std::move(card));
+		}
+		mCardVersion++;
+		if (boosted) PLOG_INFO << "loot: mastery bonuses on " << boosted << " guns";
+		return boosted;
+	}
+
+	void reapply()
+	{
+		if (!mWeapons.empty()) roll(mSeed);
+		else applyMastery();
+	}
+
 public:
 	Impl(GameState game, IDIContainer& dicon) : mGame(game)
 	{
@@ -450,6 +803,14 @@ public:
 		tagTableWeak = resolveDependentCheat(TagTableRange);
 		tagNameWeak = resolveDependentCheat(GetTagName);
 		tagBlockWeak = resolveDependentCheat(TagBlockReader);
+		if (auto dirs = dicon.Resolve<DirPathContainer>().lock())
+		{
+			std::string folder = dirs->dirPath;
+			if (!folder.empty() && folder.back() != '\\' && folder.back() != '/') folder += "\\";
+			mMasteryPath = folder + "ModMenuMastery.txt";
+			loadMastery();
+		}
+		mMasteryApplyAtMs = nowMs() + 3000;
 		try
 		{
 			auto ptr = dicon.Resolve<PointerDataStore>().lock();
@@ -470,18 +831,12 @@ public:
 	// the rolled gun the player is holding right now, or null
 	const LootWeapon* heldWeapon()
 	{
-		if (mWeapons.empty() || !playerUnitPointer || !objectMetaDataTable) return nullptr;
-		uintptr_t unitField = 0;
-		uint32_t unit = kNone;
-		if (!playerUnitPointer->resolve(&unitField) || !readSafe(unitField, unit)) return nullptr;
-		uintptr_t body = objectAddress(unit);
-		int8_t slot = -1;
-		if (!body || !readSafe(body + kUnitWeaponSlot, slot) || slot < 0 || slot > 3) return nullptr;
-		uint32_t weapon = kNone, parent = kNone, tag = kNone;
-		if (!readSafe(body + kUnitWeapons + 4 * slot, weapon)) return nullptr;
-		uintptr_t gun = objectAddress(weapon, kWeaponObjectType);
-		if (!gun || !readSafe(gun + kObjectParent, parent) || parent != unit || !readSafe(gun, tag)) return nullptr;
+		if ((mWeapons.empty() && mStandard.empty()) || !playerUnitPointer || !objectMetaDataTable) return nullptr;
+		uint32_t tag = heldTag();
+		if (tag == kNone) return nullptr;
 		for (auto& w : mWeapons) if (w.tag == tag) return &w;
+		if (mWeapons.empty())
+			for (auto& w : mStandard) if (w.tag == tag) return w.mastery.kills > 0 ? &w : nullptr;
 		return nullptr;
 	}
 
@@ -651,15 +1006,20 @@ public:
 				auto& pool = elements[roll.element];
 				elementProjectile = pool[pick(pool.size())];
 			}
+			// mastery earned with this gun type goes on top of the roll (the card shows it in its own section)
+			const bool hasMagazine = gun.magazine && gun.loaded > 0;
+			if (!hasMagazine) mNoMagazine.insert(masteryKey(gun.path));
+			loot.mastery = masteryOf(gun.path);
+			const MasteryBonus mb = masteryBonus(loot.mastery.level);
 			for (auto& b : gun.barrels)
 			{
-				float rate = std::min(roll.rate, 3.5f);
+				float rate = std::min(roll.rate, 3.5f) * mb.rate;
 				float rps[2] = { b.rps[0] * rate, b.rps[1] * rate };
 				for (float& v : rps) v = std::min(v, std::max(50.f, std::max(b.rps[0], b.rps[1])));
 				int pps = std::clamp(b.pps * roll.ppsMul, 1, 12);
 				// keep the game sane: no more than ~120 projectiles a second out of one barrel
 				while (pps > 1 && rps[1] * pps > 120.f) pps--;
-				float accuracy = roll.accuracy;
+				float accuracy = roll.accuracy * mb.accuracy;
 				float minError = b.minError * accuracy, error0 = b.error[0] * accuracy, error1 = b.error[1] * accuracy;
 				if (pps > b.pps)
 				{
@@ -723,7 +1083,7 @@ public:
 			int newLoaded = gun.loaded;
 			if (gun.magazine && gun.loaded > 0)
 			{
-				float mag = std::min(roll.mag, 12.f);
+				float mag = std::min(roll.mag, 12.f) * mb.mag;
 				newLoaded = std::clamp((int)std::lround(gun.loaded * mag), (int)gun.loaded, 999);
 				int newTotal = std::clamp((int)std::lround(gun.total * mag), (int)gun.total, 9999);
 				int newInitial = std::clamp((int)std::lround(gun.initial * mag), (int)gun.initial, newTotal);
@@ -781,6 +1141,8 @@ public:
 		// best first, like a loot screen
 		std::stable_sort(mWeapons.begin(), mWeapons.end(), [](const LootWeapon& a, const LootWeapon& b) { return (int)a.rarity > (int)b.rarity; });
 		PLOG_INFO << "loot: rolled " << mWeapons.size() << " guns with seed " << mSeed << ", " << mPatches.size() << " values written";
+		mStandard.clear();
+		mCardVersion++;
 
 		std::string top;
 		for (auto& w : mWeapons)
@@ -794,8 +1156,10 @@ public:
 		int restored = undoPatches();
 		bool had = !mWeapons.empty();
 		mWeapons.clear();
-		if (!had) return "Every gun is already standard issue.";
-		return std::format("Every gun is back to standard issue ({} values restored).", restored);
+		int boosted = applyMastery();
+		std::string kept = boosted ? std::format(" Mastery bonuses stay on {} gun{}.", boosted, boosted == 1 ? "" : "s") : "";
+		if (!had) return "Every gun is already standard issue." + kept;
+		return std::format("Every gun is back to standard issue ({} values restored).{}", restored, kept);
 	}
 
 	std::optional<std::string> update(bool gamePlaying)
@@ -805,7 +1169,13 @@ public:
 			// the level's tags were reloaded from disk: our values are gone, so forget them without writing anything
 			mPatches.clear();
 			mWeapons.clear();
+			mStandard.clear();
+			mGunDamageCache.clear();
+			mDead.clear();
+			mScanPrimed = false;
+			mCardVersion++;
 			mAutoRollAtMs = mAuto ? nowMs() + 4000 : 0;
+			mMasteryApplyAtMs = mAuto ? 0 : nowMs() + 4000;
 		}
 		if (mAutoRollAtMs != 0 && gamePlaying && nowMs() >= mAutoRollAtMs)
 		{
@@ -814,8 +1184,73 @@ public:
 			if (mWeapons.empty()) { mAutoRollAtMs = nowMs() + 3000; return std::nullopt; } // still loading
 			return "New loot for this mission. " + message;
 		}
+		// no loot this mission: still put the mastery bonuses on (and make the standard-issue cards)
+		if (mMasteryApplyAtMs != 0 && gamePlaying && nowMs() >= mMasteryApplyAtMs)
+		{
+			mMasteryApplyAtMs = 0;
+			if (mWeapons.empty())
+			{
+				applyMastery();
+				if (mStandard.empty()) mMasteryApplyAtMs = nowMs() + 3000; // still loading
+			}
+		}
+		// watch for kills
+		if (gamePlaying && nowMs() >= mNextKillScanMs)
+		{
+			mNextKillScanMs = nowMs() + 100;
+			try { scanKills(); }
+			catch (HCMRuntimeException ex) { PLOG_ERROR << "loot: kill scan: " << ex.what(); }
+		}
+		if (mPendingMessage) return std::exchange(mPendingMessage, std::nullopt);
 		return std::nullopt;
 	}
+
+	// ---- mastery, public
+	const ModMenuLoot::MasteryKill* lastKill() const { return mHaveKill ? &mLastKill : nullptr; }
+
+	std::vector<MasteryEntry> masteryList()
+	{
+		std::vector<MasteryEntry> out;
+		for (auto& [path, kills] : mKills)
+			if (kills > 0) out.push_back({ titleCase(lastSegment(path)), masteryOf(path) });
+		std::stable_sort(out.begin(), out.end(), [](const MasteryEntry& a, const MasteryEntry& b) { return a.mastery.kills > b.mastery.kills; });
+		return out;
+	}
+
+	std::string addMastery(int kills)
+	{
+		uint32_t tag = heldTag();
+		if (tag == kNone) return "Hold a gun first.";
+		credit(tag, std::clamp(kills, 1, 1000));
+		auto m = masteryOf(tagPathOf(tag));
+		return std::format("{}: {} kills, level {} {}", titleCase(lastSegment(tagPathOf(tag))), m.kills, m.level, m.rank);
+	}
+
+	std::string resetMastery(bool all)
+	{
+		std::string what;
+		if (all) { mKills.clear(); what = "every gun"; }
+		else
+		{
+			uint32_t tag = heldTag();
+			if (tag == kNone) return "Hold a gun first (or reset all).";
+			mKills.erase(masteryKey(tagPathOf(tag)));
+			what = titleCase(lastSegment(tagPathOf(tag)));
+		}
+		saveMastery();
+		mHaveKill = false;
+		reapply();
+		return "Mastery reset for " + what + ".";
+	}
+
+	std::vector<std::string> recentDeaths() const { return { mRecentDeaths.begin(), mRecentDeaths.end() }; }
+
+	bool cardsAvailable() const
+	{
+		return !mWeapons.empty() || std::any_of(mStandard.begin(), mStandard.end(), [](const LootWeapon& w) { return w.mastery.kills > 0; });
+	}
+	uint32_t cardVersion() const { return mCardVersion; }
+	bool levelUpCard(uint32_t tag) const { return tag != kNone && tag == mLevelUpTag && nowMs() - mLevelUpAtMs < 7000; }
 
 	void onLevelChanged() { mLevelChanged = true; }
 
@@ -848,3 +1283,11 @@ std::optional<std::string> ModMenuLoot::update(bool gamePlaying) { return pimpl-
 void ModMenuLoot::onLevelChanged() { pimpl->onLevelChanged(); }
 std::vector<std::string> ModMenuLoot::describeGuns() { return pimpl->describeGuns(); }
 const LootWeapon* ModMenuLoot::heldWeapon() { return pimpl->heldWeapon(); }
+const ModMenuLoot::MasteryKill* ModMenuLoot::lastKill() const { return pimpl->lastKill(); }
+std::vector<MasteryEntry> ModMenuLoot::masteryList() { return pimpl->masteryList(); }
+std::string ModMenuLoot::addMastery(int kills) { return pimpl->addMastery(kills); }
+std::string ModMenuLoot::resetMastery(bool all) { return pimpl->resetMastery(all); }
+std::vector<std::string> ModMenuLoot::recentDeaths() const { return pimpl->recentDeaths(); }
+bool ModMenuLoot::cardsAvailable() const { return pimpl->cardsAvailable(); }
+uint32_t ModMenuLoot::cardVersion() const { return pimpl->cardVersion(); }
+bool ModMenuLoot::levelUpCard(uint32_t tag) const { return pimpl->levelUpCard(tag); }

@@ -43,7 +43,7 @@ private:
 	std::weak_ptr<IMessagesGUI> messagesWeak; // HCM's on-screen messages, used to say mods were restored
 	std::unique_ptr<ModMenuPossession> possession; // true body swap (only where the memory layout is known)
 	std::unique_ptr<ModMenuSpawner> spawner;
-	uint32_t lootCardTag = 0xFFFFFFFF, lootCardSeed = 0;	// which gun's card is showing, for which roll
+	uint32_t lootCardTag = 0xFFFFFFFF, lootCardVersion = 0;	// which gun's card is showing, for which set of cards
 	int64_t lootCardShownMs = 0;
 	std::unique_ptr<ModMenuLoot> loot;			// Borderlands-style weapon rolls (Reach)		// spawn anything the level has loaded
 
@@ -438,6 +438,34 @@ private:
 			}
 			return "usage: loot roll [seed] | restore | chest | auto on|off | list | dump";
 		}
+		if (verb == "mastery")
+		{
+			if (!loot) return "mastery isn't available in this game";
+			std::string sub = lowerCopy(rest.substr(0, rest.find(' ')));
+			std::string arg = rest.find(' ') == std::string::npos ? "" : rest.substr(rest.find(' ') + 1);
+			if (sub == "add")
+			{
+				int n = 1;
+				try { if (!arg.empty()) n = std::stoi(arg); } catch (...) {}
+				return loot->addMastery(n);
+			}
+			if (sub == "reset") return loot->resetMastery(lowerCopy(arg) == "all");
+			if (sub == "deaths")
+			{
+				auto lines = loot->recentDeaths();
+				for (auto& l : lines) devLog("  " + l);
+				return std::format("{} recent deaths", lines.size());
+			}
+			if (sub == "list" || sub.empty())
+			{
+				auto list = loot->masteryList();
+				for (auto& e : list)
+					devLog(std::format("  {:<22} {:>4} kills  level {} {}", e.name, e.mastery.kills, e.mastery.level, e.mastery.rank));
+				if (auto k = loot->lastKill()) devLog(std::format("  last kill: {} ({} kills{})", k->name, k->mastery.kills, k->levelUp ? ", level up" : ""));
+				return std::format("{} guns with kills", list.size());
+			}
+			return "usage: mastery list | add [n] | reset [all] | deaths";
+		}
 		return gui->devCommand(line);
 	}
 
@@ -563,21 +591,31 @@ private:
 				}
 			}
 
-			// item card: pull out a rolled gun (or roll new loot) and its card slides in for a few seconds
-			if (loot && ourGamePlaying && !openRequests && loot->active())
+			// item card: pull out a rolled gun (or roll new loot, or level up a gun's mastery) and its card slides in
+			if (loot && ourGamePlaying && !openRequests && loot->cardsAvailable())
 			{
 				const LootWeapon* held = nullptr;
 				try { held = loot->heldWeapon(); }
 				catch (HCMRuntimeException) {}
 				uint32_t heldTag = held ? held->tag : 0xFFFFFFFF;
-				if (loot->seed() != lootCardSeed) { lootCardSeed = loot->seed(); lootCardTag = 0xFFFFFFFF; } // new roll: show it again
+				if (loot->cardVersion() != lootCardVersion) { lootCardVersion = loot->cardVersion(); lootCardTag = 0xFFFFFFFF; } // new cards: show it again
 				if (heldTag != lootCardTag)
 				{
 					lootCardTag = heldTag;
 					lootCardShownMs = nowMs();
 				}
 				float age = (nowMs() - lootCardShownMs) / 1000.f;
-				if (held && age < ModMenuGUI::kLootCardSeconds) gui->renderLootCard(screenSize, *held, age);
+				if (held && age < ModMenuGUI::kLootCardSeconds) gui->renderLootCard(screenSize, *held, age, loot->levelUpCard(heldTag));
+			}
+
+			// weapon mastery: a small "+1" under the crosshair for every kill that counts
+			if (loot && ourGamePlaying && !openRequests)
+			{
+				if (auto kill = loot->lastKill())
+				{
+					float age = (nowMs() - kill->atMs) / 1000.f;
+					if (age >= 0.f && age < ModMenuGUI::kMasteryToastSeconds) gui->renderMasteryToast(screenSize, kill->name, kill->mastery, kill->levelUp, age);
+				}
 			}
 
 						pollDevCommands(ourGamePlaying);
@@ -692,6 +730,7 @@ public:
 				[this]() { return loot->autoReroll(); },
 				[this](bool on) { loot->setAutoReroll(on); });
 			if (spawner) gui->setLootChestHandler([this]() { return lootChest(); });
+			gui->setMasteryHandler([this]() { return loot ? loot->masteryList() : std::vector<MasteryEntry>{}; });
 		}
 		catch (HCMInitException ex)
 		{

@@ -50,4 +50,26 @@ public:
 
 	// developer: one line per gun with its current stats (read-only)
 	std::vector<std::string> describeGuns();
+
+	// ---- weapon mastery: kills with a gun type level it up (saved in ModMenuMastery.txt), each level makes it better.
+	// Kills are found by watching bipeds die and reading who dealt the last damage and with what (object +0xF0 damage
+	// owner, +0x154 last damage effect, +0x138 bit 2 dead; from haloreach.dll 1.3528, object_set_damage_owner).
+	struct MasteryKill
+	{
+		uint32_t tag = 0xFFFFFFFF;
+		std::string name;
+		LootMastery mastery;	// after this kill
+		bool levelUp = false;
+		int64_t atMs = 0;		// steady clock
+	};
+	const MasteryKill* lastKill() const;	// the most recent credited kill, or null
+	std::vector<MasteryEntry> masteryList();	// every gun type with kills, most kills first
+	std::string addMastery(int kills);		// developer: credit the held gun with some kills
+	std::string resetMastery(bool all);		// developer: forget the held gun's kills (or every gun's)
+	std::vector<std::string> recentDeaths() const;	// developer: the last few bipeds seen dying and who hit them last
+
+	// item cards: a rolled gun, or a standard-issue gun with mastery progress
+	bool cardsAvailable() const;
+	uint32_t cardVersion() const;			// changes whenever the cards are rebuilt (roll, restore, level up)
+	bool levelUpCard(uint32_t tag) const;	// this gun's card is showing because it just levelled up
 };

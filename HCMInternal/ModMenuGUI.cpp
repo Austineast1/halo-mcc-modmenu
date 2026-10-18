@@ -1813,7 +1813,49 @@ void ModMenuGUI::renderLootPanel()
 		"and elemental rounds borrowed from other guns on the level. Enemies carry the same guns, so watch out.",
 		ImGui::GetContentRegionAvail().x);
 	ImGui::Dummy(ImVec2(0.f, 8.f * S));
+
+	// weapon mastery: every gun type you've scored kills with, its level and how far to the next one
+	{
+		auto mastery = mMasteryList ? mMasteryList() : std::vector<MasteryEntry>{};
+		trackedItem(fBold(), B * 0.54f, colMuted, "WEAPON MASTERY", 2.6f * S);
+		ImGui::Dummy(ImVec2(0.f, 2.f * S));
+		float rowW = ImGui::GetContentRegionAvail().x;
+		textItem(fBody(), B * 0.74f, colMuted,
+			"Kills level a gun up: 10, 30, 75, 150 and 300 kills. Every level adds 4% fire rate, 8% magazine and 6% tighter spread "
+			"to every gun of that type, on top of its loot, and Master adds another 10% fire rate. Kept between missions.",
+			rowW);
+		ImGui::Dummy(ImVec2(0.f, 6.f * S));
+		if (mastery.empty())
+			textItem(fBody(), B * 0.74f, colTaupe, "No kills counted yet. Go get some.", rowW);
+		size_t shown = 0;
+		for (auto& e : mastery)
+		{
+			if (++shown > 14) break;
+			const LootMastery& m = e.mastery;
+			ImVec2 p = ImGui::GetCursorScreenPos();
+			float namePx = B * 0.8f, smallPx = B * 0.58f, barH = 4.f * S;
+			dl->AddText(fBold(), namePx, p, col32(colIvory), e.name.c_str());
+			std::string rank = m.level > 0 ? std::format("LV {}  {}", m.level, m.rank) : std::string(m.rank);
+			std::transform(rank.begin(), rank.end(), rank.begin(), [](unsigned char c) { return (char)std::toupper(c); });
+			float rw = fBold()->CalcTextSizeA(smallPx, FLT_MAX, 0.f, rank.c_str()).x;
+			dl->AddText(fBold(), smallPx, ImVec2(p.x + rowW - rw, p.y + (namePx - smallPx) * 0.55f), col32(m.level > 0 ? colGoldBright : colMuted), rank.c_str());
+			float by = p.y + namePx + 6.f * S;
+			std::string count = m.nextKills > 0 ? std::format("{} / {}", m.kills, m.nextKills) : std::format("{}  MASTERED", m.kills);
+			float cw = fBold()->CalcTextSizeA(smallPx, FLT_MAX, 0.f, count.c_str()).x;
+			float barW = std::max(40.f * S, rowW - cw - 14.f * S);
+			float progress = m.nextKills > m.levelKills ? std::clamp((float)(m.kills - m.levelKills) / (float)(m.nextKills - m.levelKills), 0.f, 1.f) : 1.f;
+			float barY = by + (smallPx - barH) * 0.5f;
+			dl->AddRectFilled(ImVec2(p.x, barY), ImVec2(p.x + barW, barY + barH), col32(colTrack), barH);
+			if (progress > 0.f) dl->AddRectFilled(ImVec2(p.x, barY), ImVec2(p.x + barW * progress, barY + barH), col32(m.nextKills > 0 ? colGold : colGoldBright), barH);
+			dl->AddText(fBold(), smallPx, ImVec2(p.x + rowW - cw, by), col32(colTaupe), count.c_str());
+			ImGui::Dummy(ImVec2(rowW, namePx + 6.f * S + smallPx + 12.f * S));
+		}
+		ImGui::Dummy(ImVec2(0.f, 10.f * S));
+	}
+
 	if (!active) return;
+	trackedItem(fBold(), B * 0.54f, colMuted, "THIS MISSION'S GUNS", 2.6f * S);
+	ImGui::Dummy(ImVec2(0.f, 4.f * S));
 
 	for (auto& w : *weapons)
 	{
@@ -2493,7 +2535,7 @@ namespace
 	}
 }
 
-void ModMenuGUI::renderLootCard(SimpleMath::Vector2 screenSize, const LootWeapon& w, float age)
+void ModMenuGUI::renderLootCard(SimpleMath::Vector2 screenSize, const LootWeapon& w, float age, bool levelUp)
 {
 	if (age < 0.f || age > kLootCardSeconds) return;
 	ImDrawList* dl = ImGui::GetBackgroundDrawList();
@@ -2514,23 +2556,39 @@ void ModMenuGUI::renderLootCard(SimpleMath::Vector2 screenSize, const LootWeapon
 	ImFont* body = fBody();
 	auto textW = [](ImFont* f, float px, const std::string& t) { return f->CalcTextSizeA(px, FLT_MAX, 0.f, t.c_str()).x; };
 	auto wrappedH = [](ImFont* f, float px, const std::string& t, float wrap) { return f->CalcTextSizeA(px, FLT_MAX, wrap, t.c_str()).y; };
+	auto upper = [](std::string t) { std::transform(t.begin(), t.end(), t.begin(), [](unsigned char c) { return (char)std::toupper(c); }); return t; };
 
 	std::string name = w.title.empty() ? w.baseName : w.title + " " + w.baseName;
 	float textWidth = W - pad * 2.f;
 	float nameH = wrappedH(display, namePx, name, textWidth);
 	float perkW = textWidth - 16.f * S;
 
+	// mastery section: shown once the gun has kills (and always on a level up)
+	const LootMastery& m = w.mastery;
+	const bool showMastery = m.kills > 0 || levelUp;
+	std::string bonusLine;
+	for (auto& b : m.bonuses) bonusLine += (bonusLine.empty() ? "" : "  /  ") + b;
+	const float barH = 7.f * S, bannerPx = 22.f * S;
+
 	// measure first so the panel fits its contents
 	const char* flavour = w.rarity == LootRarity::Legendary ? flavourFor(w.title) : nullptr;
 	float h = pad + labelPx + 10.f * S + nameH + 14.f * S;
 	if (!w.element.empty()) h += perkPx + 12.f * S + 10.f * S;
-	h += 1.f * S + 12.f * S + (float)w.stats.size() * (statPx + 8.f * S);
+	if (!w.stats.empty()) h += 1.f * S + 12.f * S + (float)w.stats.size() * (statPx + 8.f * S);
 	if (!w.perks.empty())
 	{
 		h += 6.f * S;
 		for (auto& perk : w.perks) h += wrappedH(perk.starts_with("Special:") ? bold : body, perkPx, perk, perkW) + 6.f * S;
 	}
 	if (flavour) h += 8.f * S + wrappedH(bold, perkPx, flavour, textWidth) + 2.f * S;
+	float masteryH = 0.f;
+	if (showMastery)
+	{
+		masteryH = 10.f * S + 1.f * S + 12.f * S + statLabelPx + 9.f * S + barH + 8.f * S + statLabelPx + 4.f * S;
+		if (levelUp) masteryH += bannerPx + 10.f * S;
+		if (!bonusLine.empty()) masteryH += 6.f * S + wrappedH(body, perkPx * 0.9f, bonusLine, textWidth);
+		h += masteryH;
+	}
 	h += pad - 4.f * S;
 
 	float x0 = screenSize.x - W - 70.f * S + (1.f - in) * 40.f * S;
@@ -2538,23 +2596,29 @@ void ModMenuGUI::renderLootCard(SimpleMath::Vector2 screenSize, const LootWeapon
 	ImVec2 p0(x0, y0), p1(x0 + W, y0 + h);
 	float r = 6.f * S;
 
-	// shadow, panel, rarity glow from the top, top band, border
+	// shadow, panel, rarity glow from the top, top band, border (gold while a level up is being shown)
 	dl->AddRectFilled(ImVec2(p0.x + 6.f * S, p0.y + 8.f * S), ImVec2(p1.x + 6.f * S, p1.y + 8.f * S), IM_COL32(0, 0, 0, (int)(110 * a)), r);
 	dl->AddRectFilled(p0, p1, col32(rgba(10, 9, 8), 0.93f * a), r);
 	float glowH = std::min(h * 0.45f, 150.f * S);
 	dl->AddRectFilledMultiColor(ImVec2(p0.x + 1.f, p0.y + 5.f * S), ImVec2(p1.x - 1.f, p0.y + glowH),
 		col32(rc, 0.20f * a), col32(rc, 0.20f * a), col32(rc, 0.f), col32(rc, 0.f));
 	dl->AddRectFilled(p0, ImVec2(p1.x, p0.y + 5.f * S), col32(rc, a), r, ImDrawFlags_RoundCornersTop);
-	dl->AddRect(p0, p1, col32(rc, 0.75f * a), r, 0, 1.5f * S);
+	if (levelUp)
+	{
+		float pulse = 0.55f + 0.45f * std::sin(age * 7.f);
+		dl->AddRect(ImVec2(p0.x - 3.f * S, p0.y - 3.f * S), ImVec2(p1.x + 3.f * S, p1.y + 3.f * S), col32(colGoldBright, 0.35f * pulse * a), r + 3.f * S, 0, 3.f * S);
+		dl->AddRect(p0, p1, col32(colGoldBright, 0.9f * a), r, 0, 2.f * S);
+	}
+	else dl->AddRect(p0, p1, col32(rc, 0.75f * a), r, 0, 1.5f * S);
 
 	float x = p0.x + pad, y = p0.y + pad;
 
 	// LEGENDARY ............................................ maker
 	diamond(dl, ImVec2(x + 4.f * S, y + labelPx * 0.55f), 4.5f * S, col32(rc, a));
-	dl->AddText(bold, labelPx, ImVec2(x + 15.f * S, y), col32(rc, a), rarityLabel(w.rarity));
+	dl->AddText(bold, labelPx, ImVec2(x + 15.f * S, y), col32(rc, a), w.rolled ? rarityLabel(w.rarity) : "STANDARD ISSUE");
+	if (w.rolled)
 	{
-		std::string maker = w.maker;
-		std::transform(maker.begin(), maker.end(), maker.begin(), [](unsigned char c) { return (char)std::toupper(c); });
+		std::string maker = upper(w.maker);
 		dl->AddText(bold, labelPx, ImVec2(p1.x - pad - textW(bold, labelPx, maker), y), col32(colTaupe, a), maker.c_str());
 	}
 	y += labelPx + 10.f * S;
@@ -2569,8 +2633,7 @@ void ModMenuGUI::renderLootCard(SimpleMath::Vector2 screenSize, const LootWeapon
 	if (!w.element.empty())
 	{
 		ImVec4 ec = elementColor(w.element);
-		std::string label = w.element + " rounds";
-		std::transform(label.begin(), label.end(), label.begin(), [](unsigned char c) { return (char)std::toupper(c); });
+		std::string label = upper(w.element + " rounds");
 		float lw = textW(bold, perkPx * 0.85f, label);
 		ImVec2 q0(x, y), q1(x + lw + 24.f * S, y + perkPx + 12.f * S);
 		dl->AddRectFilled(q0, q1, col32(ec, 0.18f * a), (q1.y - q0.y) * 0.5f);
@@ -2579,19 +2642,19 @@ void ModMenuGUI::renderLootCard(SimpleMath::Vector2 screenSize, const LootWeapon
 		y = q1.y + 10.f * S;
 	}
 
-	// divider
-	dl->AddLine(ImVec2(x, y), ImVec2(p1.x - pad, y), col32(rc, 0.35f * a), 1.f * S);
-	y += 12.f * S;
-
 	// stats: LABEL ............ value (green when it's better than stock, red when worse)
-	for (auto& st : w.stats)
+	if (!w.stats.empty())
 	{
-		std::string label = st.label;
-		std::transform(label.begin(), label.end(), label.begin(), [](unsigned char c) { return (char)std::toupper(c); });
-		dl->AddText(bold, statLabelPx, ImVec2(x, y + (statPx - statLabelPx) * 0.6f), col32(colTaupe, a), label.c_str());
-		ImVec4 vc = st.good ? good : bad;
-		dl->AddText(bold, statPx, ImVec2(p1.x - pad - textW(bold, statPx, st.value), y), col32(vc, a), st.value.c_str());
-		y += statPx + 8.f * S;
+		dl->AddLine(ImVec2(x, y), ImVec2(p1.x - pad, y), col32(rc, 0.35f * a), 1.f * S);
+		y += 12.f * S;
+		for (auto& st : w.stats)
+		{
+			std::string label = upper(st.label);
+			dl->AddText(bold, statLabelPx, ImVec2(x, y + (statPx - statLabelPx) * 0.6f), col32(colTaupe, a), label.c_str());
+			ImVec4 vc = st.good ? good : bad;
+			dl->AddText(bold, statPx, ImVec2(p1.x - pad - textW(bold, statPx, st.value), y), col32(vc, a), st.value.c_str());
+			y += statPx + 8.f * S;
+		}
 	}
 
 	// perks
@@ -2614,5 +2677,92 @@ void ModMenuGUI::renderLootCard(SimpleMath::Vector2 screenSize, const LootWeapon
 	{
 		y += 8.f * S;
 		dl->AddText(bold, perkPx, ImVec2(x, y), col32(rgba(232, 74, 58), a), flavour, nullptr, textWidth);
+		y += wrappedH(bold, perkPx, flavour, textWidth) + 2.f * S;
 	}
+
+	// weapon mastery: MASTERY ........ LV 3  VETERAN, a progress bar, kills, and what the levels give
+	if (showMastery)
+	{
+		y += 10.f * S;
+		dl->AddLine(ImVec2(x, y), ImVec2(p1.x - pad, y), col32(colGold, 0.35f * a), 1.f * S);
+		y += 12.f * S;
+		if (levelUp)
+		{
+			// MASTERY UP!, slightly bouncy for the first half second
+			float pop = 1.f + 0.18f * std::max(0.f, 1.f - age / 0.5f) * std::sin(std::min(age, 0.5f) * 12.f);
+			float px = bannerPx * pop;
+			std::string banner = "MASTERY UP!";
+			float bw = textW(display, px, banner);
+			float bx = x + (textWidth - bw) * 0.5f;
+			dl->AddText(display, px, ImVec2(bx + 1.5f * S, y + 2.f * S), IM_COL32(0, 0, 0, (int)(170 * a)), banner.c_str());
+			dl->AddText(display, px, ImVec2(bx, y), col32(colGoldBright, a), banner.c_str());
+			y += bannerPx + 10.f * S;
+		}
+		diamond(dl, ImVec2(x + 4.f * S, y + statLabelPx * 0.55f), 4.f * S, col32(colGold, a));
+		dl->AddText(bold, statLabelPx, ImVec2(x + 15.f * S, y), col32(colGold, a), "MASTERY");
+		std::string rank = m.level > 0 ? std::format("LV {}  {}", m.level, upper(m.rank)) : upper(m.rank);
+		dl->AddText(bold, statLabelPx, ImVec2(p1.x - pad - textW(bold, statLabelPx, rank), y), col32(m.level > 0 ? colGoldBright : colTaupe, a), rank.c_str());
+		y += statLabelPx + 9.f * S;
+
+		// progress through this level (full and gold at Master)
+		float progress = m.nextKills > m.levelKills ? std::clamp((float)(m.kills - m.levelKills) / (float)(m.nextKills - m.levelKills), 0.f, 1.f) : 1.f;
+		ImVec2 b0(x, y), b1(p1.x - pad, y + barH);
+		dl->AddRectFilled(b0, b1, col32(colIvory, 0.10f * a), barH * 0.5f);
+		if (progress > 0.f)
+		{
+			ImVec2 f1(b0.x + (b1.x - b0.x) * progress, b1.y);
+			dl->AddRectFilledMultiColor(b0, f1, col32(colGoldDeep, a), col32(colGoldBright, a), col32(colGoldBright, a), col32(colGoldDeep, a));
+			if (levelUp) dl->AddRectFilled(ImVec2(b0.x, b0.y - 2.f * S), ImVec2(f1.x, b1.y + 2.f * S), col32(colGoldBright, 0.25f * (0.5f + 0.5f * std::sin(age * 7.f)) * a), barH);
+		}
+		// level ticks
+		y = b1.y + 8.f * S;
+		std::string left = m.nextKills > 0 ? std::format("{} / {} kills", m.kills, m.nextKills) : std::format("{} kills", m.kills);
+		std::string right = m.nextKills > 0 ? std::format("{} to level {}", m.nextKills - m.kills, m.level + 1) : "MASTERED";
+		dl->AddText(bold, statLabelPx, ImVec2(x, y), col32(colIvory, 0.9f * a), left.c_str());
+		dl->AddText(bold, statLabelPx, ImVec2(p1.x - pad - textW(bold, statLabelPx, right), y), col32(m.nextKills > 0 ? colTaupe : colGoldBright, a), right.c_str());
+		y += statLabelPx + 4.f * S;
+		if (!bonusLine.empty())
+		{
+			y += 6.f * S;
+			dl->AddText(body, perkPx * 0.9f, ImVec2(x, y), col32(good, 0.95f * a), bonusLine.c_str(), nullptr, textWidth);
+		}
+	}
+}
+
+void ModMenuGUI::renderMasteryToast(SimpleMath::Vector2 screenSize, const std::string& gunName, const LootMastery& m, bool levelUp, float age)
+{
+	if (age < 0.f || age > kMasteryToastSeconds) return;
+	ImDrawList* dl = ImGui::GetBackgroundDrawList();
+	const float S = std::clamp(screenSize.y / 1440.f, 0.5f, 3.f);
+	float in = std::clamp(age / 0.12f, 0.f, 1.f);
+	float a = std::min(in, std::clamp((kMasteryToastSeconds - age) / 0.6f, 0.f, 1.f));
+	if (a <= 0.f) return;
+	ImFont* bold = fBold();
+	auto textW = [](ImFont* f, float px, const std::string& t) { return f->CalcTextSizeA(px, FLT_MAX, 0.f, t.c_str()).x; };
+	auto upper = [](std::string t) { std::transform(t.begin(), t.end(), t.begin(), [](unsigned char c) { return (char)std::toupper(c); }); return t; };
+
+	// +1   ASSAULT RIFLE   13 / 30        (or: ASSAULT RIFLE  LV 2  PROFICIENT)
+	const float plusPx = 20.f * S, px = 14.f * S, gap = 12.f * S, barH = 2.5f * S;
+	std::string plus = levelUp ? "LEVEL UP" : "+1";
+	std::string gun = upper(gunName);
+	std::string count = levelUp ? std::format("LV {}  {}", m.level, upper(m.rank)) : (m.nextKills > 0 ? std::format("{} / {}", m.kills, m.nextKills) : std::format("{}  MASTER", m.kills));
+	float wPlus = textW(bold, plusPx, plus), wGun = textW(bold, px, gun), wCount = textW(bold, px, count);
+	float total = wPlus + gap + wGun + gap + wCount;
+	float rise = (1.f - in) * 8.f * S + age * 4.f * S;
+	float cx = screenSize.x * 0.5f, y = screenSize.y * 0.60f - rise;
+	float x = cx - total * 0.5f;
+	ImVec2 q0(x - 18.f * S, y - 9.f * S), q1(x + total + 18.f * S, y + plusPx + 17.f * S);
+	dl->AddRectFilled(q0, q1, col32(rgba(10, 9, 8), 0.72f * a), (q1.y - q0.y) * 0.5f);
+	dl->AddRect(q0, q1, col32(levelUp ? colGoldBright : colGold, (levelUp ? 0.9f : 0.45f) * a), (q1.y - q0.y) * 0.5f, 0, 1.2f * S);
+	dl->AddText(bold, plusPx, ImVec2(x, y), col32(colGoldBright, a), plus.c_str());
+	x += wPlus + gap;
+	float ty = y + (plusPx - px) * 0.55f;
+	dl->AddText(bold, px, ImVec2(x, ty), col32(colIvory, a), gun.c_str());
+	x += wGun + gap;
+	dl->AddText(bold, px, ImVec2(x, ty), col32(levelUp ? colGoldBright : colTaupe, a), count.c_str());
+	// thin progress line along the bottom of the pill
+	float progress = m.nextKills > m.levelKills ? std::clamp((float)(m.kills - m.levelKills) / (float)(m.nextKills - m.levelKills), 0.f, 1.f) : 1.f;
+	float bx0 = q0.x + (q1.y - q0.y) * 0.5f, bx1 = q1.x - (q1.y - q0.y) * 0.5f, by = q1.y - 6.f * S;
+	dl->AddRectFilled(ImVec2(bx0, by - barH), ImVec2(bx1, by), col32(colIvory, 0.10f * a), barH);
+	dl->AddRectFilled(ImVec2(bx0, by - barH), ImVec2(bx0 + (bx1 - bx0) * progress, by), col32(colGoldBright, 0.9f * a), barH);
 }

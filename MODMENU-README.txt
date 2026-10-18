@@ -102,6 +102,26 @@ and red flavour text on legendaries.
 - Works in campaign, Firefight and Workshop mods. Nothing on disk changes.
 
 
+WEAPON MASTERY (Halo: Reach)
+----------------------------
+Every kill you make with a gun counts toward that gun type (all Assault
+Rifles share one count, and so on). Kills are counted when the last hit came
+from a gun you're carrying; grenades, melee and vehicle kills don't count.
+- Levels: 10 kills Familiar, 30 Proficient, 75 Veteran, 150 Expert,
+  300 Master.
+- Every level gives that gun type +4% fire rate, +8% magazine and 6%
+  tighter spread, stacked on top of its loot (Master adds another +10% fire
+  rate). Works with loot on or off.
+- After each kill a small "+1" under the crosshair shows the gun and how far
+  it is to the next level. On a level up, the gun's card slides in with
+  MASTERY UP!.
+- The item card has a MASTERY section, and the Loot collection lists every
+  gun you've scored with.
+- Progress is saved in ModMenuMastery.txt in this folder (delete it to start
+  over). Reverting to a checkpoint and killing the same enemy again counts
+  again.
+
+
 THIRD PERSON
 ------------
 HUD and Camera > "Third Person" puts the camera behind your shoulder in any
@@ -138,6 +158,7 @@ the results are written to ModMenuDev.log. Commands:
   spawn <name> / become <name> / catalogue / loadmore   spawning
   possess / return / pose    (Reach) body swap
   loot roll [seed] / loot restore / loot list / loot dump   (Reach) loot
+  mastery list / add [n] / reset [all] / deaths             (Reach) weapon mastery
   status                     game, tick and player unit
   wait <ms>                  pause between lines
 
