@@ -246,6 +246,8 @@ IF EXIST "C:\Program Files\LockHunter\LockHunter.exe"  (
     <ClInclude Include="ModMenuGUI.h" />
     <ClInclude Include="ModMenuLibrary.h" />
     <ClInclude Include="ModMenuManager.h" />
+    <ClInclude Include="ModMenuLoot.h" />
+    <ClInclude Include="ModMenuLootTypes.h" />
     <ClInclude Include="ModMenuPossession.h" />
     <ClInclude Include="ModMenuSpawner.h" />
     <ClInclude Include="ModMenuSpawnTypes.h" />
@@ -582,6 +584,7 @@ IF EXIST "C:\Program Files\LockHunter\LockHunter.exe"  (
     <ClCompile Include="ModMenuGUI.cpp" />
     <ClCompile Include="ModMenuLibrary.cpp" />
     <ClCompile Include="ModMenuManager.cpp" />
+    <ClCompile Include="ModMenuLoot.cpp" />
     <ClCompile Include="ModMenuPossession.cpp" />
     <ClCompile Include="ModMenuSpawner.cpp" />
     <ClCompile Include="DisableBarriers.cpp" />

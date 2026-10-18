@@ -1196,6 +1196,13 @@ void ModMenuGUI::renderCategoryList()
 			auto* catalogue = mSpawnCatalogue ? mSpawnCatalogue() : nullptr;
 			total = catalogue ? (int)catalogue->size() : 0;
 		}
+		else if (cat.special == "loot")
+		{
+			if (!mSearch.empty()) continue;
+			auto* weapons = mLootWeapons ? mLootWeapons() : nullptr;
+			total = weapons ? std::max(1, (int)weapons->size()) : 0;
+			active = weapons && !weapons->empty() ? 1 : 0;
+		}
 		else
 		{
 			for (auto* mod : visibleMods(cat))
@@ -1288,6 +1295,11 @@ void ModMenuGUI::renderModList()
 	if (cat.special == "spawn")
 	{
 		renderSpawnPanel();
+		return;
+	}
+	if (cat.special == "loot")
+	{
+		renderLootPanel();
 		return;
 	}
 
@@ -1722,6 +1734,169 @@ void ModMenuGUI::renderSpawnPanel()
 		}
 	}
 	clipper.End();
+}
+
+namespace
+{
+	ImVec4 rarityColor(LootRarity r)
+	{
+		switch (r)
+		{
+		case LootRarity::Uncommon: return rgba(104, 204, 118);
+		case LootRarity::Rare: return rgba(88, 156, 255);
+		case LootRarity::Epic: return rgba(182, 112, 255);
+		case LootRarity::Legendary: return rgba(255, 156, 48);
+		default: return rgba(198, 192, 180);
+		}
+	}
+
+	const char* rarityLabel(LootRarity r)
+	{
+		static const char* names[] = { "COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY" };
+		int i = std::clamp((int)r, 0, 4);
+		return names[i];
+	}
+
+	ImVec4 elementColor(const std::string& e)
+	{
+		if (e == "Plasma") return rgba(96, 176, 255);
+		if (e == "Crystal") return rgba(255, 112, 196);
+		if (e == "Radiant") return rgba(128, 232, 96);
+		if (e == "Explosive") return rgba(255, 140, 64);
+		if (e == "Shock") return rgba(160, 208, 255);
+		return rgba(224, 214, 194);
+	}
+}
+
+void ModMenuGUI::renderLootPanel()
+{
+	const float B = mBasePx, S = B / 20.f;
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+	auto* weapons = mLootWeapons ? mLootWeapons() : nullptr;
+	if (!weapons)
+	{
+		textItem(ModMenuFonts::body(), B * 0.9f, colTaupe, "Loot works in Halo: Reach for now (campaign and Firefight, Workshop mods too).");
+		return;
+	}
+	bool active = !weapons->empty();
+
+	if (luxButton(active ? "RE-ROLL LOOT" : "ROLL LOOT", Btn::Primary, B, S) && mLootRoll) toast(mLootRoll());
+	if (active)
+	{
+		ImGui::SameLine(0.f, 10.f * S);
+		if (luxButton("STANDARD ISSUE", Btn::Outline, B, S) && mLootRestore) toast(mLootRestore());
+	}
+	ImGui::Dummy(ImVec2(0.f, 6.f * S));
+
+	{
+		bool autoOn = mLootAutoGet ? mLootAutoGet() : false;
+		float rowY = ImGui::GetCursorScreenPos().y;
+		if (luxSwitch("##lootauto", autoOn, S) && mLootAutoSet) mLootAutoSet(!autoOn);
+		ImGui::SameLine(0.f, 12.f * S);
+		float px = B * 0.82f;
+		ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, rowY + (switchSize(S).y - px) * 0.5f - 1.f * S));
+		textItem(fBody(), px, colIvory, "New loot every mission");
+	}
+	ImGui::Dummy(ImVec2(0.f, 4.f * S));
+	textItem(fBody(), B * 0.74f, colMuted,
+		"Every gun on the level gets a rarity, a maker and perks: fire rate, magazine size, rounds per shot, accuracy, "
+		"and elemental rounds borrowed from other guns on the level. Enemies carry the same guns, so watch out.",
+		ImGui::GetContentRegionAvail().x);
+	ImGui::Dummy(ImVec2(0.f, 8.f * S));
+	if (!active) return;
+
+	for (auto& w : *weapons)
+	{
+		ImGui::PushID((int)w.tag);
+		ImVec4 rc = rarityColor(w.rarity);
+		Card card = beginCard(S);
+		float inner = card.innerWidth();
+
+		// a strip of the rarity colour along the top edge, brighter for better loot
+		float glow = 0.35f + 0.15f * (float)w.rarity;
+		dl->AddRectFilled(ImVec2(card.start.x + 14.f * S, card.start.y), ImVec2(card.start.x + card.width - 14.f * S, card.start.y + 2.5f * S), col32(rc, glow), 2.f * S);
+
+		// LEGENDARY  ·  Iruiru Armory
+		{
+			ImVec2 p = ImGui::GetCursorScreenPos();
+			float px = B * 0.6f;
+			diamond(dl, ImVec2(p.x + 4.f * S, p.y + px * 0.62f), 4.f * S, col32(rc));
+			ImGui::SetCursorScreenPos(ImVec2(p.x + 14.f * S, p.y));
+			textItem(fBold(), px, rc, rarityLabel(w.rarity));
+			ImGui::SameLine(0.f, 10.f * S);
+			textItem(fBody(), px, colMuted, w.maker);
+		}
+
+		// the name, big
+		std::string name = w.title.empty() ? w.baseName : w.title + " " + w.baseName;
+		textItem(ModMenuFonts::display() ? ModMenuFonts::display() : fBold(), B * 1.08f, w.rarity == LootRarity::Legendary ? mix(colIvory, rc, 0.35f) : colIvory, name);
+
+		// element pill
+		if (!w.element.empty())
+		{
+			ImVec4 ec = elementColor(w.element);
+			std::string label = w.element + " rounds";
+			float px = B * 0.62f;
+			ImVec2 size;
+			{
+				ModMenuFonts::Scoped f(fBold(), px);
+				size = ImGui::CalcTextSize(label.c_str());
+			}
+			ImVec2 p = ImGui::GetCursorScreenPos();
+			ImVec2 pad(10.f * S, 4.f * S);
+			ImVec2 q(p.x + size.x + pad.x * 2.f, p.y + size.y + pad.y * 2.f);
+			dl->AddRectFilled(p, q, col32(ec, 0.16f), (q.y - p.y) * 0.5f);
+			dl->AddRect(p, q, col32(ec, 0.55f), (q.y - p.y) * 0.5f, 0, 1.f);
+			ImGui::SetCursorScreenPos(ImVec2(p.x + pad.x, p.y + pad.y));
+			textItem(fBold(), px, ec, label);
+			ImGui::SetCursorScreenPos(ImVec2(p.x, q.y + 6.f * S));
+			ImGui::Dummy(ImVec2(0.f, 0.f));
+		}
+
+		// stats: LABEL value, flowing onto a new line when they run out of room
+		{
+			float startX = ImGui::GetCursorScreenPos().x, used = 0.f;
+			float labelPx = B * 0.58f, valuePx = B * 0.8f, gap = 22.f * S;
+			for (size_t i = 0; i < w.stats.size(); i++)
+			{
+				auto& st = w.stats[i];
+				std::string label = st.label;
+				std::transform(label.begin(), label.end(), label.begin(), [](unsigned char c) { return (char)std::toupper(c); });
+				float lw, vw;
+				{ ModMenuFonts::Scoped f(fBold(), labelPx); lw = ImGui::CalcTextSize(label.c_str()).x; }
+				{ ModMenuFonts::Scoped f(fBold(), valuePx); vw = ImGui::CalcTextSize(st.value.c_str()).x; }
+				float itemW = lw + 8.f * S + vw;
+				if (i > 0 && used + gap + itemW <= inner) ImGui::SameLine(0.f, gap);
+				else if (i > 0) used = 0.f;
+				if (used > 0.f) used += gap;
+				used += itemW;
+				ImVec2 p = ImGui::GetCursorScreenPos();
+				ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + (valuePx - labelPx) * 0.55f));
+				textItem(fBold(), labelPx, colMuted, label);
+				ImGui::SameLine(0.f, 8.f * S);
+				ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, p.y));
+				textItem(fBold(), valuePx, st.good ? colGoldBright : colDanger, st.value);
+			}
+			(void)startX;
+		}
+
+		// perks
+		if (!w.perks.empty())
+		{
+			ImGui::Dummy(ImVec2(0.f, 2.f * S));
+			for (auto& perk : w.perks)
+			{
+				ImVec2 p = ImGui::GetCursorScreenPos();
+				float px = B * 0.74f;
+				diamond(dl, ImVec2(p.x + 4.f * S, p.y + px * 0.62f), 3.f * S, col32(rc, 0.85f));
+				ImGui::SetCursorScreenPos(ImVec2(p.x + 14.f * S, p.y));
+				textItem(fBody(), px, colTaupe, perk, inner - 14.f * S);
+			}
+		}
+
+		endCard(card, w.rarity >= LootRarity::Epic, S);
+		ImGui::PopID();
+	}
 }
 
 void ModMenuGUI::renderLog(float totalHeight)

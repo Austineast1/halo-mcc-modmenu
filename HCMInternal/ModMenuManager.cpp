@@ -18,6 +18,7 @@
 #include "GameTickEventHook.h"
 #include "GetPlayerDatum.h"
 #include "ModMenuPossession.h"
+#include "ModMenuLoot.h"
 #include "GetObjectPhysics.h"
 #include "GetPlayerViewAngle.h"
 #include "GetObjectHealth.h"
@@ -40,7 +41,8 @@ private:
 	std::shared_ptr<RuntimeExceptionHandler> runtimeExceptions;
 	std::weak_ptr<IMessagesGUI> messagesWeak; // HCM's on-screen messages, used to say mods were restored
 	std::unique_ptr<ModMenuPossession> possession; // true body swap (only where the memory layout is known)
-	std::unique_ptr<ModMenuSpawner> spawner;		// spawn anything the level has loaded
+	std::unique_ptr<ModMenuSpawner> spawner;
+	std::unique_ptr<ModMenuLoot> loot;			// Borderlands-style weapon rolls (Reach)		// spawn anything the level has loaded
 
 	// optional engine events
 	std::optional<std::shared_ptr<ObservedEvent<HSOutputEvent>>> haloScriptOutputEvent;
@@ -168,6 +170,7 @@ private:
 		}
 		if (possession) possession->onLevelChanged();
 		if (spawner) spawner->onLevelChanged();
+		if (loot) loot->onLevelChanged();
 		// our game loaded (or reloaded) a level: give the player a few seconds to spawn, then re-apply
 		if (gui) gui->onLevelLoaded();
 		reapplyReason = 1;
@@ -354,6 +357,40 @@ private:
 			out += gui->selfTestRunning() ? ", self-test running" : "";
 			return out;
 		}
+		if (verb == "loot")
+		{
+			if (!loot) return "loot isn't available in this game";
+			std::string sub = lowerCopy(rest.substr(0, rest.find(' ')));
+			std::string arg = rest.find(' ') == std::string::npos ? "" : rest.substr(rest.find(' ') + 1);
+			if (sub == "roll")
+			{
+				std::optional<uint32_t> seed;
+				try { if (!arg.empty()) seed = (uint32_t)std::stoul(arg); } catch (...) {}
+				return loot->roll(seed);
+			}
+			if (sub == "restore") return loot->restore();
+			if (sub == "auto") { loot->setAutoReroll(arg != "off"); return arg != "off" ? "new loot every mission: on" : "new loot every mission: off"; }
+			if (sub == "list")
+			{
+				static const char* rarities[] = { "common", "uncommon", "rare", "epic", "LEGENDARY" };
+				for (auto& w : loot->weapons())
+				{
+					std::string stats;
+					for (auto& st : w.stats) stats += std::format(" {} {};", st.label, st.value);
+					std::string perks;
+					for (auto& p : w.perks) perks += " [" + p + "]";
+					devLog(std::format("  {:<9} {} {} ({}){}{}", rarities[std::clamp((int)w.rarity, 0, 4)], w.title, w.baseName, w.maker, stats, perks));
+				}
+				return std::format("{} guns, seed {}", loot->weapons().size(), loot->seed());
+			}
+			if (sub == "dump")
+			{
+				auto lines = loot->describeGuns();
+				for (auto& l : lines) devLog("  " + l);
+				return std::format("{} lines", lines.size());
+			}
+			return "usage: loot roll [seed] | restore | auto on|off | list | dump";
+		}
 		return gui->devCommand(line);
 	}
 
@@ -469,7 +506,17 @@ private:
 				}
 			}
 
-			pollDevCommands(ourGamePlaying);
+			if (loot)
+			{
+				if (auto message = loot->update(ourGamePlaying))
+				{
+					devLog("loot: " + *message);
+					gui->notify(*message);
+					if (auto messages = messagesWeak.lock()) messages->addMessage("Mod Menu: " + *message);
+				}
+			}
+
+						pollDevCommands(ourGamePlaying);
 			gui->tickSelfTest(ourGamePlaying);
 
 			if (!ourGamePlaying) return;
@@ -570,6 +617,21 @@ public:
 				return spawner ? spawner->spawn(entry, becomeIt) : std::string("Spawning isn't available in this game yet.");
 			});
 
+		try
+		{
+			loot = std::make_unique<ModMenuLoot>(game, dicon);
+			PLOG_INFO << "ModMenu: loot available for " << game.toString();
+			gui->setLootHandlers(
+				[this]() -> const std::vector<LootWeapon>* { return loot ? &loot->weapons() : nullptr; },
+				[this]() { return loot->roll(); },
+				[this]() { return loot->restore(); },
+				[this]() { return loot->autoReroll(); },
+				[this](bool on) { loot->setAutoReroll(on); });
+		}
+		catch (HCMInitException ex)
+		{
+			PLOG_INFO << "ModMenu: loot not available for " << game.toString() << ": " << ex.what();
+		}
 		gui->setCanBecome(possession != nullptr);
 		if (spawner && spawner->canLoadMore())
 			gui->setLoadMoreHandler([this]() -> std::string { return spawner ? spawner->loadMore() : std::string("Not available."); });

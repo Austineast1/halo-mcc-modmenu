@@ -31,7 +31,7 @@
   group="name" makes buttons one-at-a-time: running one forgets the others in the group (Become forms use this).
   A reapply button in a group is remembered and run again after deaths, reverts and level loads.
 -->
-<ModMenuLibrary version="14" title="Mod Menu">
+<ModMenuLibrary version="15" title="Mod Menu">
 
   <!-- ================================================================== -->
   <Category id="spartan" name="Spartan" desc="Your body: armour, health, size and movement.">
@@ -621,6 +621,9 @@
 
   <!-- ================================================================== -->
   <Category id="spawn" name="Spawn" special="spawn" desc="Everything this level has loaded: weapons, vehicles, characters, armor abilities and props. It appears right in front of you. Characters can be jumped into with BECOME." />
+
+  <!-- ================================================================== -->
+  <Category id="loot" name="Loot" special="loot" desc="Borderlands-style guns: every weapon on the level gets a rarity, a maker, perks and elemental rounds. Re-roll any time." />
 
   <!-- ================================================================== -->
   <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles.">

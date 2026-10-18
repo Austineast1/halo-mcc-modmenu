@@ -36,7 +36,7 @@ R"MML(<?xml version="1.0" encoding="utf-8"?>
   group="name" makes buttons one-at-a-time: running one forgets the others in the group (Become forms use this).
   A reapply button in a group is remembered and run again after deaths, reverts and level loads.
 -->
-<ModMenuLibrary version="14" title="Mod Menu">
+<ModMenuLibrary version="15" title="Mod Menu">
 
   <!-- ================================================================== -->
   <Category id="spartan" name="Spartan" desc="Your body: armour, health, size and movement.">
@@ -631,6 +631,9 @@ R"MML(    <Mod id="p_odst" type="button" reapply="true" group="form" tag="PRESET
   <Category id="spawn" name="Spawn" special="spawn" desc="Everything this level has loaded: weapons, vehicles, characters, armor abilities and props. It appears right in front of you. Characters can be jumped into with BECOME." />
 
   <!-- ================================================================== -->
+  <Category id="loot" name="Loot" special="loot" desc="Borderlands-style guns: every weapon on the level gets a rarity, a maker, perks and elemental rounds. Re-roll any time." />
+
+  <!-- ================================================================== -->
   <Category id="arsenal" name="Arsenal" desc="Ammo, weapons and vehicles.">
 
     <Mod id="infammo" type="hcm-toggle" hcm="infiniteAmmo" games="Halo1,Halo2" name="Infinite Ammo"
@@ -723,7 +726,8 @@ R"MML(    <Mod id="p_odst" type="button" reapply="true" group="form" tag="PRESET
     </Mod>
 
     <Mod id="allvehicles" type="button" name="Spawn All Vehicles"
-         desc="Spawns every vehicle the level has loaded around you. Step back first.">
+)MML",
+R"MML(         desc="Spawns every vehicle the level has loaded around you. Step back first.">
       <Game games="Halo1">
         <Run>(cheat_all_vehicles)</Run>
       </Game>
@@ -732,8 +736,7 @@ R"MML(    <Mod id="p_odst" type="button" reapply="true" group="form" tag="PRESET
     <Mod id="warthog" type="button" name="Spawn Warthog"
          desc="A Warthog appears next to you.">
       <Game games="Halo1">
-)MML",
-R"MML(        <Run>(cheat_spawn_warthog)</Run>
+        <Run>(cheat_spawn_warthog)</Run>
       </Game>
     </Mod>
 
@@ -927,7 +930,8 @@ R"MML(        <Run>(cheat_spawn_warthog)</Run>
     </Mod>
 
     <Mod id="ceasefire" type="button" name="Ceasefire"
-         desc="Every faction in the game becomes your ally. Total peace, until you end it.">
+)MML",
+R"MML(         desc="Every faction in the game becomes your ally. Total peace, until you end it.">
       <Game games="all">
         <Run>(ai_allegiance covenant player)
 (ai_allegiance covenant human)</Run>
@@ -937,8 +941,7 @@ R"MML(        <Run>(cheat_spawn_warthog)</Run>
 (ai_allegiance flood human)
 (ai_allegiance sentinel player)
 (ai_allegiance sentinel human)</Run>
-)MML",
-R"MML(      </Game>
+      </Game>
       <Game games="Halo2">
         <Run>(ai_allegiance heretic player)
 (ai_allegiance heretic human)
@@ -1125,7 +1128,8 @@ R"MML(      </Game>
     </Mod>
 
     <Mod id="hudoff" type="toggle" name="HUD Off (engine)"
-         desc="The game's own HUD switch, separate from HCM's.">
+)MML",
+R"MML(         desc="The game's own HUD switch, separate from HCM's.">
       <Game games="gen3">
         <On>(chud_show false)</On>
         <Off>(chud_show true)</Off>
@@ -1139,8 +1143,7 @@ R"MML(      </Game>
     <Mod id="nocrosshair" type="toggle" name="Hide Crosshair"
          desc="Removes the reticle only.">
       <Game games="gen3">
-)MML",
-R"MML(        <On>(chud_show_crosshair false)</On>
+        <On>(chud_show_crosshair false)</On>
         <Off>(chud_show_crosshair true)</Off>
       </Game>
       <Game games="Halo1">
@@ -1361,7 +1364,8 @@ R"MML(        <On>(chud_show_crosshair false)</On>
 (object_set_velocity {player} 0 0 40)</Run>
       </Game>
       <Game games="Halo2">
-        <Run>(object_set_velocity {player} 0 0 40)</Run>
+)MML",
+R"MML(        <Run>(object_set_velocity {player} 0 0 40)</Run>
       </Game>
     </Mod>
 
@@ -1373,8 +1377,7 @@ R"MML(        <On>(chud_show_crosshair false)</On>
     </Mod>
 
     <Mod id="nuke" type="button" tag="DANGER" name="Delete Every Object"
-)MML",
-R"MML(         desc="Wipes every non-player object from the level: enemies, allies, vehicles, weapons and crates. Revert to undo.">
+         desc="Wipes every non-player object from the level: enemies, allies, vehicles, weapons and crates. Revert to undo.">
       <Game games="all">
         <Run>(object_destroy_all)</Run>
       </Game>

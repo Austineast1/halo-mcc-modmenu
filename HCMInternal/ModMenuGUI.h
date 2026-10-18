@@ -8,6 +8,7 @@
 #include "SkullEnum.h"
 #include "imgui.h"
 #include "ModMenuSpawnTypes.h"
+#include "ModMenuLootTypes.h"
 #include <deque>
 
 // Renders the in-game Mod Menu window and runs mods.
@@ -61,6 +62,11 @@ private:
 	std::function<std::string(const ModMenuSpawnEntry&, bool)> mSpawnAction;
 	std::optional<std::pair<bool, bool>> mThirdPersonSaved; // free camera's third-person-rendering and block-input settings before third person
 	void setThirdPerson(bool on);
+	// loot (Loot collection): null weapons getter = not available in this game
+	std::function<const std::vector<LootWeapon>*()> mLootWeapons;
+	std::function<std::string()> mLootRoll, mLootRestore;
+	std::function<bool()> mLootAutoGet;
+	std::function<void(bool)> mLootAutoSet;
 	bool mCanBecome = false;
 	std::function<std::string()> mLoadMoreAction;	// true body swap is available in this game (BECOME buttons on characters)
 	int mSpawnKind = 0;
@@ -122,6 +128,7 @@ private:
 	void renderMod(const ModDef& mod);
 	void renderSkullPanel();
 	void renderSpawnPanel();
+	void renderLootPanel();
 	void renderLog(float totalHeight);
 	void renderFooter();
 	void renderSettingsPopup();
@@ -172,6 +179,17 @@ public:
 	}
 
 	void setCanBecome(bool canBecome) { mCanBecome = canBecome; }
+
+	// Borderlands-style loot: the current roll, roll / restore actions, and the "new loot every mission" switch
+	void setLootHandlers(std::function<const std::vector<LootWeapon>*()> weapons, std::function<std::string()> roll, std::function<std::string()> restore,
+		std::function<bool()> autoGet, std::function<void(bool)> autoSet)
+	{
+		mLootWeapons = std::move(weapons);
+		mLootRoll = std::move(roll);
+		mLootRestore = std::move(restore);
+		mLootAutoGet = std::move(autoGet);
+		mLootAutoSet = std::move(autoSet);
+	}
 
 	// Third person hides the game's own HUD, so the menu draws a crosshair and shield/health bars instead.
 	// Shields and health are 0..1 (shields can go past 1 with overshields); nullopt when unknown.
