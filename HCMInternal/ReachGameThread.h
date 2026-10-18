@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "ModuleCache.h"
+#include <atomic>
 #include <intrin.h>
 
 // Halo: Reach (MCC 1.3528) keeps its live game state (object table, players) in the game thread's thread-local storage.
@@ -95,6 +96,41 @@ namespace ReachGameThread
 		uint16_t salt = 0;
 		if (!dataArray(kBlockPlayers, players, stride) || !read(players + stride * index, salt) || salt == 0) return kNone;
 		return ((uint32_t)salt << 16) | (uint32_t)index;
+	}
+
+	// HCM's Reach pointers start from game-state pointers in haloreach.dll's data that campaign fills in and Firefight
+	// leaves null. The game state itself sits at the same place in both (checked live Oct 2026: object and player arrays
+	// at identical addresses), so the values come from the game thread's object array (o) or TLS block (b):
+	//   +0x15B6700 player array elements  = [players +0x50]          (playerDatum)
+	//   +0x15B6708 player view angles     = [b+0x118] - 4            (playerViewAngle)
+	//   +0x1680DC4 object array - 0x58    = o - 0x58                 (objectMetaDataTable)
+	//   +0x19A6310 game time globals      = o + 0x30A2F4             (tickCounter, boarding text)
+	//   +0x1901ED0 camera data            = [b+0x188] - 8            (cameraDataPointer)
+	//   +0xC519B8  havok component table  = o + 0xFBF7C0             (havokComponentMetaTableHeader)
+	//   +0x24FB5F0 skull globals          = [b+0x168]                (skullIronPointer)
+	// Checkpoint and scenario pointers are left alone (Firefight has no checkpoints).
+	inline uintptr_t slotFallback(uintptr_t slot)
+	{
+		uintptr_t module = gModule, block = gBlock.load();
+		if (!module || !block || slot < module || slot - module > 0x4000000) return 0;
+		uintptr_t objects = 0, value = 0;
+		if (!read(block + kBlockObjects, objects) || !objects) return 0;
+		switch (slot - module)
+		{
+		case 0x15B6700:
+		{
+			uintptr_t players = 0;
+			if (read(block + kBlockPlayers, players) && players && read(players + kArrayElements, value)) return value;
+			return 0;
+		}
+		case 0x15B6708: return read(block + 0x118, value) && value ? value - 4 : 0;
+		case 0x1680DC4: return objects - 0x58;
+		case 0x19A6310: return objects + 0x30A2F4;
+		case 0x1901ED0: return read(block + 0x188, value) && value ? value - 8 : 0;
+		case 0xC519B8: return objects + 0xFBF7C0;
+		case 0x24FB5F0: return read(block + 0x168, value) ? value : 0;
+		}
+		return 0;
 	}
 
 	inline uint32_t playerUnit(int index = 0)

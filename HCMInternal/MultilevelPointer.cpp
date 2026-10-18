@@ -61,7 +61,10 @@ bool MultilevelPointer::dereferencePointer(const void* const& base, const std::v
 					return false;
 				}
 
+				uintptr_t slot = baseAddress;
 				baseAddress = (uintptr_t) * (void**)baseAddress; // read the value at baseaddress and assign it to base address
+				if (baseAddress == 0 && i == 1)
+					if (auto fallback = sNullSlotFallback.load()) baseAddress = fallback(slot);
 				baseAddress += offsets[i]; // add the offset
 			}
 

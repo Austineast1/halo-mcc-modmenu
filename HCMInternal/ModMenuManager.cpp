@@ -21,6 +21,7 @@
 #include <random>
 #include "ModMenuLoot.h"
 #include "ReachGameThread.h"
+#include "MultilevelPointer.h"
 #include "GetObjectPhysics.h"
 #include "GetPlayerViewAngle.h"
 #include "GetObjectHealth.h"
@@ -171,12 +172,12 @@ private:
 
 	void onMCCStateChanged(const MCCState& newState)
 	{
+		if (mGame.operator GameState::Value() == GameState::Value::HaloReach) ReachGameThread::forget();
 		if (newState.currentGameState != mGame)
 		{
 			closeAsap = true;
 			return;
 		}
-		if (mGame.operator GameState::Value() == GameState::Value::HaloReach) ReachGameThread::forget();
 		if (possession) possession->onLevelChanged();
 		if (spawner) spawner->onLevelChanged();
 		if (loot) loot->onLevelChanged();
@@ -281,16 +282,18 @@ private:
 			try
 			{
 				Datum unit = playerDatum->getPlayerDatum();
-				if (unit.isNull()) return std::nullopt;
-				auto position = physics->getObjectPosition(unit);
-				if (!position) return std::nullopt;
-				ModMenuPose pose{ *position, 0.f };
-				if (auto view = viewAngleWeak.lock())
+				const SimpleMath::Vector3* position = unit.isNull() ? nullptr : physics->getObjectPosition(unit);
+				if (position)
 				{
-					try { pose.yaw = view->getPlayerViewAngle().x; }
-					catch (HCMRuntimeException) {}
+					ModMenuPose pose{ *position, 0.f };
+					if (auto view = viewAngleWeak.lock())
+					{
+						try { pose.yaw = view->getPlayerViewAngle().x; }
+						catch (HCMRuntimeException) {}
+					}
+					return pose;
 				}
-				return pose;
+				// no player here (Reach Firefight): try the other ways below
 			}
 			catch (HCMRuntimeException ex)
 			{
@@ -879,7 +882,11 @@ public:
 			// player and the object table, so grab it from the game thread every tick (cheap: three reads)
 			if (game.operator GameState::Value() == GameState::Value::HaloReach)
 				if (auto tick = tickSourceWeak.lock())
+				{
 					reachThreadCallback = tick->getGameTickEvent()->subscribe([](uint32_t) { ReachGameThread::capture(); });
+					// and fill in the game-state pointers Firefight leaves null, so HCM's own Reach features work there too
+					MultilevelPointer::sNullSlotFallback = &ReachGameThread::slotFallback;
+				}
 		}
 		catch (HCMInitException ex)
 		{

@@ -1,5 +1,6 @@
 #pragma once
 #include "pch.h"
+#include <atomic>
 
 
 
@@ -32,6 +33,11 @@ protected:
 public:
 
 	virtual ~MultilevelPointer() = default;
+
+	// Called when the first pointer in a chain reads as null: given the address that was read, returns what it should
+	// have held, or 0. Halo: Reach leaves its game-state pointers null in Firefight while the game state itself is
+	// right where campaign keeps it, so the mod menu fills them in from the game thread (see ReachGameThread.h).
+	static inline std::atomic<uintptr_t(*)(uintptr_t)> sNullSlotFallback{ nullptr };
 
 
 	// The useful stuff
