@@ -303,12 +303,16 @@ private:
 		if (mGame.operator GameState::Value() == GameState::Value::HaloReach)
 		{
 			uintptr_t body = ReachGameThread::objectAddress(ReachGameThread::playerUnit());
-			float center[3] = {}, forward[3] = {};
-			// object +0x20 = bounding sphere centre (world), +0x50 = forward vector
-			if (body && ReachGameThread::read(body + 0x20, center) && ReachGameThread::read(body + 0x50, forward)
+			float center[3] = {}, origin[3] = {}, forward[3] = {};
+			uint32_t parent = 0xFFFFFFFF;
+			// object +0x14 parent, +0x20 bounding sphere centre (world), +0x44 origin (world unless riding something),
+			// +0x50 forward vector (checked live in Firefight: origin = feet, centre ~0.38 above)
+			if (body && ReachGameThread::read(body + 0x14, parent) && ReachGameThread::read(body + 0x20, center) && ReachGameThread::read(body + 0x44, origin)
+				&& ReachGameThread::read(body + 0x50, forward)
 				&& std::isfinite(center[0]) && std::isfinite(center[1]) && std::isfinite(center[2]) && std::isfinite(forward[0]) && std::isfinite(forward[1]))
 			{
-				ModMenuPose pose{ SimpleMath::Vector3{ center[0], center[1], center[2] - 0.3f }, 0.f };
+				bool riding = parent != 0xFFFFFFFF;
+				ModMenuPose pose{ riding ? SimpleMath::Vector3{ center[0], center[1], center[2] - 0.38f } : SimpleMath::Vector3{ origin[0], origin[1], origin[2] }, 0.f };
 				if (std::fabs(forward[0]) + std::fabs(forward[1]) > 0.01f) pose.yaw = std::atan2(forward[1], forward[0]);
 				return pose;
 			}
