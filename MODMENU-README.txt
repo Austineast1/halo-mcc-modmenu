@@ -22,9 +22,9 @@ Insert ........ open or close the Mod Menu
 `  (grave) .... open HCM's own main menu (rebind keys there)
 
 Inside the Mod Menu:
-- Pick a collection on the left: Spartan, Become, Spawn, Arsenal, World,
-  Battle, Mission, HUD and Camera, Director, Chaos, Skulls, Halo CE Classic,
-  Custom.
+- Pick a collection on the left: Spartan, Become, Spawn, Loot, Arsenal,
+  World, Battle, Mission, HUD and Camera, Director, Chaos, Skulls,
+  Halo CE Classic, Custom.
   Only mods that work in the game you're playing are shown.
 - Flip the gold switches, press ACTIVATE for one-off effects, or drag a
   slider and press APPLY. Anything switched on gets a gold edge.
@@ -73,6 +73,20 @@ list grows a few seconds later. What exists at all depends on the mission
 a mission that has one.
 
 
+LOOT (Halo: Reach)
+------------------
+Borderlands met Halo. Press ROLL LOOT in the Loot collection and every gun
+on the level gets a rarity (common, uncommon, rare, epic, legendary), a maker
+and perks: faster fire, bigger magazines, 2 or 5 rounds per shot, laser
+accuracy, and elemental rounds (plasma, needles, fuel rod, explosive,
+concussion) borrowed from other guns on the level. Legendaries get a name.
+Each gun's card in the menu shows what it rolled.
+- RE-ROLL for new loot any time; STANDARD ISSUE puts every gun back.
+- "New loot every mission" rolls fresh guns whenever a mission loads.
+- Enemies carrying the same gun get the same roll. Watch the Grunts.
+- Works in campaign, Firefight and Workshop mods. Nothing on disk changes.
+
+
 THIRD PERSON
 ------------
 HUD and Camera > "Third Person" puts the camera behind your shoulder in any
@@ -108,6 +122,7 @@ the results are written to ModMenuDev.log. Commands:
   hs <command>               send one HaloScript command
   spawn <name> / become <name> / catalogue / loadmore   spawning
   possess / return / pose    (Reach) body swap
+  loot roll [seed] / loot restore / loot list / loot dump   (Reach) loot
   status                     game, tick and player unit
   wait <ms>                  pause between lines
 
