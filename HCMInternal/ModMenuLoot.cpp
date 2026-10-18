@@ -26,6 +26,12 @@ namespace
 	constexpr size_t kRoundsPerSecond = 0x4, kFireRecovery = 0x28, kProjectilesPerShot = 0x6A;
 	constexpr size_t kMinimumError = 0x70, kErrorAngle = 0x74, kProjectileRef = 0x104, kProjectileDatum = 0x110;
 
+	// projectile -> damage effect (ReachMCC proj plugin): tag references are {group, ?, ?, datum}. Bullets hurt through
+	// "Impact Damage", grenades and bolts through "Detonation Damage". Damage effect (jpt!): lower bound +0x20, upper
+	// bound range +0x24/+0x28. Every value is sanity-checked before it's scaled, and skipped if it looks wrong.
+	constexpr size_t kProjImpactDamage = 0x284, kProjDetonationDamage = 0x1D8, kTagRefDatum = 0xC;
+	constexpr size_t kDamageLower = 0x20, kDamageUpper = 0x24;
+
 	// which gun the player is holding (Reach unit layout, found live Oct 2026): current weapon slot (byte) at unit +0x348,
 	// the four carried weapon datums at +0x350. A weapon object's parent (+0x14) is the unit carrying it.
 	constexpr size_t kUnitWeaponSlot = 0x348, kUnitWeapons = 0x350, kObjectParent = 0x14;
@@ -287,8 +293,37 @@ private:
 		return restored;
 	}
 
+	// the damage effect a projectile deals (impact first, else detonation), with its bounds looking like real damage
+	struct DamageEffect { uint32_t datum; uintptr_t address; };
+	std::optional<DamageEffect> damageEffectOf(uint32_t projectile)
+	{
+		auto tagTable = tagTableWeak.lock();
+		if (!tagTable || projectile == kNone) return std::nullopt;
+		static const int32_t projGroup = MagicString(std::string("proj")).getNum();
+		static const int32_t jptGroup = MagicString(std::string("jpt!")).getNum();
+		auto projTag = tagTable->getTagByDatum(Datum((uint16_t)(projectile & 0xFFFF), (uint16_t)(projectile >> 16)));
+		if (!projTag || projTag.value().tagType.getNum() != projGroup) return std::nullopt;
+		for (size_t refOffset : { kProjImpactDamage, kProjDetonationDamage })
+		{
+			int32_t group = 0;
+			uint32_t datum = kNone;
+			uintptr_t ref = projTag.value().tagAddress + refOffset;
+			if (!readSafe(ref, group) || group != jptGroup || !readSafe(ref + kTagRefDatum, datum) || datum == kNone) continue;
+			auto jpt = tagTable->getTagByDatum(Datum((uint16_t)(datum & 0xFFFF), (uint16_t)(datum >> 16)));
+			if (!jpt || jpt.value().tagType.getNum() != jptGroup) continue;
+			float lower = 0.f, upper[2] = {};
+			uintptr_t a = jpt.value().tagAddress;
+			if (!readSafe(a + kDamageLower, lower) || !readSafe(a + kDamageUpper, upper)) continue;
+			auto sane = [](float v) { return std::isfinite(v) && v >= 0.f && v <= 5000.f; };
+			if (!sane(lower) || !sane(upper[0]) || !sane(upper[1]) || upper[1] <= 0.f || lower > upper[1] + 0.001f || upper[0] > upper[1] + 0.001f) continue;
+			return DamageEffect{ datum, a };
+		}
+		return std::nullopt;
+	}
+
 	struct Roll
 	{
+		float damage = 1.f;
 		float rate = 1.f, mag = 1.f, accuracy = 1.f;	// accuracy < 1 = tighter
 		int ppsMul = 1;
 		std::string element;
@@ -378,6 +413,19 @@ public:
 		};
 		static const float rarityWeights[] = { 40.f, 30.f, 17.f, 9.f, 4.f };
 
+		// which damage effects each gun's own rounds use, and how many guns share each one: a gun only gets a damage
+		// roll when its damage effect is its own (otherwise boosting it would boost another gun too)
+		std::map<uint32_t, std::set<uint32_t>> damageUsers;	// damage effect -> guns
+		std::map<uint32_t, std::vector<DamageEffect>> gunDamage;	// gun -> its damage effects
+		for (auto& gun : guns)
+			for (auto& b : gun.barrels)
+				if (auto d = damageEffectOf(b.projectile))
+				{
+					damageUsers[d->datum].insert(gun.tag);
+					auto& list = gunDamage[gun.tag];
+					if (std::none_of(list.begin(), list.end(), [&](const DamageEffect& e) { return e.datum == d->datum; })) list.push_back(*d);
+				}
+
 		int counts[(int)LootRarity::Count] = {};
 		for (auto& gun : guns)
 		{
@@ -391,15 +439,23 @@ public:
 			static const float elementChance[] = { 0.f, 0.2f, 0.45f, 0.7f, 1.f };
 			static const int perkCount[] = { 0, 1, 1, 2, 2 };
 
+			static const float dmgLo[] = { 1.0f, 1.05f, 1.15f, 1.25f, 1.4f }, dmgHi[] = { 1.1f, 1.25f, 1.4f, 1.6f, 2.0f };
+
 			Roll roll;
 			roll.rate = uniform(rateLo[r], rateHi[r]);
 			roll.mag = uniform(magLo[r], magHi[r]);
+			roll.damage = uniform(dmgLo[r], dmgHi[r]);
 
-			// perks: 0 rapid, 1 deep mag, 2 twin, 3 scatter, 4 overcharged, 5 deadeye
+			// can this gun's damage be changed on its own? (its damage effects aren't shared with another gun)
+			bool canDamage = false;
+			if (auto it = gunDamage.find(gun.tag); it != gunDamage.end() && !it->second.empty())
+				canDamage = std::all_of(it->second.begin(), it->second.end(), [&](const DamageEffect& e) { return damageUsers[e.datum].size() == 1; });
+
+			// perks: 0 rapid, 1 deep mag, 2 twin, 3 scatter, 4 overcharged, 5 deadeye, 6 heavy (only when damage can change)
 			std::set<int> perks;
 			int wanted = perkCount[r] + (r == 2 && chance(0.5f) ? 1 : 0);
 			if (wanted > 0 && chance(0.6f)) perks.insert(maker.favouredPerk);
-			while ((int)perks.size() < wanted) perks.insert((int)pick(6));
+			while ((int)perks.size() < wanted) perks.insert((int)pick(canDamage ? 7 : 6));
 			if (rarity != LootRarity::Legendary) perks.erase(4); // overcharged is a legendary thing
 			for (int perk : perks)
 			{
@@ -411,11 +467,12 @@ public:
 				case 3: roll.ppsMul *= 5; roll.accuracy *= 2.6f; roll.perks.push_back("Scatter: shotgun spread, 5 rounds per shot"); roll.adjective = "Scattered"; break;
 				case 4: roll.ppsMul *= 3; roll.rate *= 1.25f; roll.perks.push_back("Overcharged: 3 rounds per shot, 25% faster"); roll.adjective = "Overcharged"; break;
 				case 5: roll.accuracy *= 0.15f; roll.perks.push_back("Deadeye: laser accurate"); roll.adjective = "Deadeye"; break;
+				case 6: { float x = uniform(1.5f, 1.9f); roll.damage *= x; roll.rate *= 0.75f; roll.perks.push_back(std::format("Heavy: hits {:.0f}% harder, fires slower", (x - 1.f) * 100.f)); roll.adjective = "Heavy"; break; }
 				}
 			}
 
-			// element: swap in a projectile from another gun on this level
-			if (chance(elementChance[r]) && !elements.empty())
+			// element: swap in a projectile from another gun on this level (not for Heavy guns: they hit harder with their own)
+			if (chance(elementChance[r]) && !elements.empty() && !perks.contains(6))
 			{
 				std::string want = maker.favouredElement && chance(0.6f) && elements.contains(maker.favouredElement) ? maker.favouredElement : "";
 				if (want.empty())
@@ -489,7 +546,26 @@ public:
 				patch<int16_t>(gun.magazine + kMagTotalInitial, (int16_t)newInitial);
 			}
 
+			// damage: scale this gun's own damage effects, only when no other gun shares them and it still fires its own rounds
+			float damage = std::min(roll.damage, 3.f);
+			bool damaged = false;
+			if (!swapped && canDamage && std::fabs(damage - 1.f) > 0.01f)
+			{
+				{
+					for (auto& e : gunDamage[gun.tag])
+					{
+						float lower = 0.f, upper[2] = {};
+						if (!readSafe(e.address + kDamageLower, lower) || !readSafe(e.address + kDamageUpper, upper)) continue;
+						patch<float>(e.address + kDamageLower, lower * damage);
+						patch<float>(e.address + kDamageUpper, upper[0] * damage);
+						patch<float>(e.address + kDamageUpper + 4, upper[1] * damage);
+						damaged = true;
+					}
+				}
+			}
+
 			loot.element = swapped ? roll.element : "";
+			if (damaged) loot.stats.push_back({ "Damage", std::format("x{:.2f}", damage), damage >= 1.f });
 			loot.stats.push_back({ "Fire rate", std::format("x{:.2f}", std::min(roll.rate, 3.5f)), roll.rate >= 1.f });
 			if (gun.magazine && gun.loaded > 0) loot.stats.push_back({ "Magazine", std::format("{} > {}", gun.loaded, newLoaded), newLoaded >= gun.loaded });
 			if (newPps != oldPps) loot.stats.push_back({ "Rounds per shot", std::format("{} > {}", oldPps, newPps), true });

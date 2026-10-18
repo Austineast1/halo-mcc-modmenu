@@ -77,8 +77,9 @@ LOOT (Halo: Reach)
 ------------------
 Borderlands met Halo. Press ROLL LOOT in the Loot collection and every gun
 on the level gets a rarity (common, uncommon, rare, epic, legendary), a maker
-and perks: faster fire, bigger magazines, 2 or 5 rounds per shot, laser
-accuracy, and elemental rounds (plasma, needles, fuel rod, explosive,
+and perks: more damage, faster fire, bigger magazines, 2 or 5 rounds per
+shot, laser accuracy, Heavy guns that hit far harder but fire slower, and
+elemental rounds (plasma, needles, fuel rod, explosive,
 concussion) borrowed from other guns on the level. Legendaries get a name.
 Each gun's card in the menu shows what it rolled, and when you pull a gun
 out in game its item card slides in on the right for a few seconds: rarity
