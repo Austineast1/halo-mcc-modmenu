@@ -42,6 +42,8 @@ private:
 	std::weak_ptr<IMessagesGUI> messagesWeak; // HCM's on-screen messages, used to say mods were restored
 	std::unique_ptr<ModMenuPossession> possession; // true body swap (only where the memory layout is known)
 	std::unique_ptr<ModMenuSpawner> spawner;
+	uint32_t lootCardTag = 0xFFFFFFFF, lootCardSeed = 0;	// which gun's card is showing, for which roll
+	int64_t lootCardShownMs = 0;
 	std::unique_ptr<ModMenuLoot> loot;			// Borderlands-style weapon rolls (Reach)		// spawn anything the level has loaded
 
 	// optional engine events
@@ -514,6 +516,23 @@ private:
 					gui->notify(*message);
 					if (auto messages = messagesWeak.lock()) messages->addMessage("Mod Menu: " + *message);
 				}
+			}
+
+			// item card: pull out a rolled gun (or roll new loot) and its card slides in for a few seconds
+			if (loot && ourGamePlaying && !openRequests && loot->active())
+			{
+				const LootWeapon* held = nullptr;
+				try { held = loot->heldWeapon(); }
+				catch (HCMRuntimeException) {}
+				uint32_t heldTag = held ? held->tag : 0xFFFFFFFF;
+				if (loot->seed() != lootCardSeed) { lootCardSeed = loot->seed(); lootCardTag = 0xFFFFFFFF; } // new roll: show it again
+				if (heldTag != lootCardTag)
+				{
+					lootCardTag = heldTag;
+					lootCardShownMs = nowMs();
+				}
+				float age = (nowMs() - lootCardShownMs) / 1000.f;
+				if (held && age < ModMenuGUI::kLootCardSeconds) gui->renderLootCard(screenSize, *held, age);
 			}
 
 						pollDevCommands(ourGamePlaying);

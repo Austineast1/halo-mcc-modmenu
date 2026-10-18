@@ -2444,3 +2444,162 @@ void ModMenuGUI::renderThirdPersonOverlay(SimpleMath::Vector2 screenSize, std::o
 		bar(y + h + gap, v, hc, hc);
 	}
 }
+
+// ------------------------------------------------------------------ loot item card
+
+namespace
+{
+	// Borderlands-style red flavour text, one line per legendary name the loot roller can give out
+	const char* flavourFor(const std::string& title)
+	{
+		static const std::map<std::string, const char*> lines = {
+			{ "Hellfire", "It burns. That's the point." },
+			{ "Widowmaker", "Somebody isn't coming home." },
+			{ "Starfall", "Look up. Too late." },
+			{ "Grunt Birthday Party", "Everyone gets a hat. And a hole." },
+			{ "Last Rites", "Say them quickly." },
+			{ "Thunderhead", "Weather report: incoming." },
+			{ "Halo Breaker", "Some rings were made to be broken." },
+			{ "Lightbringer", "Let there be light. A lot of it." },
+			{ "Sunburst", "Wear sunscreen." },
+			{ "Banshee Scream", "You'll hear it before you feel it." },
+			{ "Long Night", "Bring a nightlight." },
+			{ "Lone Wolf", "No team. No problem." },
+			{ "Hammer of Reach", "Reach falls. You don't." },
+			{ "Glass Cannon", "Handle with care. Or don't." },
+			{ "Pillar of Autumn", "Built to run. Built to fight." },
+			{ "Ascendant Justice", "Borrowed. Not giving it back." },
+			{ "Covenant Killer", "They call it heresy. You call it Tuesday." },
+			{ "Noble Sacrifice", "Remember Reach." },
+			{ "Sword of Sanghelios", "Honour, delivered at range." },
+			{ "Zero Hour", "Time's up." },
+			{ "Winter's Edge", "Cold steel. Colder aim." },
+			{ "The Great Journey", "The ticket is one way." },
+			{ "Spirit of Fire", "Still out there. Still shooting." },
+			{ "Oni's Secret", "This weapon does not exist." },
+		};
+		auto it = lines.find(title);
+		return it == lines.end() ? nullptr : it->second;
+	}
+}
+
+void ModMenuGUI::renderLootCard(SimpleMath::Vector2 screenSize, const LootWeapon& w, float age)
+{
+	if (age < 0.f || age > kLootCardSeconds) return;
+	ImDrawList* dl = ImGui::GetBackgroundDrawList();
+	const float S = std::clamp(screenSize.y / 1440.f, 0.5f, 3.f);
+
+	// slide in from the right over 0.22 s, hold, fade out over the last 0.7 s
+	float in = std::clamp(age / 0.22f, 0.f, 1.f);
+	in = 1.f - (1.f - in) * (1.f - in) * (1.f - in);
+	float a = std::min(in, std::clamp((kLootCardSeconds - age) / 0.7f, 0.f, 1.f));
+	if (a <= 0.f) return;
+
+	const ImVec4 rc = rarityColor(w.rarity);
+	const ImVec4 good = rgba(126, 224, 128), bad = rgba(238, 104, 92);
+	const float W = 430.f * S, pad = 22.f * S;
+	const float labelPx = 13.f * S, namePx = 30.f * S, statLabelPx = 13.f * S, statPx = 18.f * S, perkPx = 15.f * S;
+	ImFont* display = fDisplay();
+	ImFont* bold = fBold();
+	ImFont* body = fBody();
+	auto textW = [](ImFont* f, float px, const std::string& t) { return f->CalcTextSizeA(px, FLT_MAX, 0.f, t.c_str()).x; };
+	auto wrappedH = [](ImFont* f, float px, const std::string& t, float wrap) { return f->CalcTextSizeA(px, FLT_MAX, wrap, t.c_str()).y; };
+
+	std::string name = w.title.empty() ? w.baseName : w.title + " " + w.baseName;
+	float textWidth = W - pad * 2.f;
+	float nameH = wrappedH(display, namePx, name, textWidth);
+	float perkW = textWidth - 16.f * S;
+
+	// measure first so the panel fits its contents
+	const char* flavour = w.rarity == LootRarity::Legendary ? flavourFor(w.title) : nullptr;
+	float h = pad + labelPx + 10.f * S + nameH + 14.f * S;
+	if (!w.element.empty()) h += perkPx + 12.f * S + 10.f * S;
+	h += 1.f * S + 12.f * S + (float)w.stats.size() * (statPx + 8.f * S);
+	if (!w.perks.empty())
+	{
+		h += 6.f * S;
+		for (auto& perk : w.perks) h += wrappedH(body, perkPx, perk, perkW) + 6.f * S;
+	}
+	if (flavour) h += 8.f * S + wrappedH(bold, perkPx, flavour, textWidth) + 2.f * S;
+	h += pad - 4.f * S;
+
+	float x0 = screenSize.x - W - 70.f * S + (1.f - in) * 40.f * S;
+	float y0 = std::clamp(screenSize.y * 0.36f, 20.f * S, std::max(20.f * S, screenSize.y - h - 120.f * S));
+	ImVec2 p0(x0, y0), p1(x0 + W, y0 + h);
+	float r = 6.f * S;
+
+	// shadow, panel, rarity glow from the top, top band, border
+	dl->AddRectFilled(ImVec2(p0.x + 6.f * S, p0.y + 8.f * S), ImVec2(p1.x + 6.f * S, p1.y + 8.f * S), IM_COL32(0, 0, 0, (int)(110 * a)), r);
+	dl->AddRectFilled(p0, p1, col32(rgba(10, 9, 8), 0.93f * a), r);
+	float glowH = std::min(h * 0.45f, 150.f * S);
+	dl->AddRectFilledMultiColor(ImVec2(p0.x + 1.f, p0.y + 5.f * S), ImVec2(p1.x - 1.f, p0.y + glowH),
+		col32(rc, 0.20f * a), col32(rc, 0.20f * a), col32(rc, 0.f), col32(rc, 0.f));
+	dl->AddRectFilled(p0, ImVec2(p1.x, p0.y + 5.f * S), col32(rc, a), r, ImDrawFlags_RoundCornersTop);
+	dl->AddRect(p0, p1, col32(rc, 0.75f * a), r, 0, 1.5f * S);
+
+	float x = p0.x + pad, y = p0.y + pad;
+
+	// LEGENDARY ............................................ maker
+	diamond(dl, ImVec2(x + 4.f * S, y + labelPx * 0.55f), 4.5f * S, col32(rc, a));
+	dl->AddText(bold, labelPx, ImVec2(x + 15.f * S, y), col32(rc, a), rarityLabel(w.rarity));
+	{
+		std::string maker = w.maker;
+		std::transform(maker.begin(), maker.end(), maker.begin(), [](unsigned char c) { return (char)std::toupper(c); });
+		dl->AddText(bold, labelPx, ImVec2(p1.x - pad - textW(bold, labelPx, maker), y), col32(colTaupe, a), maker.c_str());
+	}
+	y += labelPx + 10.f * S;
+
+	// the name, in the rarity colour (white for common), like Borderlands
+	ImVec4 nameColour = w.rarity == LootRarity::Common ? colIvory : mix(rc, colIvory, 0.12f);
+	dl->AddText(display, namePx, ImVec2(x + 1.f * S, y + 1.5f * S), IM_COL32(0, 0, 0, (int)(160 * a)), name.c_str(), nullptr, textWidth);
+	dl->AddText(display, namePx, ImVec2(x, y), col32(nameColour, a), name.c_str(), nullptr, textWidth);
+	y += nameH + 14.f * S;
+
+	// element pill
+	if (!w.element.empty())
+	{
+		ImVec4 ec = elementColor(w.element);
+		std::string label = w.element + " rounds";
+		std::transform(label.begin(), label.end(), label.begin(), [](unsigned char c) { return (char)std::toupper(c); });
+		float lw = textW(bold, perkPx * 0.85f, label);
+		ImVec2 q0(x, y), q1(x + lw + 24.f * S, y + perkPx + 12.f * S);
+		dl->AddRectFilled(q0, q1, col32(ec, 0.18f * a), (q1.y - q0.y) * 0.5f);
+		dl->AddRect(q0, q1, col32(ec, 0.7f * a), (q1.y - q0.y) * 0.5f, 0, 1.2f * S);
+		dl->AddText(bold, perkPx * 0.85f, ImVec2(x + 12.f * S, y + 6.f * S + perkPx * 0.075f), col32(ec, a), label.c_str());
+		y = q1.y + 10.f * S;
+	}
+
+	// divider
+	dl->AddLine(ImVec2(x, y), ImVec2(p1.x - pad, y), col32(rc, 0.35f * a), 1.f * S);
+	y += 12.f * S;
+
+	// stats: LABEL ............ value (green when it's better than stock, red when worse)
+	for (auto& st : w.stats)
+	{
+		std::string label = st.label;
+		std::transform(label.begin(), label.end(), label.begin(), [](unsigned char c) { return (char)std::toupper(c); });
+		dl->AddText(bold, statLabelPx, ImVec2(x, y + (statPx - statLabelPx) * 0.6f), col32(colTaupe, a), label.c_str());
+		ImVec4 vc = st.good ? good : bad;
+		dl->AddText(bold, statPx, ImVec2(p1.x - pad - textW(bold, statPx, st.value), y), col32(vc, a), st.value.c_str());
+		y += statPx + 8.f * S;
+	}
+
+	// perks
+	if (!w.perks.empty())
+	{
+		y += 6.f * S;
+		for (auto& perk : w.perks)
+		{
+			diamond(dl, ImVec2(x + 4.f * S, y + perkPx * 0.6f), 3.5f * S, col32(rc, 0.9f * a));
+			dl->AddText(body, perkPx, ImVec2(x + 16.f * S, y), col32(colIvory, 0.92f * a), perk.c_str(), nullptr, perkW);
+			y += wrappedH(body, perkPx, perk, perkW) + 6.f * S;
+		}
+	}
+
+	// legendaries get a line of red flavour text, as is tradition
+	if (flavour)
+	{
+		y += 8.f * S;
+		dl->AddText(bold, perkPx, ImVec2(x, y), col32(rgba(232, 74, 58), a), flavour, nullptr, textWidth);
+	}
+}

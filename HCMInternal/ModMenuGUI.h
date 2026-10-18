@@ -195,6 +195,11 @@ public:
 	// Shields and health are 0..1 (shields can go past 1 with overshields); nullopt when unknown.
 	void renderThirdPersonOverlay(SimpleMath::Vector2 screenSize, std::optional<float> shields, std::optional<float> health);
 	bool thirdPersonActive();
+
+	// Borderlands-style item card for the gun you just pulled out (drawn over the game, menu closed).
+	// ageSeconds = time since it appeared; it slides in, holds, then fades.
+	void renderLootCard(SimpleMath::Vector2 screenSize, const LootWeapon& weapon, float ageSeconds);
+	static constexpr float kLootCardSeconds = 5.5f;
 	// "load more from this mission" on the Spawn page (Reach designer zones); empty = not offered
 	void setLoadMoreHandler(std::function<std::string()> handler) { mLoadMoreAction = std::move(handler); }
 

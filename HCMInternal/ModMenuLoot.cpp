@@ -7,6 +7,8 @@
 #include "IGetMCCVersion.h"
 #include "ModuleCache.h"
 #include "MagicString.h"
+#include "PointerDataStore.h"
+#include "MultilevelPointer.h"
 #include <atomic>
 #include <chrono>
 #include <map>
@@ -23,6 +25,11 @@ namespace
 	constexpr size_t kBarrels = 0x408, kBarrelSize = 0x184;
 	constexpr size_t kRoundsPerSecond = 0x4, kFireRecovery = 0x28, kProjectilesPerShot = 0x6A;
 	constexpr size_t kMinimumError = 0x70, kErrorAngle = 0x74, kProjectileRef = 0x104, kProjectileDatum = 0x110;
+
+	// which gun the player is holding (Reach unit layout, found live Oct 2026): current weapon slot (byte) at unit +0x348,
+	// the four carried weapon datums at +0x350. A weapon object's parent (+0x14) is the unit carrying it.
+	constexpr size_t kUnitWeaponSlot = 0x348, kUnitWeapons = 0x350, kObjectParent = 0x14;
+	constexpr uint8_t kWeaponObjectType = 2;
 
 	// "is this tag loaded in the current zone set" (same check the spawner uses): never fire a projectile that isn't
 	constexpr uintptr_t kTagAvailable = 0x8F620;
@@ -121,6 +128,27 @@ private:
 	bool mAuto = false;
 	std::atomic_bool mLevelChanged = false;
 	int64_t mAutoRollAtMs = 0;
+
+	// object lookups for heldWeapon() (optional: the card just doesn't show without them)
+	std::shared_ptr<MultilevelPointer> playerUnitPointer, objectMetaDataTable;
+	int64_t headerStride = 0x18, headerType = 0x4, headerPointer = 0x10;
+
+	uintptr_t objectAddress(uint32_t datum, std::optional<uint8_t> type = std::nullopt)
+	{
+		if (datum == kNone || !objectMetaDataTable) return 0;
+		uintptr_t meta = 0;
+		if (!objectMetaDataTable->resolve(&meta)) return 0;
+		uint16_t index = (uint16_t)(datum & 0xFFFF), salt = (uint16_t)(datum >> 16);
+		if (index >= 2048) return 0;
+		uintptr_t header = meta + headerStride * index;
+		uint16_t headerSalt = 0;
+		uint8_t headerKind = 0xFF;
+		uintptr_t address = 0;
+		if (!readSafe(header, headerSalt) || headerSalt != salt) return 0;
+		if (type && (!readSafe(header + headerType, headerKind) || headerKind != *type)) return 0;
+		if (!readSafe(header + headerPointer, address)) return 0;
+		return IsBadReadPtr((void*)address, 0x400) ? 0 : address;
+	}
 
 	struct Barrel
 	{
@@ -277,6 +305,39 @@ public:
 		tagTableWeak = resolveDependentCheat(TagTableRange);
 		tagNameWeak = resolveDependentCheat(GetTagName);
 		tagBlockWeak = resolveDependentCheat(TagBlockReader);
+		try
+		{
+			auto ptr = dicon.Resolve<PointerDataStore>().lock();
+			playerUnitPointer = ptr->getData<std::shared_ptr<MultilevelPointer>>("playerDatum", game);
+			objectMetaDataTable = ptr->getData<std::shared_ptr<MultilevelPointer>>("objectMetaDataTable", game);
+			headerStride = *ptr->getData<std::shared_ptr<int64_t>>("objectHeaderStride", game);
+			headerType = *ptr->getData<std::shared_ptr<int64_t>>("objectTypeOffset", game);
+			headerPointer = *ptr->getData<std::shared_ptr<int64_t>>("objectOffsetOffset", game);
+		}
+		catch (HCMInitException ex)
+		{
+			PLOG_INFO << "loot: no object data, item cards are off: " << ex.what();
+			playerUnitPointer.reset();
+			objectMetaDataTable.reset();
+		}
+	}
+
+	// the rolled gun the player is holding right now, or null
+	const LootWeapon* heldWeapon()
+	{
+		if (mWeapons.empty() || !playerUnitPointer || !objectMetaDataTable) return nullptr;
+		uintptr_t unitField = 0;
+		uint32_t unit = kNone;
+		if (!playerUnitPointer->resolve(&unitField) || !readSafe(unitField, unit)) return nullptr;
+		uintptr_t body = objectAddress(unit);
+		int8_t slot = -1;
+		if (!body || !readSafe(body + kUnitWeaponSlot, slot) || slot < 0 || slot > 3) return nullptr;
+		uint32_t weapon = kNone, parent = kNone, tag = kNone;
+		if (!readSafe(body + kUnitWeapons + 4 * slot, weapon)) return nullptr;
+		uintptr_t gun = objectAddress(weapon, kWeaponObjectType);
+		if (!gun || !readSafe(gun + kObjectParent, parent) || parent != unit || !readSafe(gun, tag)) return nullptr;
+		for (auto& w : mWeapons) if (w.tag == tag) return &w;
+		return nullptr;
 	}
 
 	const std::vector<LootWeapon>& weapons() const { return mWeapons; }
@@ -510,3 +571,4 @@ bool ModMenuLoot::autoReroll() const { return pimpl->autoReroll(); }
 std::optional<std::string> ModMenuLoot::update(bool gamePlaying) { return pimpl->update(gamePlaying); }
 void ModMenuLoot::onLevelChanged() { pimpl->onLevelChanged(); }
 std::vector<std::string> ModMenuLoot::describeGuns() { return pimpl->describeGuns(); }
+const LootWeapon* ModMenuLoot::heldWeapon() { return pimpl->heldWeapon(); }

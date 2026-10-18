@@ -80,7 +80,10 @@ on the level gets a rarity (common, uncommon, rare, epic, legendary), a maker
 and perks: faster fire, bigger magazines, 2 or 5 rounds per shot, laser
 accuracy, and elemental rounds (plasma, needles, fuel rod, explosive,
 concussion) borrowed from other guns on the level. Legendaries get a name.
-Each gun's card in the menu shows what it rolled.
+Each gun's card in the menu shows what it rolled, and when you pull a gun
+out in game its item card slides in on the right for a few seconds: rarity
+colour, name, maker, stats (green = better than stock, red = worse), perks,
+and red flavour text on legendaries.
 - RE-ROLL for new loot any time; STANDARD ISSUE puts every gun back.
 - "New loot every mission" rolls fresh guns whenever a mission loads.
 - Enemies carrying the same gun get the same roll. Watch the Grunts.

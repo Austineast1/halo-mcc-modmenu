@@ -45,6 +45,9 @@ public:
 
 	void onLevelChanged();	// any thread: the tags were reloaded, so nothing we wrote is there any more
 
+	// Render thread: the rolled gun the player is holding right now (for the item card), or null.
+	const LootWeapon* heldWeapon();
+
 	// developer: one line per gun with its current stats (read-only)
 	std::vector<std::string> describeGuns();
 };
