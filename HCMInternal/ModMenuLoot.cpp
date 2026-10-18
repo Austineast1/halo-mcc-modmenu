@@ -49,6 +49,11 @@ namespace
 	constexpr size_t kProjCollisionRadius = 0x170, kProjGravity = 0x2B8, kProjVelocity = 0x2D0, kProjGuided = 0x2F0;
 	constexpr size_t kProjResponses = 0x320, kProjResponseSize = 0x34, kProjOldResponses = 0x314, kProjOldResponseSize = 0x3C;
 	constexpr size_t kDamageLower = 0x20, kDamageUpper = 0x24;
+	// more damage effect fields (Reach jpt! plugin; the damage bounds above line up with it): radius +0x0/+0x4,
+	// side effect +0x10 (3 = EMP), flags +0x18 (bit 1 = can cause headshots), area of effect core radius +0x1C,
+	// instantaneous acceleration (knockback) +0x5C, EMP radius +0x94
+	constexpr size_t kDamageRadius = 0x0, kDamageSideEffect = 0x10, kDamageFlags = 0x18, kDamageCoreRadius = 0x1C;
+	constexpr size_t kDamageAcceleration = 0x5C, kDamageEmpRadius = 0x94;
 
 	// which gun the player is holding (Reach unit layout, found live Oct 2026 by switching weapons and diffing the unit):
 	// current weapon slot (byte) at unit +0x34A (+0x34E follows it; +0x348 does not change), the four carried weapon
@@ -389,7 +394,9 @@ private:
 		std::string adjective;
 		std::set<int> flight;		// projectile perks (7..13), applied to whatever this gun ends up firing
 		bool endless = false;		// legendary special: never uses ammo
+		bool wrecking = false;		// legendary special: extreme knockback
 		bool fan = false;
+		std::set<int> hits;			// damage-effect perks (14..17), only on the gun's own unshared damage
 	};
 
 	// ---- projectile perks (shared by every gun that fires the same projectile, so the notes are kept per projectile)
@@ -480,6 +487,57 @@ private:
 		case 12:
 			patch<float>(p + kProjCollisionRadius, std::min(std::max(radius * 4.f, 0.06f), 0.6f));
 			return "Big Bore: fat rounds that are hard to miss";
+		}
+		return "";
+	}
+
+	// one damage-effect perk on a gun's own damage effects; returns the card line, or empty if nothing could be changed
+	std::string applyHit(const std::vector<DamageEffect>& effects, int perk, bool wrecking)
+	{
+		bool any = false;
+		for (auto& e : effects)
+		{
+			uintptr_t a = e.address;
+			float radius[2] = {}, core = 0.f, accel = 0.f, emp = 0.f;
+			uint32_t flags = 0;
+			int16_t side = 0;
+			if (!readSafe(a + kDamageRadius, radius) || !readSafe(a + kDamageCoreRadius, core) || !readSafe(a + kDamageAcceleration, accel)
+				|| !readSafe(a + kDamageFlags, flags) || !readSafe(a + kDamageSideEffect, side) || !readSafe(a + kDamageEmpRadius, emp))
+				continue;
+			if (!sane(radius[0], 0.f, 50.f) || !sane(radius[1], 0.f, 50.f) || !sane(core, 0.f, 50.f) || !sane(accel, 0.f, 100.f) || !sane(emp, 0.f, 100.f) || side < 0 || side > 3)
+				continue;
+			switch (perk)
+			{
+			case 14:
+				patch<float>(a + kDamageAcceleration, wrecking ? std::clamp(std::max(accel * 10.f, 6.f), 0.f, 12.f) : std::clamp(std::max(accel * 5.f, 2.f), 0.f, 5.f));
+				any = true;
+				break;
+			case 15:
+				if (radius[1] < 0.3f) break;
+				patch<float>(a + kDamageRadius, std::min(radius[0] * 2.5f, 20.f));
+				patch<float>(a + kDamageRadius + 4, std::min(radius[1] * 2.5f, 20.f));
+				patch<float>(a + kDamageCoreRadius, std::min(core * 2.f, 10.f));
+				any = true;
+				break;
+			case 16:
+				if (radius[1] > 0.01f) break;
+				patch<uint32_t>(a + kDamageFlags, flags | 0x2);
+				any = true;
+				break;
+			case 17:
+				patch<int16_t>(a + kDamageSideEffect, 3);
+				if (radius[1] > 0.01f) patch<float>(a + kDamageEmpRadius, std::max(emp, radius[1]));
+				any = true;
+				break;
+			}
+		}
+		if (!any) return "";
+		switch (perk)
+		{
+		case 14: return wrecking ? "" : "Concussive: hits knock enemies flying";
+		case 15: return "Big Boom: blasts 2.5x wider";
+		case 16: return "Headhunter: every round can headshot";
+		case 17: return "Shocking: hits stall vehicles like an EMP";
 		}
 		return "";
 	}
@@ -925,7 +983,25 @@ public:
 			int wanted = perkCount[r] + (r == 2 && chance(0.5f) ? 1 : 0);
 			if (wanted > 0 && chance(0.6f)) perks.insert(maker.favouredPerk);
 			std::vector<int> allowed = { 0, 1, 2, 3, 5, 7, 8, 9, 10, 11, 12, 13 };
-			if (canDamage) allowed.push_back(6);
+			// perks that change what a hit does need the gun's damage to be its own (and its rounds kept): 14 concussive,
+			// 15 big boom (explosive damage only), 16 headhunter (direct hits only), 17 EMP
+			bool explosiveDamage = false, directDamage = false;
+			if (auto it = gunDamage.find(gun.tag); it != gunDamage.end())
+				for (auto& e : it->second)
+				{
+					float radius[2] = {};
+					if (!readSafe(e.address + kDamageRadius, radius) || !sane(radius[1], 0.f, 50.f)) continue;
+					if (radius[1] >= 0.3f) explosiveDamage = true;
+					if (radius[1] <= 0.01f) directDamage = true;
+				}
+			if (canDamage)
+			{
+				allowed.push_back(6);
+				allowed.push_back(14);
+				allowed.push_back(17);
+				if (explosiveDamage) allowed.push_back(15);
+				if (directDamage) allowed.push_back(16);
+			}
 			for (int tries = 0; (int)perks.size() < wanted && tries < 40; tries++) perks.insert(allowed[pick(allowed.size())]);
 			if (rarity != LootRarity::Legendary) perks.erase(4); // overcharged is a legendary thing
 			// one way of flying only: railgun, drifter and mortar fight over speed and gravity
@@ -941,7 +1017,7 @@ public:
 				std::vector<int> specials = { 3, 5 };
 				if (gun.magazine && gun.loaded > 0) specials.push_back(0);		// endless only means something with a magazine
 				if (elements.contains("Explosive")) { specials.push_back(1); specials.push_back(2); }
-				if (canDamage) specials.push_back(4);
+				if (canDamage) { specials.push_back(4); specials.push_back(6); }
 				switch (specials[pick(specials.size())])
 				{
 				case 0: roll.endless = true; special = "Special: Endless. Never needs reloading"; break;
@@ -950,6 +1026,7 @@ public:
 				case 3: perks.insert(8); roll.ppsMul *= 3; roll.accuracy *= 1.6f; special = "Special: Swarm. Three seeking rounds per shot"; break;
 				case 4: perks.erase(10); perks.erase(11); perks.insert(9); roll.damage *= 1.6f; special = "Special: Lancer. Hyper-velocity slugs that hit like a truck"; break;
 				case 5: roll.rate *= 2.2f; roll.mag *= 3.f; special = "Special: Firehose. Double fire rate, triple magazine"; break;
+				case 6: perks.insert(14); if (explosiveDamage) perks.insert(15); roll.damage *= 1.25f; roll.wrecking = true; special = "Special: Wrecking Ball. Every hit sends them flying"; break;
 				}
 			}
 			for (int perk : perks)
@@ -970,12 +1047,17 @@ public:
 				case 11: roll.flight.insert(11); roll.adjective = "Mortar"; break;
 				case 12: roll.flight.insert(12); roll.adjective = "Big Bore"; break;
 				case 13: roll.fan = true; if (roll.ppsMul == 1) roll.ppsMul = 3; roll.perks.push_back("Fan: rounds spray out in a flat line"); roll.adjective = "Fanning"; break;
+				case 14: roll.hits.insert(14); roll.adjective = "Concussive"; break;
+				case 15: roll.hits.insert(15); roll.adjective = "Big Boom"; break;
+				case 16: roll.hits.insert(16); roll.adjective = "Headhunter"; break;
+				case 17: roll.hits.insert(17); roll.adjective = "Shocking"; break;
 				}
 			}
 			if (!special.empty()) roll.perks.insert(roll.perks.begin(), special);
+			if (!roll.element.empty()) roll.hits.clear();	// borrowed rounds deal another gun's damage: hit perks can't go on it
 
 			// element: swap in a projectile from another gun on this level (not for Heavy guns: they hit harder with their own)
-			if (roll.element.empty() && chance(elementChance[r]) && !elements.empty() && !perks.contains(6))
+			if (roll.element.empty() && chance(elementChance[r]) && !elements.empty() && !perks.contains(6) && roll.hits.empty())
 			{
 				std::string want = maker.favouredElement && chance(0.6f) && elements.contains(maker.favouredElement) ? maker.favouredElement : "";
 				if (want.empty())
@@ -1110,6 +1192,15 @@ public:
 				}
 			}
 
+			// what a hit does: knockback, blast radius, headshots, EMP (same rule as damage: the gun's own, unshared damage)
+			std::vector<std::string> hitLines;
+			if (!swapped && canDamage)
+				for (int perk : roll.hits)
+				{
+					std::string line = applyHit(gunDamage[gun.tag], perk, roll.wrecking);
+					if (!line.empty()) hitLines.push_back(line);
+				}
+
 			loot.element = swapped ? roll.element : "";
 			if (damaged) loot.stats.push_back({ "Damage", std::format("x{:.2f}", damage), damage >= 1.f });
 			loot.stats.push_back({ "Fire rate", std::format("x{:.2f}", std::min(roll.rate, 3.5f)), roll.rate >= 1.f });
@@ -1119,6 +1210,7 @@ public:
 			else if (roll.accuracy > 1.05f) loot.stats.push_back({ "Spread", std::format("x{:.1f}", roll.accuracy), false });
 			if (swapped) loot.perks.push_back(std::format("{} rounds: fires {}", roll.element, titleCase(lastSegment(projectilePaths[*elementProjectile]))));
 			for (auto& p : roll.perks) loot.perks.push_back(p);
+			for (auto& p : hitLines) loot.perks.push_back(p);
 			(void)oldRps;
 			if (loot.title.empty() && !roll.adjective.empty()) loot.title = roll.adjective;
 			mWeapons.push_back(std::move(loot));

@@ -90,10 +90,14 @@ and red flavour text on legendaries.
   straight), Drifter (slow floating rounds), Mortar (arc like grenades), Big
   Bore (fat rounds) and Fan (a flat spray). They belong to the rounds, so any
   gun firing the same rounds gets them too, and its card says so.
+- Hit perks change what a hit does: Concussive (knocks enemies flying), Big
+  Boom (explosions 2.5x wider), Headhunter (every round can headshot) and
+  Shocking (hits stall vehicles like an EMP).
 - Every legendary gets a Special: Endless (never reloads), Rocket Choir (a
   fan of explosive rounds), Bounce House (bouncing explosive rounds), Swarm
-  (three seeking rounds per shot), Lancer (hyper-velocity, huge damage) or
-  Firehose (double fire rate, triple magazine).
+  (three seeking rounds per shot), Lancer (hyper-velocity, huge damage),
+  Firehose (double fire rate, triple magazine) or Wrecking Ball (every hit
+  sends them flying).
 - RE-ROLL for new loot any time; STANDARD ISSUE puts every gun back.
 - LOOT CHEST drops four rolled guns in front of you (better rarities are
   more likely). Pick one up and its item card slides in.
