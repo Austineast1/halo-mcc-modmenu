@@ -1781,6 +1781,16 @@ void ModMenuGUI::renderLootPanel()
 	bool active = !weapons->empty();
 
 	if (luxButton(active ? "RE-ROLL LOOT" : "ROLL LOOT", Btn::Primary, B, S) && mLootRoll) toast(mLootRoll());
+	if (mLootChest)
+	{
+		ImGui::SameLine(0.f, 10.f * S);
+		if (luxButton("LOOT CHEST", Btn::Outline, B, S))
+		{
+			auto result = mLootChest();
+			if (mPauseWhileOpen && result.ends_with("...")) result += " Close the menu to see it.";
+			toast(result);
+		}
+	}
 	if (active)
 	{
 		ImGui::SameLine(0.f, 10.f * S);

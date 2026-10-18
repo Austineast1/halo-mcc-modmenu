@@ -86,6 +86,8 @@ out in game its item card slides in on the right for a few seconds: rarity
 colour, name, maker, stats (green = better than stock, red = worse), perks,
 and red flavour text on legendaries.
 - RE-ROLL for new loot any time; STANDARD ISSUE puts every gun back.
+- LOOT CHEST drops four rolled guns in front of you (better rarities are
+  more likely). Pick one up and its item card slides in.
 - "New loot every mission" rolls fresh guns whenever a mission loads.
 - Enemies carrying the same gun get the same roll. Watch the Grunts.
 - Works in campaign, Firefight and Workshop mods. Nothing on disk changes.

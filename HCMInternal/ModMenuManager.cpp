@@ -18,6 +18,7 @@
 #include "GameTickEventHook.h"
 #include "GetPlayerDatum.h"
 #include "ModMenuPossession.h"
+#include <random>
 #include "ModMenuLoot.h"
 #include "GetObjectPhysics.h"
 #include "GetPlayerViewAngle.h"
@@ -293,6 +294,49 @@ private:
 		return possession ? possession->playerPose() : std::nullopt;
 	}
 
+	// Loot chest: roll loot if needed, then spawn four rolled guns in a fan in front of you, better rarities more likely
+	std::string lootChest()
+	{
+		if (!loot) return "Loot works in Halo: Reach for now.";
+		if (!spawner) return "Spawning isn't available here.";
+		std::string rolled;
+		if (!loot->active()) rolled = loot->roll() + " ";
+		auto& guns = loot->weapons();
+		if (guns.empty()) return rolled.empty() ? "No guns to put in the chest yet. Load into a mission." : rolled;
+		auto& catalogue = spawner->catalogue();
+		std::vector<const LootWeapon*> pool;
+		std::vector<double> weights;
+		for (auto& g : guns)
+		{
+			bool spawnable = std::any_of(catalogue.begin(), catalogue.end(), [&](const ModMenuSpawnEntry& e) { return e.tag == g.tag; });
+			if (!spawnable) continue;
+			pool.push_back(&g);
+			weights.push_back(1.0 + 1.5 * (double)g.rarity); // legendaries are 7x as likely as commons
+		}
+		if (pool.empty()) return rolled + "None of the rolled guns can be spawned on this part of the level.";
+		static std::mt19937 rng{ std::random_device{}() };
+		std::vector<std::string> names;
+		int drops = std::min<int>(4, (int)pool.size());
+		for (int i = 0; i < drops; i++)
+		{
+			std::discrete_distribution<size_t> pickOne(weights.begin(), weights.end());
+			size_t k = pickOne(rng);
+			const LootWeapon* g = pool[k];
+			weights[k] = 0.0; // no duplicates
+			for (auto& e : catalogue)
+				if (e.tag == g->tag)
+				{
+					spawner->spawn(e, false);
+					names.push_back(g->title.empty() ? g->baseName : g->title + " " + g->baseName);
+					break;
+				}
+			if (std::all_of(weights.begin(), weights.end(), [](double w) { return w <= 0.0; })) break;
+		}
+		std::string list;
+		for (size_t i = 0; i < names.size(); i++) list += (i ? ", " : "") + names[i];
+		return rolled + std::format("Loot chest: {}...", list);
+	}
+
 	static std::string lowerCopy(std::string s)
 	{
 		std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return (char)std::tolower(c); });
@@ -371,6 +415,7 @@ private:
 				return loot->roll(seed);
 			}
 			if (sub == "restore") return loot->restore();
+			if (sub == "chest") return lootChest();
 			if (sub == "auto") { loot->setAutoReroll(arg != "off"); return arg != "off" ? "new loot every mission: on" : "new loot every mission: off"; }
 			if (sub == "list")
 			{
@@ -391,7 +436,7 @@ private:
 				for (auto& l : lines) devLog("  " + l);
 				return std::format("{} lines", lines.size());
 			}
-			return "usage: loot roll [seed] | restore | auto on|off | list | dump";
+			return "usage: loot roll [seed] | restore | chest | auto on|off | list | dump";
 		}
 		return gui->devCommand(line);
 	}
@@ -646,6 +691,7 @@ public:
 				[this]() { return loot->restore(); },
 				[this]() { return loot->autoReroll(); },
 				[this](bool on) { loot->setAutoReroll(on); });
+			if (spawner) gui->setLootChestHandler([this]() { return lootChest(); });
 		}
 		catch (HCMInitException ex)
 		{

@@ -67,6 +67,7 @@ private:
 	std::function<std::string()> mLootRoll, mLootRestore;
 	std::function<bool()> mLootAutoGet;
 	std::function<void(bool)> mLootAutoSet;
+	std::function<std::string()> mLootChest;	// drop a few rolled guns in front of you (needs spawning)
 	bool mCanBecome = false;
 	std::function<std::string()> mLoadMoreAction;	// true body swap is available in this game (BECOME buttons on characters)
 	int mSpawnKind = 0;
@@ -190,6 +191,8 @@ public:
 		mLootAutoGet = std::move(autoGet);
 		mLootAutoSet = std::move(autoSet);
 	}
+
+	void setLootChestHandler(std::function<std::string()> chest) { mLootChest = std::move(chest); }
 
 	// Third person hides the game's own HUD, so the menu draws a crosshair and shield/health bars instead.
 	// Shields and health are 0..1 (shields can go past 1 with overshields); nullopt when unknown.
