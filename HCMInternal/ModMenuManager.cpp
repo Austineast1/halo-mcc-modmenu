@@ -20,6 +20,7 @@
 #include "ModMenuPossession.h"
 #include <random>
 #include "ModMenuLoot.h"
+#include "ReachGameThread.h"
 #include "GetObjectPhysics.h"
 #include "GetPlayerViewAngle.h"
 #include "GetObjectHealth.h"
@@ -59,6 +60,7 @@ private:
 	// but the game tick counter and the player's unit datum exist for all six. A tick that goes backwards means a
 	// checkpoint revert (which is also what dying in solo campaign does) or a restart; a new player unit means a respawn.
 	std::weak_ptr<GameTickEventHook> tickSourceWeak;
+	std::unique_ptr<ScopedCallback<eventpp::CallbackList<void(uint32_t)>>> reachThreadCallback;	// Reach: remember the game thread's game state
 	std::weak_ptr<GetPlayerDatum> playerDatumWeak;
 	std::optional<uint32_t> lastTick;
 	std::optional<Datum> lastPlayerUnit;
@@ -174,6 +176,7 @@ private:
 			closeAsap = true;
 			return;
 		}
+		if (mGame.operator GameState::Value() == GameState::Value::HaloReach) ReachGameThread::forget();
 		if (possession) possession->onLevelChanged();
 		if (spawner) spawner->onLevelChanged();
 		if (loot) loot->onLevelChanged();
@@ -294,7 +297,23 @@ private:
 				PLOG_DEBUG << "ModMenu: no player pose: " << ex.what();
 			}
 		}
-		return possession ? possession->playerPose() : std::nullopt;
+		if (possession)
+			if (auto pose = possession->playerPose()) return pose;
+		// Reach Firefight: HCM's pointers are null there, so read the player's body straight from the game state
+		if (mGame.operator GameState::Value() == GameState::Value::HaloReach)
+		{
+			uintptr_t body = ReachGameThread::objectAddress(ReachGameThread::playerUnit());
+			float center[3] = {}, forward[3] = {};
+			// object +0x20 = bounding sphere centre (world), +0x50 = forward vector
+			if (body && ReachGameThread::read(body + 0x20, center) && ReachGameThread::read(body + 0x50, forward)
+				&& std::isfinite(center[0]) && std::isfinite(center[1]) && std::isfinite(center[2]) && std::isfinite(forward[0]) && std::isfinite(forward[1]))
+			{
+				ModMenuPose pose{ SimpleMath::Vector3{ center[0], center[1], center[2] - 0.3f }, 0.f };
+				if (std::fabs(forward[0]) + std::fabs(forward[1]) > 0.01f) pose.yaw = std::atan2(forward[1], forward[0]);
+				return pose;
+			}
+		}
+		return std::nullopt;
 	}
 
 	// Loot chest: roll loot if needed, then spawn four rolled guns in a fan in front of you, better rarities more likely
@@ -852,6 +871,11 @@ public:
 		try
 		{
 			tickSourceWeak = resolveDependentCheat(GameTickEventHook);
+			// Reach keeps its live game state in the game thread's TLS; in Firefight that's the only place to find the
+			// player and the object table, so grab it from the game thread every tick (cheap: three reads)
+			if (game.operator GameState::Value() == GameState::Value::HaloReach)
+				if (auto tick = tickSourceWeak.lock())
+					reachThreadCallback = tick->getGameTickEvent()->subscribe([](uint32_t) { ReachGameThread::capture(); });
 		}
 		catch (HCMInitException ex)
 		{

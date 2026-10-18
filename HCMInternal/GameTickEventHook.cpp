@@ -35,7 +35,12 @@ private:
 		ScopedAtomicBool lock(gameTickHookRunningMutex);
 		try
 		{
-			instance->gameTickEvent->fireEvent(instance->getCurrentGameTick());
+			// the tick counter pointer is null in some modes (Reach Firefight): still tell subscribers a tick happened
+			uint32_t tick = 0;
+			static uint32_t fallbackTick = 0;
+			try { tick = instance->getCurrentGameTick(); }
+			catch (HCMRuntimeException) { tick = ++fallbackTick; }
+			instance->gameTickEvent->fireEvent(tick);
 			errorCount = 0;
 		}
 		catch (HCMRuntimeException ex)

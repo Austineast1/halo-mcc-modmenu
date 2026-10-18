@@ -10,6 +10,7 @@
 #include "PointerDataStore.h"
 #include "MultilevelPointer.h"
 #include "DirPathContainer.h"
+#include "ReachGameThread.h"
 #include <atomic>
 #include <deque>
 #include <filesystem>
@@ -202,11 +203,19 @@ private:
 	std::shared_ptr<MultilevelPointer> playerUnitPointer, objectMetaDataTable;
 	int64_t headerStride = 0x18, headerType = 0x4, headerPointer = 0x10;
 
+	// the object header table: HCM's pointer in campaign, the game thread's own state otherwise (Firefight)
+	bool headerTable(uintptr_t& meta)
+	{
+		if (objectMetaDataTable && objectMetaDataTable->resolve(&meta) && meta >= 0x10000 && !IsBadReadPtr((void*)meta, 8)) return true;
+		uint64_t stride = 0;
+		return ReachGameThread::objectHeaders(meta, stride) && (int64_t)stride == headerStride;
+	}
+
 	uintptr_t objectAddress(uint32_t datum, std::optional<uint8_t> type = std::nullopt)
 	{
-		if (datum == kNone || !objectMetaDataTable) return 0;
+		if (datum == kNone) return 0;
 		uintptr_t meta = 0;
-		if (!objectMetaDataTable->resolve(&meta)) return 0;
+		if (!headerTable(meta)) return 0;
 		uint16_t index = (uint16_t)(datum & 0xFFFF), salt = (uint16_t)(datum >> 16);
 		if (index >= 2048) return 0;
 		uintptr_t header = meta + headerStride * index;
@@ -626,22 +635,20 @@ private:
 
 	uint32_t playerUnit()
 	{
-		if (!playerUnitPointer) return kNone;
 		uintptr_t unitField = 0;
 		uint32_t unit = kNone;
-		if (!playerUnitPointer->resolve(&unitField) || !readSafe(unitField, unit)) return kNone;
-		return unit;
+		if (playerUnitPointer && playerUnitPointer->resolve(&unitField) && readSafe(unitField, unit) && unit != kNone) return unit;
+		return ReachGameThread::playerUnit();	// Firefight
 	}
 
 	// player 0's own datum (its record's salt, index 0): some damage is owned by the player rather than its body
 	uint32_t playerDatum()
 	{
-		if (!playerUnitPointer) return kNone;
 		uintptr_t unitField = 0;
 		uint16_t salt = 0;
-		if (!playerUnitPointer->resolve(&unitField) || unitField < kPlayerUnitField || !readSafe(unitField - kPlayerUnitField, salt) || salt == 0 || salt == 0xFFFF)
-			return kNone;
-		return (uint32_t)salt << 16;
+		if (playerUnitPointer && playerUnitPointer->resolve(&unitField) && unitField >= kPlayerUnitField && readSafe(unitField - kPlayerUnitField, salt) && salt != 0 && salt != 0xFFFF)
+			return (uint32_t)salt << 16;
+		return ReachGameThread::playerDatum();	// Firefight
 	}
 
 	std::string tagPathOf(uint32_t tag)
@@ -735,9 +742,9 @@ private:
 	// look over every biped (a tenth of a second apart) for ones that have just died
 	void scanKills()
 	{
-		if (!objectMetaDataTable || headerStride <= 0 || headerType + 1 > headerStride || headerPointer + 8 > headerStride) return;
+		if (headerStride <= 0 || headerType + 1 > headerStride || headerPointer + 8 > headerStride) return;
 		uintptr_t meta = 0;
-		if (!objectMetaDataTable->resolve(&meta) || meta < 0x10000) return;
+		if (!headerTable(meta) || meta < 0x10000) return;
 		size_t bytes = (size_t)headerStride * kObjectSlots;
 		if (IsBadReadPtr((void*)meta, bytes)) return;
 		mHeaderCopy.resize(bytes);
@@ -892,7 +899,7 @@ public:
 	// the rolled gun the player is holding right now, or null
 	const LootWeapon* heldWeapon()
 	{
-		if ((mWeapons.empty() && mStandard.empty()) || !playerUnitPointer || !objectMetaDataTable) return nullptr;
+		if (mWeapons.empty() && mStandard.empty()) return nullptr;
 		uint32_t tag = heldTag();
 		if (tag == kNone) return nullptr;
 		for (auto& w : mWeapons) if (w.tag == tag) return &w;

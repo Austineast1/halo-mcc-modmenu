@@ -247,6 +247,7 @@ IF EXIST "C:\Program Files\LockHunter\LockHunter.exe"  (
     <ClInclude Include="ModMenuLibrary.h" />
     <ClInclude Include="ModMenuManager.h" />
     <ClInclude Include="ModMenuLoot.h" />
+    <ClInclude Include="ReachGameThread.h" />
     <ClInclude Include="ModMenuLootTypes.h" />
     <ClInclude Include="ModMenuPossession.h" />
     <ClInclude Include="ModMenuSpawner.h" />
