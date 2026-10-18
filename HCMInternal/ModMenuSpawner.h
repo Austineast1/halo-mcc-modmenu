@@ -28,7 +28,8 @@ public:
 	~ModMenuSpawner();
 
 	// Render thread. Built lazily once per level. Empty if the tag table can't be read.
-	const std::vector<ModMenuSpawnEntry>& catalogue();
+	// buildNow: don't wait out the short settling delay after a level load (the loot chest needs it right away)
+	const std::vector<ModMenuSpawnEntry>& catalogue(bool buildNow = false);
 
 	// Render thread. Queues a spawn for the next game tick; returns a message for the footer.
 	std::string spawn(const ModMenuSpawnEntry& entry, bool thenBecomeIt);

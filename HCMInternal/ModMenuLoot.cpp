@@ -32,9 +32,10 @@ namespace
 	constexpr size_t kProjImpactDamage = 0x284, kProjDetonationDamage = 0x1D8, kTagRefDatum = 0xC;
 	constexpr size_t kDamageLower = 0x20, kDamageUpper = 0x24;
 
-	// which gun the player is holding (Reach unit layout, found live Oct 2026): current weapon slot (byte) at unit +0x348,
-	// the four carried weapon datums at +0x350. A weapon object's parent (+0x14) is the unit carrying it.
-	constexpr size_t kUnitWeaponSlot = 0x348, kUnitWeapons = 0x350, kObjectParent = 0x14;
+	// which gun the player is holding (Reach unit layout, found live Oct 2026 by switching weapons and diffing the unit):
+	// current weapon slot (byte) at unit +0x34A (+0x34E follows it; +0x348 does not change), the four carried weapon
+	// datums at +0x350. A weapon object's parent (+0x14) is the unit carrying it.
+	constexpr size_t kUnitWeaponSlot = 0x34A, kUnitWeapons = 0x350, kObjectParent = 0x14;
 	constexpr uint8_t kWeaponObjectType = 2;
 
 	// "is this tag loaded in the current zone set" (same check the spawner uses): never fire a projectile that isn't

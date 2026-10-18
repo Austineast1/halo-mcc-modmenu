@@ -303,7 +303,7 @@ private:
 		if (!loot->active()) rolled = loot->roll() + " ";
 		auto& guns = loot->weapons();
 		if (guns.empty()) return rolled.empty() ? "No guns to put in the chest yet. Load into a mission." : rolled;
-		auto& catalogue = spawner->catalogue();
+		auto& catalogue = spawner->catalogue(true);
 		std::vector<const LootWeapon*> pool;
 		std::vector<double> weights;
 		for (auto& g : guns)

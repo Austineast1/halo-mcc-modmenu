@@ -446,7 +446,7 @@ public:
 
 	~Impl() { mTickCallback.reset(); }
 
-	const std::vector<ModMenuSpawnEntry>& catalogue()
+	const std::vector<ModMenuSpawnEntry>& catalogue(bool buildNow = false)
 	{
 		if (mCatalogueStale.exchange(false))
 		{
@@ -454,6 +454,7 @@ public:
 			mCatalogueBuilt = false;
 			mCatalogueRetryAtMs = nowMs() + 1500; // let the new level finish loading
 		}
+		if (buildNow && !mCatalogueBuilt) mCatalogueRetryAtMs = 0;
 		// zone sets change mid-mission, and "load more" streams things in over a few seconds: refresh now and then
 		int64_t refreshEvery = nowMs() < mFastRefreshUntilMs ? 3000 : 20000;
 		if (mCatalogueBuilt && nowMs() - mCatalogueBuiltAtMs > refreshEvery) mCatalogueBuilt = false;
@@ -587,7 +588,7 @@ public:
 ModMenuSpawner::ModMenuSpawner(GameState game, IDIContainer& dicon, std::function<std::optional<ModMenuPose>()> poseProvider)
 	: pimpl(std::make_unique<Impl>(game, dicon, std::move(poseProvider))) {}
 ModMenuSpawner::~ModMenuSpawner() = default;
-const std::vector<ModMenuSpawnEntry>& ModMenuSpawner::catalogue() { return pimpl->catalogue(); }
+const std::vector<ModMenuSpawnEntry>& ModMenuSpawner::catalogue(bool buildNow) { return pimpl->catalogue(buildNow); }
 std::string ModMenuSpawner::spawn(const ModMenuSpawnEntry& entry, bool thenBecomeIt) { return pimpl->spawn(entry, thenBecomeIt); }
 std::optional<ModMenuSpawner::Result> ModMenuSpawner::update() { return pimpl->update(); }
 void ModMenuSpawner::onLevelChanged() { pimpl->onLevelChanged(); }
