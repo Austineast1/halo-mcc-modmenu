@@ -85,6 +85,15 @@ Each gun's card in the menu shows what it rolled, and when you pull a gun
 out in game its item card slides in on the right for a few seconds: rarity
 colour, name, maker, stats (green = better than stock, red = worse), perks,
 and red flavour text on legendaries.
+- Projectile perks change how rounds fly: Ricochet (bounce off walls),
+  Seeker (curve into what you aim near), Railgun (hyper-velocity, dead
+  straight), Drifter (slow floating rounds), Mortar (arc like grenades), Big
+  Bore (fat rounds) and Fan (a flat spray). They belong to the rounds, so any
+  gun firing the same rounds gets them too, and its card says so.
+- Every legendary gets a Special: Endless (never reloads), Rocket Choir (a
+  fan of explosive rounds), Bounce House (bouncing explosive rounds), Swarm
+  (three seeking rounds per shot), Lancer (hyper-velocity, huge damage) or
+  Firehose (double fire rate, triple magazine).
 - RE-ROLL for new loot any time; STANDARD ISSUE puts every gun back.
 - LOOT CHEST drops four rolled guns in front of you (better rarities are
   more likely). Pick one up and its item card slides in.

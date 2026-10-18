@@ -2528,7 +2528,7 @@ void ModMenuGUI::renderLootCard(SimpleMath::Vector2 screenSize, const LootWeapon
 	if (!w.perks.empty())
 	{
 		h += 6.f * S;
-		for (auto& perk : w.perks) h += wrappedH(body, perkPx, perk, perkW) + 6.f * S;
+		for (auto& perk : w.perks) h += wrappedH(perk.starts_with("Special:") ? bold : body, perkPx, perk, perkW) + 6.f * S;
 	}
 	if (flavour) h += 8.f * S + wrappedH(bold, perkPx, flavour, textWidth) + 2.f * S;
 	h += pad - 4.f * S;
@@ -2600,9 +2600,12 @@ void ModMenuGUI::renderLootCard(SimpleMath::Vector2 screenSize, const LootWeapon
 		y += 6.f * S;
 		for (auto& perk : w.perks)
 		{
-			diamond(dl, ImVec2(x + 4.f * S, y + perkPx * 0.6f), 3.5f * S, col32(rc, 0.9f * a));
-			dl->AddText(body, perkPx, ImVec2(x + 16.f * S, y), col32(colIvory, 0.92f * a), perk.c_str(), nullptr, perkW);
-			y += wrappedH(body, perkPx, perk, perkW) + 6.f * S;
+			// a legendary's special is its headline: bold, in the rarity colour
+			bool isSpecial = perk.starts_with("Special:");
+			ImFont* f = isSpecial ? bold : body;
+			diamond(dl, ImVec2(x + 4.f * S, y + perkPx * 0.6f), (isSpecial ? 4.5f : 3.5f) * S, col32(rc, 0.9f * a));
+			dl->AddText(f, perkPx, ImVec2(x + 16.f * S, y), col32(isSpecial ? mix(rc, colIvory, 0.15f) : colIvory, 0.95f * a), perk.c_str(), nullptr, perkW);
+			y += wrappedH(f, perkPx, perk, perkW) + 6.f * S;
 		}
 	}
 

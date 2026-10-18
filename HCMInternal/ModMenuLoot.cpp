@@ -30,6 +30,18 @@ namespace
 	// "Impact Damage", grenades and bolts through "Detonation Damage". Damage effect (jpt!): lower bound +0x20, upper
 	// bound range +0x24/+0x28. Every value is sanity-checked before it's scaled, and skipped if it looks wrong.
 	constexpr size_t kProjImpactDamage = 0x284, kProjDetonationDamage = 0x1D8, kTagRefDatum = 0xC;
+
+	// more barrel fields: ammo used per shot (0 = never runs dry), distribution function (1 = horizontal fan) and fan angle
+	constexpr size_t kRoundsUsedPerShot = 0x3A, kDistributionFunction = 0x68, kDistributionAngle = 0x6C;
+	// weapon autoaim (helps seeking rounds find a target): angle (radians) +0x2D4, range +0x2D8
+	constexpr size_t kAutoaimAngle = 0x2D4, kAutoaimRange = 0x2D8;
+	// projectile flight (ReachMCC proj plugin): collision radius +0x170, air gravity scale +0x2B8, initial/final velocity
+	// +0x2D0/+0x2D4, guided angular velocity lower/upper/at rest +0x2F0/+0x2F4/+0x2F8 (radians per second).
+	// Material responses: new block +0x320 (0x34 each: flags +0x6, chance +0x8, angle range +0xC, response +0x1C,
+	// frictions +0x2C/+0x30) and old block +0x314 (0x3C each: flags +0xE, chance +0x10, angle range +0x14, potential
+	// response +0xC, frictions +0x34/+0x38). Response 4 = bounce; flag bit 1 = never against units.
+	constexpr size_t kProjCollisionRadius = 0x170, kProjGravity = 0x2B8, kProjVelocity = 0x2D0, kProjGuided = 0x2F0;
+	constexpr size_t kProjResponses = 0x320, kProjResponseSize = 0x34, kProjOldResponses = 0x314, kProjOldResponseSize = 0x3C;
 	constexpr size_t kDamageLower = 0x20, kDamageUpper = 0x24;
 
 	// which gun the player is holding (Reach unit layout, found live Oct 2026 by switching weapons and diffing the unit):
@@ -171,6 +183,7 @@ private:
 		uint32_t tag;
 		std::string path;
 		std::string name;
+		uintptr_t base = 0;		// the weapon tag itself
 		uintptr_t magazine = 0;	// first magazine element, 0 if none (batteries, swords)
 		int16_t loaded = 0, total = 0, initial = 0;
 		std::vector<Barrel> barrels;
@@ -237,6 +250,7 @@ private:
 			gun.name = titleCase(lastSegment(gun.path));
 
 			uintptr_t base = tag.tagAddress;
+			gun.base = base;
 			if (auto mags = block(*tagBlocks, base + kMagazines); mags && mags->elementCount > 0)
 			{
 				gun.magazine = mags->firstElement;
@@ -330,7 +344,102 @@ private:
 		std::string element;
 		std::vector<std::string> perks;
 		std::string adjective;
+		std::set<int> flight;		// projectile perks (7..13), applied to whatever this gun ends up firing
+		bool endless = false;		// legendary special: never uses ammo
+		bool fan = false;
 	};
+
+	// ---- projectile perks (shared by every gun that fires the same projectile, so the notes are kept per projectile)
+	std::map<uint32_t, std::vector<std::string>> mProjectileNotes;
+	std::set<std::pair<uint32_t, int>> mFlightApplied;	// (projectile, perk) already written this roll
+
+	std::optional<uintptr_t> projectileTag(uint32_t datum)
+	{
+		auto tagTable = tagTableWeak.lock();
+		if (!tagTable || datum == kNone) return std::nullopt;
+		static const int32_t projGroup = MagicString(std::string("proj")).getNum();
+		auto tag = tagTable->getTagByDatum(Datum((uint16_t)(datum & 0xFFFF), (uint16_t)(datum >> 16)));
+		if (!tag || tag.value().tagType.getNum() != projGroup) return std::nullopt;
+		return tag.value().tagAddress;
+	}
+
+	static bool sane(float v, float lo, float hi) { return std::isfinite(v) && v >= lo && v <= hi; }
+
+	// rounds bounce off the world (still hit people): every impact/fizzle response becomes a bounce that ignores units
+	bool makeRicochet(uintptr_t proj)
+	{
+		auto tagBlocks = tagBlockWeak.lock();
+		if (!tagBlocks) return false;
+		bool any = false;
+		auto convert = [&](uintptr_t e, size_t flagsAt, size_t chanceAt, size_t angleAt, size_t responseAt, size_t frictionAt)
+			{
+				int16_t response = -1;
+				uint16_t flags = 0;
+				if (!readSafe(e + responseAt, response) || !readSafe(e + flagsAt, flags)) return;
+				if (response != 0 && response != 1 && response != 6) return;	// impact, fizzle, ricochet-fizzle
+				if (flags & 0x1) return;										// only-against-units responses stay
+				float friction[2] = {};
+				if (!readSafe(e + frictionAt, friction) || !sane(friction[0], 0.f, 1.f) || !sane(friction[1], 0.f, 1.f)) return;
+				patch<int16_t>(e + responseAt, 4);
+				patch<uint16_t>(e + flagsAt, (uint16_t)(flags | 0x2));
+				patch<float>(e + chanceAt, 1.f);
+				patch<float>(e + angleAt, 0.f);
+				patch<float>(e + angleAt + 4, 1.5708f);
+				patch<float>(e + frictionAt, std::min(friction[0], 0.1f));
+				patch<float>(e + frictionAt + 4, std::min(friction[1], 0.25f));
+				any = true;
+			};
+		if (auto blk = block(*tagBlocks, proj + kProjResponses); blk && blk->elementCount < 64)
+			for (size_t i = 0; i < blk->elementCount; i++) convert(blk->firstElement + i * kProjResponseSize, 0x6, 0x8, 0xC, 0x1C, 0x2C);
+		if (auto blk = block(*tagBlocks, proj + kProjOldResponses); blk && blk->elementCount < 64)
+			for (size_t i = 0; i < blk->elementCount; i++) convert(blk->firstElement + i * kProjOldResponseSize, 0xE, 0x10, 0x14, 0xC, 0x34);
+		return any;
+	}
+
+	// apply one projectile perk to a projectile tag; returns the line for the card, or empty if it couldn't be done
+	std::string applyFlight(uint32_t projectile, int perk)
+	{
+		auto proj = projectileTag(projectile);
+		if (!proj) return "";
+		uintptr_t p = *proj;
+		float gravity = 0.f, velocity[2] = {}, radius = 0.f, guided[3] = {};
+		if (!readSafe(p + kProjGravity, gravity) || !readSafe(p + kProjVelocity, velocity) || !readSafe(p + kProjCollisionRadius, radius) || !readSafe(p + kProjGuided, guided))
+			return "";
+		if (!sane(gravity, 0.f, 50.f) || !sane(velocity[0], 0.f, 5000.f) || !sane(velocity[1], 0.f, 5000.f) || !sane(radius, 0.f, 10.f)
+			|| !sane(guided[0], 0.f, 100.f) || !sane(guided[1], 0.f, 100.f) || !sane(guided[2], 0.f, 100.f))
+			return "";
+		switch (perk)
+		{
+		case 7: return makeRicochet(p) ? "Ricochet: rounds bounce off walls" : "";
+		case 8:
+			patch<float>(p + kProjGuided, std::max(guided[0], 2.5f));
+			patch<float>(p + kProjGuided + 4, std::max(guided[1], 3.5f));
+			patch<float>(p + kProjGuided + 8, std::max(guided[2], 2.0f));
+			return "Seeker: rounds curve into whatever you aim near";
+		case 9:
+			if (velocity[0] <= 0.f) return "";
+			patch<float>(p + kProjVelocity, std::min(velocity[0] * 3.f, 1500.f));
+			patch<float>(p + kProjVelocity + 4, std::min(velocity[1] * 3.f, 1500.f));
+			patch<float>(p + kProjGravity, 0.f);
+			return "Railgun: hyper-velocity slugs, dead straight";
+		case 10:
+			if (velocity[0] <= 0.f) return "";
+			patch<float>(p + kProjVelocity, std::max(velocity[0] * 0.3f, 3.f));
+			patch<float>(p + kProjVelocity + 4, std::max(velocity[1] * 0.3f, 3.f));
+			patch<float>(p + kProjGravity, 0.f);
+			return "Drifter: slow rounds that float through the air";
+		case 11:
+			if (velocity[0] <= 0.f) return "";
+			patch<float>(p + kProjGravity, std::min(std::max(gravity, 1.f) * 2.5f, 6.f));
+			patch<float>(p + kProjVelocity, std::max(velocity[0] * 0.6f, 5.f));
+			patch<float>(p + kProjVelocity + 4, std::max(velocity[1] * 0.6f, 5.f));
+			return "Mortar: rounds arc down like grenades";
+		case 12:
+			patch<float>(p + kProjCollisionRadius, std::min(std::max(radius * 4.f, 0.06f), 0.6f));
+			return "Big Bore: fat rounds that are hard to miss";
+		}
+		return "";
+	}
 
 public:
 	Impl(GameState game, IDIContainer& dicon) : mGame(game)
@@ -387,6 +496,9 @@ public:
 		// start from the level's own values so re-rolls don't stack
 		undoPatches();
 		mWeapons.clear();
+		mProjectileNotes.clear();
+		mFlightApplied.clear();
+		std::vector<std::pair<size_t, std::set<uint32_t>>> firedBy;	// weapon index -> projectiles it fires after the roll
 
 		std::map<uint32_t, std::string> projectilePaths;
 		std::vector<Gun> guns;
@@ -452,12 +564,39 @@ public:
 			if (auto it = gunDamage.find(gun.tag); it != gunDamage.end() && !it->second.empty())
 				canDamage = std::all_of(it->second.begin(), it->second.end(), [&](const DamageEffect& e) { return damageUsers[e.datum].size() == 1; });
 
-			// perks: 0 rapid, 1 deep mag, 2 twin, 3 scatter, 4 overcharged, 5 deadeye, 6 heavy (only when damage can change)
+			// perks: 0 rapid, 1 deep mag, 2 twin, 3 scatter, 4 overcharged, 5 deadeye, 6 heavy (only when damage can change),
+			// projectile perks 7 ricochet, 8 seeker, 9 railgun, 10 drifter, 11 mortar, 12 big bore, 13 fan
 			std::set<int> perks;
 			int wanted = perkCount[r] + (r == 2 && chance(0.5f) ? 1 : 0);
 			if (wanted > 0 && chance(0.6f)) perks.insert(maker.favouredPerk);
-			while ((int)perks.size() < wanted) perks.insert((int)pick(canDamage ? 7 : 6));
+			std::vector<int> allowed = { 0, 1, 2, 3, 5, 7, 8, 9, 10, 11, 12, 13 };
+			if (canDamage) allowed.push_back(6);
+			for (int tries = 0; (int)perks.size() < wanted && tries < 40; tries++) perks.insert(allowed[pick(allowed.size())]);
 			if (rarity != LootRarity::Legendary) perks.erase(4); // overcharged is a legendary thing
+			// one way of flying only: railgun, drifter and mortar fight over speed and gravity
+			{
+				bool flight = false;
+				for (int f : { 9, 10, 11 }) { if (perks.contains(f)) { if (flight) perks.erase(f); flight = true; } }
+			}
+
+			// legendary specials: one signature trick each
+			std::string special;
+			if (rarity == LootRarity::Legendary)
+			{
+				std::vector<int> specials = { 3, 5 };
+				if (gun.magazine && gun.loaded > 0) specials.push_back(0);		// endless only means something with a magazine
+				if (elements.contains("Explosive")) { specials.push_back(1); specials.push_back(2); }
+				if (canDamage) specials.push_back(4);
+				switch (specials[pick(specials.size())])
+				{
+				case 0: roll.endless = true; special = "Special: Endless. Never needs reloading"; break;
+				case 1: perks.insert(13); perks.erase(9); perks.erase(10); perks.erase(11); roll.ppsMul *= 5; roll.element = "Explosive"; special = "Special: Rocket Choir. A fan of explosive rounds"; break;
+				case 2: perks.insert(7); roll.element = "Explosive"; special = "Special: Bounce House. Explosive rounds that bounce"; break;
+				case 3: perks.insert(8); roll.ppsMul *= 3; roll.accuracy *= 1.6f; special = "Special: Swarm. Three seeking rounds per shot"; break;
+				case 4: perks.erase(10); perks.erase(11); perks.insert(9); roll.damage *= 1.6f; special = "Special: Lancer. Hyper-velocity slugs that hit like a truck"; break;
+				case 5: roll.rate *= 2.2f; roll.mag *= 3.f; special = "Special: Firehose. Double fire rate, triple magazine"; break;
+				}
+			}
 			for (int perk : perks)
 			{
 				switch (perk)
@@ -469,11 +608,19 @@ public:
 				case 4: roll.ppsMul *= 3; roll.rate *= 1.25f; roll.perks.push_back("Overcharged: 3 rounds per shot, 25% faster"); roll.adjective = "Overcharged"; break;
 				case 5: roll.accuracy *= 0.15f; roll.perks.push_back("Deadeye: laser accurate"); roll.adjective = "Deadeye"; break;
 				case 6: { float x = uniform(1.5f, 1.9f); roll.damage *= x; roll.rate *= 0.75f; roll.perks.push_back(std::format("Heavy: hits {:.0f}% harder, fires slower", (x - 1.f) * 100.f)); roll.adjective = "Heavy"; break; }
+				case 7: roll.flight.insert(7); roll.adjective = "Ricochet"; break;
+				case 8: roll.flight.insert(8); roll.adjective = "Seeking"; break;
+				case 9: roll.flight.insert(9); roll.adjective = "Railgun"; break;
+				case 10: roll.flight.insert(10); roll.adjective = "Drifting"; break;
+				case 11: roll.flight.insert(11); roll.adjective = "Mortar"; break;
+				case 12: roll.flight.insert(12); roll.adjective = "Big Bore"; break;
+				case 13: roll.fan = true; if (roll.ppsMul == 1) roll.ppsMul = 3; roll.perks.push_back("Fan: rounds spray out in a flat line"); roll.adjective = "Fanning"; break;
 				}
 			}
+			if (!special.empty()) roll.perks.insert(roll.perks.begin(), special);
 
 			// element: swap in a projectile from another gun on this level (not for Heavy guns: they hit harder with their own)
-			if (chance(elementChance[r]) && !elements.empty() && !perks.contains(6))
+			if (roll.element.empty() && chance(elementChance[r]) && !elements.empty() && !perks.contains(6))
 			{
 				std::string want = maker.favouredElement && chance(0.6f) && elements.contains(maker.favouredElement) ? maker.favouredElement : "";
 				if (want.empty())
@@ -494,6 +641,7 @@ public:
 			loot.maker = maker.name;
 			if (rarity == LootRarity::Legendary || (rarity == LootRarity::Epic && chance(0.35f))) loot.title = kTitles[pick(std::size(kTitles))];
 
+			std::set<uint32_t> firedNow;	// the projectiles this gun fires after the roll
 			int oldPps = gun.barrels.front().pps, newPps = oldPps;
 			float oldRps = gun.barrels.front().rps[1];
 			bool swapped = false;
@@ -533,7 +681,44 @@ public:
 					patch<uint32_t>(b.address + kProjectileDatum, *elementProjectile);
 					swapped = true;
 				}
+				firedNow.insert(elementProjectile && *elementProjectile != b.projectile ? *elementProjectile : b.projectile);
+				if (roll.fan)
+				{
+					int16_t distribution = -1;
+					if (readSafe(b.address + kDistributionFunction, distribution) && distribution >= 0 && distribution <= 3)
+					{
+						patch<int16_t>(b.address + kDistributionFunction, 1);	// horizontal fan
+						patch<float>(b.address + kDistributionAngle, 0.35f);		// about 20 degrees wide
+					}
+				}
+				if (roll.endless)
+				{
+					int16_t used = -1;
+					if (readSafe(b.address + kRoundsUsedPerShot, used) && used >= 0 && used <= 100) patch<int16_t>(b.address + kRoundsUsedPerShot, 0);
+				}
 				if (&b == &gun.barrels.front()) newPps = pps;
+			}
+
+			// projectile perks go on whatever this gun fires now; anything else firing the same rounds gets them too
+			for (int f : roll.flight)
+				for (uint32_t proj : firedNow)
+				{
+					if (mFlightApplied.contains({ proj, f })) continue;
+					bool flies = f >= 9 && f <= 11;
+					if (flies && (mFlightApplied.contains({ proj, 9 }) || mFlightApplied.contains({ proj, 10 }) || mFlightApplied.contains({ proj, 11 }))) continue;
+					std::string line = applyFlight(proj, f);
+					if (line.empty()) continue;
+					mFlightApplied.insert({ proj, f });
+					mProjectileNotes[proj].push_back(line);
+				}
+			if (roll.flight.contains(8) && gun.base)
+			{
+				float angle = 0.f, range = 0.f;
+				if (readSafe(gun.base + kAutoaimAngle, angle) && readSafe(gun.base + kAutoaimRange, range) && sane(angle, 0.f, 1.5f) && sane(range, 0.f, 2000.f))
+				{
+					patch<float>(gun.base + kAutoaimAngle, std::max(angle, 0.12f));
+					patch<float>(gun.base + kAutoaimRange, std::max(range, 30.f));
+				}
 			}
 			int newLoaded = gun.loaded;
 			if (gun.magazine && gun.loaded > 0)
@@ -577,6 +762,20 @@ public:
 			(void)oldRps;
 			if (loot.title.empty() && !roll.adjective.empty()) loot.title = roll.adjective;
 			mWeapons.push_back(std::move(loot));
+			firedBy.push_back({ mWeapons.size() - 1, firedNow });
+		}
+
+		// projectile perks belong to the rounds: every gun firing them lists them (and can't claim ones that didn't stick)
+		for (auto& [index, fired] : firedBy)
+		{
+			auto& perks = mWeapons[index].perks;
+			for (uint32_t proj : fired)
+			{
+				auto it = mProjectileNotes.find(proj);
+				if (it == mProjectileNotes.end()) continue;
+				for (auto& note : it->second)
+					if (std::find(perks.begin(), perks.end(), note) == perks.end()) perks.push_back(note);
+			}
 		}
 
 		// best first, like a loot screen
